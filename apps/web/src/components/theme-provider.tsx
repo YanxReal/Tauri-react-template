@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import * as React from "react"
 
 type Theme = "dark" | "light" | "system"
@@ -157,7 +156,7 @@ export function ThemeProvider({
         return
       }
 
-      setThemeState((currentTheme) => {
+      setThemeState(currentTheme => {
         const nextTheme =
           currentTheme === "dark"
             ? "light"

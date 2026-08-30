@@ -1,21 +1,114 @@
-# shadcn/ui monorepo template
+# tauri-react-template
 
-This is a Vite monorepo template with shadcn/ui.
+Bilingual Tauri v2 + React 19 + Vite 8 + Tailwind v4 starter — ready for your private use.
+Plantilla bilingüe Tauri v2 + React 19 + Vite 8 + Tailwind v4 — lista para uso privado.
 
-## Adding components
+## Stack
 
-To add components to your app, run the following command at the root of your `web` app:
+- **Runtime:** Node >=24, pnpm >=10, Rust 1.77+
+- **Frontend:** React 19.2, Vite 8.2, TypeScript 5.9 (strict), Tailwind 4.3 (`@tailwindcss/vite`), Biome 2.5, Vitest 4 + Testing Library, i18next (EN/ES)
+- **Desktop:** Tauri 2.11 (`@tauri-apps/api` + `plugin-opener`), Cargo edition 2021
+- **Monorepo:** Turborepo 2.10, workspaces `apps/*` + `packages/*`, path alias `@` → `apps/web/src`, `@workspace/ui/*`
+- **UI:** shadcn + Base UI (`@base-ui/react`), `globals.css` with OKLCH, `Inter Variable`
+
+## Quick start / Inicio rápido
+
+```bash
+# requirements: node 24, pnpm 10, rust
+pnpm install
+pnpm dev          # turbo dev (web on http://localhost:1420)
+pnpm tauri:dev    # tauri dev (needs Rust)
+pnpm build        # turbo build
+pnpm typecheck
+pnpm lint         # biome check
+pnpm test         # vitest
+```
+
+## Project structure / Estructura
+
+```
+.
+├── apps/web                 # Vite React app (HTML5 semantic, i18n)
+│   ├── index.html           # semantic meta, OG, theme-color
+│   └── src/
+│       ├── App.tsx          # header/main/section/footer + i18n
+│       ├── i18n/            # en.json / es.json
+│       ├── components/layout/{header,hero,features,footer}.tsx
+│       └── test/setup.ts
+├── packages/ui              # design system (shadcn)
+│   └── src/{components,lib,styles/globals.css}
+├── src-tauri/               # Tauri v2 backend (Rust)
+│   └── tauri.conf.json      # frontendDist: ../apps/web/dist
+├── biome.json               # formatter + linter (replaces ESLint+Prettier)
+├── turbo.json
+└── pnpm-workspace.yaml
+```
+
+## i18n — Bilingual / Bilingüe
+
+- `apps/web/src/i18n/config.ts` — `i18next` + `browser-languagedetector` + `localStorage` cache
+- Locales: `en.json` / `es.json` typed (`defaultNS: translation`)
+- Language toggle in `Header` updates `document.documentElement.lang` and persists
+- Add a locale: copy `en.json` → `xx.json`, add to `supportedLngs` in `config.ts`
+
+```tsx
+const { t, i18n } = useTranslation()
+t("hero.title") // EN/ES auto
+await i18n.changeLanguage("es")
+```
+
+## HTML5 Semantic
+
+- `index.html` has `lang`, `description`, `og:*`, `theme-color`, `noscript`
+- `App.tsx` uses `<header><nav><main><section><footer>` + skip-link + landmarks + `kbd` hint
+- `Header` has `aria-label="Main navigation"`, `Footer` has `contentinfo`
+
+## Adding shadcn components
 
 ```bash
 pnpm dlx shadcn@latest add button -c apps/web
+pnpm dlx shadcn@latest add dialog -c apps/web
+# components land in packages/ui/src/components
 ```
-
-This will place the ui components in the `packages/ui/src/components` directory.
-
-## Using components
-
-To use the components in your app, import them from the `ui` package.
 
 ```tsx
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@workspace/ui/components/button"
 ```
+
+## Tauri
+
+- `src-tauri/tauri.conf.json:build` → `beforeDevCommand: "pnpm dev"`, `frontendDist: "../apps/web/dist"`
+- Rust: `cargo check --manifest-path src-tauri/Cargo.toml`
+- Add Tauri plugin: `pnpm --filter web add @tauri-apps/plugin-xxx` + `Cargo.toml` + `capabilities`
+
+## Scripts
+
+| Script | Description |
+|---|---|
+| `pnpm dev` | `turbo dev` (web) |
+| `pnpm build` | `turbo build` |
+| `pnpm lint` / `lint:fix` | `biome check` |
+| `pnpm typecheck` | `turbo typecheck` |
+| `pnpm test` | `turbo test` (vitest) |
+| `pnpm tauri:dev` | `tauri dev` |
+| `pnpm tauri:build` | `tauri build` |
+
+## Recommended IDE
+
+VS Code + `tauri-vscode` + `rust-analyzer` + `biome` + `tailwindcss` (see `.vscode/extensions.json`).
+Settings: `editor.formatOnSave` + `source.fixAll.biome` enabled.
+
+## Git private
+
+This repo is intended as your **private** template.
+
+```bash
+gh repo create tauri-react-template --private --source=. --push
+# or
+git remote add origin git@github.com:YOUR_USER/tauri-react-template.git
+git push -u origin master
+```
+
+## License
+
+MIT — private template for personal use.

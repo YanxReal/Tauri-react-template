@@ -1,0 +1,49 @@
+{
+  "header": {
+    "title": "Tauri React Template",
+    "nav": {
+      "features": "Features",
+      "docs": "Docs",
+      "github": "GitHub"
+    },
+    "language": "Language",
+    "toggleTheme": "Toggle theme (press D)"
+  },
+  "hero": {
+    "badge": "Tauri v2 · React 19 · Vite 8 · Tailwind 4",
+    "title": "Build fast, ship native",
+    "description": "Bilingual (EN/ES), typed, accessible starter. Ready for your next Tauri desktop app with a modern web frontend.",
+    "ctaPrimary": "Get started",
+    "ctaSecondary": "Documentation",
+    "hint": "Press {{key}} to toggle dark mode"
+  },
+  "features": {
+    "title": "Everything you need — nothing you don't",
+    "items": [
+      {
+        "title": "HTML5 Semantic",
+        "description": "Header, nav, main, section, footer and proper landmarks for accessibility and SEO."
+      },
+      {
+        "title": "Bilingual ready",
+        "description": "i18next + browser detection, localStorage persistence and typed resources (EN/ES)."
+      },
+      {
+        "title": "Modern stack",
+        "description": "pnpm + Turborepo + Vite 8 + React 19 + Tailwind v4 + Biome + Vitest + Tauri v2."
+      }
+    ]
+  },
+  "status": {
+    "title": "Project ready!",
+    "description": "You may now add components and start building.",
+    "note": "We've already added the button component for you.",
+    "tauriNote": "Try Tauri API: {{message}}"
+  },
+  "footer": {
+    "rights": "All rights reserved.",
+    "builtWith": "Built with Tauri, React and Vite.",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  }
+}
