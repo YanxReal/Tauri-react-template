@@ -7,7 +7,11 @@
       "github": "GitHub"
     },
     "language": "Language",
-    "toggleTheme": "Toggle theme (press D)"
+    "toggleTheme": "Toggle theme (press D)",
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore",
+    "close": "Close"
   },
   "hero": {
     "badge": "Tauri v2 · React 19 · Vite 8 · Tailwind 4",

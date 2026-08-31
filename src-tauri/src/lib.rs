@@ -122,19 +122,29 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![greet, platform_info, window_effects_set])
         .setup(|app| {
             // Ventana frameless en Windows: DWM no redondea WS_POPUP por defecto.
-            // Prestly lo hace vía windows crate + DwmSetWindowAttribute(DWMWCP_ROUND).
-            // Para template genérico lo dejamos como comentario documentado;
-            // descomenta si quieres bordes redondeados nativos en Windows 11.
+            // Prestly patrón: DwmSetWindowAttribute(DWMWCP_ROUND) restaura las
+            // esquinas curvas nativas de Windows 11.
             #[cfg(target_os = "windows")]
             {
-                // use windows::Win32::Foundation::HWND;
-                // use windows::Win32::Graphics::Dwm::{DwmSetWindowAttribute, DWM_WINDOW_CORNER_PREFERENCE, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND};
-                // if let Some(window) = app.get_webview_window("main") {
-                //     if let Ok(hwnd) = window.hwnd() {
-                //         let pref = DWM_WINDOW_CORNER_PREFERENCE(DWMWCP_ROUND.0);
-                //         unsafe { let _ = DwmSetWindowAttribute(HWND(hwnd.0), DWMWA_WINDOW_CORNER_PREFERENCE, &pref as *const _ as *const _, std::mem::size_of_val(&pref) as u32); }
-                //     }
-                // }
+                use windows::Win32::Foundation::HWND;
+                use windows::Win32::Graphics::Dwm::{
+                    DwmSetWindowAttribute, DWM_WINDOW_CORNER_PREFERENCE,
+                    DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
+                };
+                if let Some(window) = app.get_webview_window("main") {
+                    if let Ok(hwnd) = window.hwnd() {
+                        let preference = DWM_WINDOW_CORNER_PREFERENCE(DWMWCP_ROUND.0);
+                        unsafe {
+                            let _ = DwmSetWindowAttribute(
+                                HWND(hwnd.0),
+                                DWMWA_WINDOW_CORNER_PREFERENCE,
+                                &preference as *const DWM_WINDOW_CORNER_PREFERENCE
+                                    as *const std::ffi::c_void,
+                                std::mem::size_of::<DWM_WINDOW_CORNER_PREFERENCE>() as u32,
+                            );
+                        }
+                    }
+                }
             }
 
             // Centrado forzado en desktop — `center:true` en tauri.conf no siempre

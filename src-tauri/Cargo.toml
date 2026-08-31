@@ -30,7 +30,19 @@ env_logger = "0.11"
 # Window translucency (macOS vibrancy / Windows Mica) — "efecto cristal".
 # Prestly pattern: the crate publishes under the name `window-vibrancy`;
 # applies/clears the native material on supported OS (no-op-ish elsewhere).
+# NOTE: must stay in the main [dependencies] table (BEFORE any
+# [target.'cfg(...)'] section) so it is linked on ALL platforms.
 window-vibrancy = "0.8"
+
+# --- Target-specific dependencies ------------------------------------------
+# Esquinas redondeadas nativas en Windows 11 (preferencia DWM). Prestly usa
+# DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND) en
+# windows[0] — solo para target Windows (WS_POPUP es cuadrado por defecto).
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Dwm",
+] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

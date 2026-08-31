@@ -142,8 +142,10 @@
 
 html,
 body {
-  touch-action: manipulation;
-  overscroll-behavior: none;
+  /* Prestly: `pan-x pan-y` deja el scroll 100% nativo (gestos del OS
+     intactos) sin pinch/zoom; NO se usa `overscroll-behavior:none` porque
+     Prestly no lo hace y puede romper el rebote/arrastre de scroll. */
+  touch-action: pan-x pan-y;
 }
 
 input,
@@ -154,10 +156,12 @@ textarea,
   -webkit-touch-callout: default;
 }
 
-/* "Efecto cristal": cuando la ventana usa el material nativo (vibrancy macOS /
-   Mica Windows), el webview debe dejar de pintar el fondo para que el material
-   del OS se vea a través. La clase `.vibrancy` vive en <html>, la alterna
-   VibrancyProvider (mismo patrón que Prestly en tailwind.css). */
-html.vibrancy body {
+/* "Efecto cristal": el material nativo (vibrancy macOS / Mica Windows) se
+   transluce SOLO en la zona marcada `.native-glass` (el Header), NO en todo
+   el body — así el fondo de la app lo pinta `bg-background` según el tema
+   claro/oscuro y el cristal es una franja que lo sigue (patrón Prestly, que
+   transluce únicamente la sidebar). La clase `.vibrancy` vive en <html>,
+   la alterna VibrancyProvider. */
+html.vibrancy .native-glass {
   background: transparent;
 }
