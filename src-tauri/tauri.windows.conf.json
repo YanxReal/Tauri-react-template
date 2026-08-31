@@ -10,7 +10,9 @@
         "center": true,
         "transparent": true,
         "decorations": false,
-        "disableInputAccessoryView": true
+        "disableInputAccessoryView": true,
+        "dragDropEnabled": false,
+        "zoomHotkeysEnabled": false
       }
     ],
     "security": {

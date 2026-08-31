@@ -12,7 +12,9 @@
         "transparent": true,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "disableInputAccessoryView": true
+        "disableInputAccessoryView": true,
+        "dragDropEnabled": false,
+        "zoomHotkeysEnabled": false
       }
     ],
     "security": {

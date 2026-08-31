@@ -16,6 +16,9 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = "2"
+# Native-app feel: bloquea atajos/menús predeterminados del navegador
+# (F5, Cmd+R, F12, Ctrl+P/S, zoom, menú contexto) a nivel de WebView.
+tauri-plugin-prevent-default = "2"
 # Generic OS info for frontend (optional, no Keychain). Uncomment if you need
 # `platform_info` richer than `platform::current_platform()`.
 # tauri-plugin-os = "2"

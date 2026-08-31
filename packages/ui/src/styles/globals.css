@@ -128,3 +128,28 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Native-app feel (multi-OS): nada seleccionable/arrastrable salvo inputs,
+   sin pinch-to-zoom ni rebote de scroll. Complementa el plugin
+   tauri-plugin-prevent-default y `dragDropEnabled:false`/`
+   zoomHotkeysEnabled:false` de tauri.conf.json. */
+* {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
+
+html,
+body {
+  touch-action: pan-x pan-y;
+  overscroll-behavior: none;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}

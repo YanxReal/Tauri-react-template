@@ -1,5 +1,6 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 
+#[cfg(desktop)]
 use tauri::Manager;
 
 pub mod platform;
@@ -33,6 +34,17 @@ pub extern "C" fn start_app() {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        // Native-app feel (multi-OS): bloquea atajos/menús de "sitio web".
+        // `Flags::debug()` deja activos en DEBUG context-menu (Recargar por
+        // clic derecho), DevTools (Ctrl/Cmd+Shift+I) y Reload (F5, Cmd+R);
+        // en RELEASE bloquea TODO (Ctrl+P/S, zoom rueda, menú contextual
+        // nativo del webview, fuente, etc.). El zoom por teclado se apaga
+        // además con `zoomHotkeysEnabled:false` en tauri.conf.json.
+        .plugin(
+            tauri_plugin_prevent_default::Builder::new()
+                .with_flags(tauri_plugin_prevent_default::Flags::debug())
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![greet, platform_info])
         .setup(|app| {
             // Ventana frameless en Windows: DWM no redondea WS_POPUP por defecto.
@@ -58,20 +70,10 @@ pub fn run() {
                 let _ = window.center();
             }
 
-            // En release (perfil sin `debug_assertions`) eliminamos el menú
-            // contextual NATIVO del webview — Recargar/Volver/Adelante en
-            // WKWebView (macOS), WebView2 (Windows) y WebKitGTK (Linux); en
-            // iOS/Android suprime el menú de long-press. Se intercepta el
-            // evento `contextmenu` desde el frontend (la única vía oficial en
-            // Tauri v2, igual en todos los OS). Debug conserva el menú: el
-            // "Recargar" es útil en desarrollo.
-            if !cfg!(debug_assertions) {
-                for (_, window) in app.webview_windows() {
-                    let _ = window.eval(
-                        "(function(){ try { document.addEventListener('contextmenu', function(e){ e.preventDefault(); }, false); } catch(_){} })();",
-                    );
-                }
-            }
+            // En release, el plugin `prevent-default` (registrado arriba con
+            // `Flags::debug()`) ya suprime el menú contextual NATIVO del
+            // webview (Recargar/Volver en WKWebView, WebView2, WebKitGTK) y el
+            // de long-press móvil, sin tocar código por perfil aquí.
 
             // Log plataforma al iniciar (útil para debug multi-OS)
             log::info!("backend started on {}", platform::current_platform());

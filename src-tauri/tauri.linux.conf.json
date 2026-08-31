@@ -9,7 +9,9 @@
         "minHeight": 600,
         "center": true,
         "transparent": true,
-        "disableInputAccessoryView": true
+        "disableInputAccessoryView": true,
+        "dragDropEnabled": false,
+        "zoomHotkeysEnabled": false
       }
     ]
   }
