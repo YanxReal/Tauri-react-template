@@ -15,6 +15,73 @@ fn platform_info() -> String {
     platform::current_platform().to_string()
 }
 
+// --- Window translucency ("efecto cristal") -----------------------------------
+// Prestly pattern: `window_effects_set { enabled, dark? }` applies or clears
+// the native window material — vibrancy on macOS (NSVisualEffectView) and
+// Mica on Windows 11. Linux / mobile / other report "unsupported" so the
+// frontend hides the toggle instead of pretending the effect exists.
+// IMPORTANT: `window-vibrancy` can only run on the MAIN thread (§144.10), so
+// this command must stay SYNC — Tauri runs sync commands on the main thread.
+// `dark` lets Windows Mica pick the right tint; macOS adapts on its own.
+#[cfg(target_os = "macos")]
+fn set_window_effect(
+    window: &tauri::WebviewWindow,
+    enabled: bool,
+    dark: Option<bool>,
+) -> Result<(), String> {
+    let _ = dark;
+    if enabled {
+        window_vibrancy::apply_vibrancy(
+            window,
+            window_vibrancy::NSVisualEffectMaterial::UnderWindowBackground,
+            Some(window_vibrancy::NSVisualEffectState::Active),
+            None,
+        )
+        .map_err(|e| e.to_string())
+    } else {
+        window_vibrancy::clear_vibrancy(window)
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn set_window_effect(
+    window: &tauri::WebviewWindow,
+    enabled: bool,
+    dark: Option<bool>,
+) -> Result<(), String> {
+    if enabled {
+        window_vibrancy::apply_mica(window, dark).map_err(|e| e.to_string())
+    } else {
+        let _ = window_vibrancy::clear_mica(window);
+        Ok(())
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+fn set_window_effect(
+    _window: &tauri::WebviewWindow,
+    _enabled: bool,
+    _dark: Option<bool>,
+) -> Result<(), String> {
+    Err("unsupported".to_string())
+}
+
+#[tauri::command]
+fn window_effects_set(
+    window: tauri::WebviewWindow,
+    enabled: bool,
+    dark: Option<bool>,
+) -> Result<(), String> {
+    let result = set_window_effect(&window, enabled, dark);
+    match &result {
+        Ok(()) => log::info!("window_effects_set: enabled={enabled} ok"),
+        Err(e) => log::error!("window_effects_set: enabled={enabled} failed: {e}"),
+    }
+    result
+}
+
 /// Desktop-Apple shell entry para el target unificado `tauri-react-template_Apple`
 /// de Xcode (ver `src-tauri/tauri.macos.conf.json` + `Assets.xcassets`).
 /// `main.mm` del Xcode project llama a `start_app()` vía FFI. En iOS el
@@ -45,7 +112,7 @@ pub fn run() {
                 .with_flags(tauri_plugin_prevent_default::Flags::debug())
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![greet, platform_info])
+        .invoke_handler(tauri::generate_handler![greet, platform_info, window_effects_set])
         .setup(|app| {
             // Ventana frameless en Windows: DWM no redondea WS_POPUP por defecto.
             // Prestly lo hace vía windows crate + DwmSetWindowAttribute(DWMWCP_ROUND).

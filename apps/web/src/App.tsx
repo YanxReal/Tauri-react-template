@@ -6,6 +6,7 @@ import { Features } from "@/components/layout/features"
 import { Footer } from "@/components/layout/footer"
 import { Header } from "@/components/layout/header"
 import { Hero } from "@/components/layout/hero"
+import { VibrancyToggle } from "@/components/layout/vibrancy-toggle"
 
 export function App() {
   const { t, i18n } = useTranslation()
@@ -57,6 +58,10 @@ export function App() {
               <Button variant="outline" onClick={handleGreet}>
                 Greet from Rust
               </Button>
+            </div>
+
+            <div className="mt-4 flex items-center gap-3">
+              <VibrancyToggle />
             </div>
 
             {greet && (

@@ -45,5 +45,10 @@
     "builtWith": "Hecho con Tauri, React y Vite.",
     "privacy": "Privacidad",
     "terms": "Términos"
+  },
+  "vibrancy": {
+    "label": "Efecto cristal / vidrio",
+    "hint": "Translucidez nativa de la ventana (vibrancy en macOS, Mica en Windows 11).",
+    "unavailable": "No compatible en esta plataforma."
   }
 }

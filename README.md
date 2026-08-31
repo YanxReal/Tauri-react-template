@@ -98,6 +98,14 @@ sistemas. Configuración actual de "sensación nativa", derivada del commit `c9a
   NO toca el scroll; el scroll del documento se validó sano (0↔max) por JS.
 - Mobile se apoya en las mismas reglas CSS/JS (`touch-action` desactiva el double-tap zoom en iOS).
 
+### Efecto cristal / glass (window-vibrancy) — toggle
+
+Patrón de **Prestly**: toggle nativo de translucidez de la ventana.
+
+- **Rust**: `window-vibrancy = "0.8"` (crate, no plugin). Comando sync `window_effects_set {enabled, dark?}` en `src-tauri/src/lib.rs` — vibrancy (`NSVisualEffectView`) en macOS, Mica en Windows 11; Linux/mobile responden `unsupported` (no-op). Patrón de Prestly: el comando debe ser **sync** (corre en el main thread; `window-vibrancy` exige el main thread).
+- **Frontend**: `VibrancyProvider` + `useVibrancy()` (`apps/web/src/components/vibrancy-provider.tsx`). Persistencia en `localStorage` (`vibrancy`), ON por defecto donde hay soporte nativo. Al activarse añade `html.vibrancy` → `globals.css` pone `body { background: transparent }` para que el material del OS se vea. `dark` sigue al tema (tint de Mica en Windows).
+- **Toggle**: `<VibrancyToggle />` (`apps/web/src/components/layout/vibrancy-toggle.tsx`) — usa el `Switch` de shadcn/Base UI y desaparece si `!supported` (Linux/mobile/browser).
+
 To verify: `pnpm typecheck && pnpm lint && pnpm build`, y testear scroll + click + no-zoom en una
 build real de cada plataforma.
 

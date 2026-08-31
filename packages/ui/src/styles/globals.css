@@ -153,3 +153,11 @@ textarea,
   -webkit-user-select: text;
   -webkit-touch-callout: default;
 }
+
+/* "Efecto cristal": cuando la ventana usa el material nativo (vibrancy macOS /
+   Mica Windows), el webview debe dejar de pintar el fondo para que el material
+   del OS se vea a través. La clase `.vibrancy` vive en <html>, la alterna
+   VibrancyProvider (mismo patrón que Prestly en tailwind.css). */
+html.vibrancy body {
+  background: transparent;
+}

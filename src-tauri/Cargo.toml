@@ -27,10 +27,10 @@ serde_json = "1"
 log = "0.4"
 env_logger = "0.11"
 
-# Window translucency stub (macOS vibrancy / Windows Mica) — compiled on
-# every target, but no-op unless you cfg-gate usage in platform/{macOS,Windows}.
-# Keep as dev dependency style: enable when you uncomment the setup code in lib.rs.
-# window-vibrancy = "0.8"
+# Window translucency (macOS vibrancy / Windows Mica) — "efecto cristal".
+# Prestly pattern: the crate publishes under the name `window-vibrancy`;
+# applies/clears the native material on supported OS (no-op-ish elsewhere).
+window-vibrancy = "0.8"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
