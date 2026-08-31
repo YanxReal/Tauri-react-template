@@ -5,12 +5,12 @@
 # el template, NUNCA el .xcodeproj generado (no persiste).
 #
 # Uso:
-#   scripts/ios-xcode.sh            # regenera gen/apple con xcodegen
-#   scripts/ios-xcode.sh --build    # además compila iOS simulator (vía CLI, que
+#   scripts/Xcode/apple-xcode.sh            # regenera gen/apple con xcodegen
+#   scripts/Xcode/apple-xcode.sh --build    # además compila iOS simulator (vía CLI, que
 #                                   # es el padre del xcode-script) y macOS host
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 TPL="$ROOT/src-tauri/vendor/tauri-cli-2.11.4/templates/mobile/ios"
 GEN="$ROOT/src-tauri/gen/apple"
 XCODEGEN="${XCODEGEN:-xcodegen}"

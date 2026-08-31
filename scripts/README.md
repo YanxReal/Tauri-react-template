@@ -13,8 +13,8 @@ La fuente de verdad del proyecto Xcode es el template:
 
 `src-tauri/gen/apple` se regenera **completo** desde ahí (está gitignored y NO persiste):
 
-    scripts/ios-xcode.sh             # regenera + xcodegen
-    scripts/ios-xcode.sh --build     # además compila iOS sim (vía CLI) y macOS host
+    scripts/Xcode/apple-xcode.sh             # regenera + xcodegen
+    scripts/Xcode/apple-xcode.sh --build     # además compila iOS sim (vía CLI) y macOS host
 
 Regla: editar SIEMPRE el template (project.yml, apple.xcconfig, entitlements, Assets.xcassets),
 NUNCA el `.xcodeproj` generado ni su Info.plist.
@@ -48,7 +48,7 @@ NUNCA el `.xcodeproj` generado ni su Info.plist.
   <script>.command` (estilo Prestly; LaunchServices → sin permisos TCC, `open` no bloquea
   nunca la phase). Dos runscripts en el repo (persisten a la regen):
   `apps/web/scripts/ios-dev-server.command` (Vite :1420 + HMR) y
-  `scripts/ios-dev-parent.command` (`tauri ios dev --open` con `--host <LAN>` si hay red).
+  `scripts/Xcode/xcode-dev-parent.command` (`tauri ios dev --open` con `--host <LAN>` si hay red).
 - Ojo de doble Vite: en hotreload, el parent levanta Vite (su `beforeDevCommand`) y falla si
   `:1420` ya está ocupado ("beforeDevCommand terminated with a non-zero..."). No dejar un Vite
   preview/dev previo corriendo antes de lanzar la config `hotreload`.

@@ -45,7 +45,7 @@ dev\:tauri:
 
 Android: regenera gen/apple (iOS+macOS) desde src-tauri/vendor/tauri-cli-2.11.4/templates/mobile/ios/
 gen-apple:
-	scripts/ios-xcode.sh
+	scripts/Xcode/apple-xcode.sh
 
 ## dev-ios — iOS simulator (requiere Xcode; usa el target unificado via scheme `_iOS`)
 dev-ios:

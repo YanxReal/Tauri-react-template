@@ -4,7 +4,7 @@
 # de la phase "Build Rust Code".
 #
 # Este archivo es fuente de verdad (NUNCA editar el .xcodeproj directamente):
-# `scripts/ios-xcode.sh` regenera src-tauri/gen/apple completo (gitignored)
+# `scripts/Xcode/apple-xcode.sh` regenera src-tauri/gen/apple completo (gitignored)
 # con `xcodegen generate`. El CLI stock (`tauri ios init`) genera solo iOS;
 # usa el script para tener también el destino macOS.
 name: tauri-react-template
@@ -99,7 +99,7 @@ targets:
         ARCHS: [arm64]
         VALID_ARCHS: arm64 
         # Team de desarrollador: NO va hardcodeado. Regenera con
-        # scripts/ios-xcode.sh y este valor se inyecta automáticamente
+        # scripts/Xcode/apple-xcode.sh y este valor se inyecta automáticamente
         # (prioridad: $DEVELOPMENT_TEAM del entorno → scripts/.team-id).
         # Sin config, la línea se omite y el team lo eliges en Xcode →
         # Target → Signing & Capabilities (necesario para el pipeline
@@ -223,14 +223,14 @@ targets:
           # (devuelve al instante; el runscript de la ventana es asíncrono).
           # Los `.command` viven en el repo (no en gen/, que se regenera):
           #   apps/web/scripts/ios-dev-server.command  → Vite (:1420 + HMR)
-          #   scripts/ios-dev-parent.command           → `tauri ios dev --open`
+          #   scripts/Xcode/xcode-dev-parent.command → `tauri ios dev --open`
           launch_dev_server_terminal() {
             curl -sf http://localhost:1420 >/dev/null 2>&1 && return 0
             open -a Terminal "$SRCROOT/../../../apps/web/scripts/ios-dev-server.command"
           }
 
           launch_parent() {
-            open -a Terminal "$SRCROOT/../../../scripts/ios-dev-parent.command"
+            open -a Terminal "$SRCROOT/../../../scripts/Xcode/xcode-dev-parent.command"
           }
 
           build_standalone() {

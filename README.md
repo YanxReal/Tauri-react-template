@@ -89,9 +89,9 @@ import { Button } from "@workspace/ui/components/button"
   "Build Rust Code"). Regenera y compila con:
 
   ```bash
-  scripts/ios-xcode.sh            # xcodegen → src-tauri/gen/apple
-  scripts/ios-xcode.sh --build    # + iOS simulator (CLI) y macOS host
-  make gen-apple                  # alias de scripts/ios-xcode.sh
+  scripts/Xcode/apple-xcode.sh            # xcodegen → src-tauri/gen/apple
+  scripts/Xcode/apple-xcode.sh --build    # + iOS simulator (CLI) y macOS host
+  make gen-apple                  # alias de scripts/Xcode/apple-xcode.sh
   ```
 
 - Usa SIEMPRE el CLI stock (el `cargo tauri` instalado puede ser un build modificado):

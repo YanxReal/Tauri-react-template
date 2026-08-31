@@ -43,7 +43,7 @@ CODE_SIGN_ENTITLEMENTS[sdk=macosx*] = tauri-react-template_Apple/macos.entitleme
 // igual que Prestly). El SDK iphonesimulator firma ad-hoc "-"/Manual para los
 // builds directos de Xcode sobre sim sin cuenta de desarrollador.
 //
-// Para cambiar de team: `scripts/ios-xcode.sh` lo inyecta al regenerar
+// Para cambiar de team: `scripts/Xcode/apple-xcode.sh` lo inyecta al regenerar
 // (env DEVELOPMENT_TEAM o scripts/.team-id); sin config se omite y se elige
 // en Xcode → target → Signing & Capabilities.
 CODE_SIGN_STYLE[sdk=iphonesimulator*] = Manual
