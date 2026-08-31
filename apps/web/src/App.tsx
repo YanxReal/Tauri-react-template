@@ -6,6 +6,7 @@ import { Features } from "@/components/layout/features"
 import { Footer } from "@/components/layout/footer"
 import { Header } from "@/components/layout/header"
 import { Hero } from "@/components/layout/hero"
+import { TitleBar } from "@/components/layout/title-bar"
 import { VibrancyToggle } from "@/components/layout/vibrancy-toggle"
 
 export function App() {
@@ -26,7 +27,7 @@ export function App() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col">
+    <div className="app-shell flex min-h-svh flex-col">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
@@ -34,6 +35,7 @@ export function App() {
         Skip to content / Saltar al contenido
       </a>
 
+      <TitleBar />
       <Header />
 
       <main id="main-content" className="flex-1">

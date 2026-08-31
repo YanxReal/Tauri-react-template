@@ -157,11 +157,40 @@ textarea,
 }
 
 /* "Efecto cristal": el material nativo (vibrancy macOS / Mica Windows) se
-   transluce SOLO en la zona marcada `.native-glass` (el Header), NO en todo
-   el body — así el fondo de la app lo pinta `bg-background` según el tema
-   claro/oscuro y el cristal es una franja que lo sigue (patrón Prestly, que
-   transluce únicamente la sidebar). La clase `.vibrancy` vive en <html>,
-   la alterna VibrancyProvider. */
+   transluce a través del fondo del body, pero teñido con el color del tema
+   (claro/oscuro) para que el cristal SIGA al tema de la app y no al sistema
+   (patrón Prestly: el fondo lo pinta la app; aquí añadimos translucidez).
+   `.vibrancy` vive en <html>, la alterna VibrancyProvider. */
+html.vibrancy body {
+  background-color: color-mix(in oklab, var(--background) 62%, transparent);
+}
+
+/* La franja del titlebar (banda superior reservada) también es cristal: su
+   fondo translúcido deja ver el material del OS por debajo de los controles
+   de ventana. */
 html.vibrancy .native-glass {
   background: transparent;
+}
+
+/* --- Ventana frameless (patrón Prestly, §144.5) -----------------------------
+   La clase `.titlebar` vive en <html>, la monta el componente TitleBar en
+   Tauri desktop (nunca en el navegador/móvil). Reserva la banda superior
+   (—native-titlebar-height) para el arrastre/los controles de ventana y
+   empuja el contenido debajo de ella. Necesita ganar a las utilities
+   (top-0 / p-0 de Tailwind), así que vive en la capa utilities. */
+@layer utilities {
+  html.titlebar {
+    --native-titlebar-height: 2.25rem; /* 36px */
+  }
+
+  /* La app entera baja debajo de la banda reservada. */
+  html.titlebar .app-shell {
+    padding-top: var(--native-titlebar-height);
+  }
+
+  /* El header sticky se pega JUSTO debajo de la banda al hacer scroll
+     (en vez de quedar oculto tras ella). */
+  html.titlebar .app-header {
+    top: var(--native-titlebar-height);
+  }
 }
