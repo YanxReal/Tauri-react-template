@@ -22,18 +22,25 @@ fn platform_info() -> String {
 // frontend hides the toggle instead of pretending the effect exists.
 // IMPORTANT: `window-vibrancy` can only run on the MAIN thread (§144.10), so
 // this command must stay SYNC — Tauri runs sync commands on the main thread.
-// `dark` lets Windows Mica pick the right tint; macOS adapts on its own.
+// `dark` drives the material so the crystal effect follows the app theme:
+// macOS picks a dark / light material, Windows Mica picks the matching tint.
 #[cfg(target_os = "macos")]
 fn set_window_effect(
     window: &tauri::WebviewWindow,
     enabled: bool,
     dark: Option<bool>,
 ) -> Result<(), String> {
-    let _ = dark;
+    // NSVisualEffectMaterial: dark theme -> smoother/darker material, light
+    // theme -> lighter one. `UnderWindowBackground` adapts to the system, so
+    // we pick explicitly so the crystal matches the in-app theme.
+    let material = match dark {
+        Some(true) => window_vibrancy::NSVisualEffectMaterial::HudWindow,
+        _ => window_vibrancy::NSVisualEffectMaterial::UnderWindowBackground,
+    };
     if enabled {
         window_vibrancy::apply_vibrancy(
             window,
-            window_vibrancy::NSVisualEffectMaterial::UnderWindowBackground,
+            material,
             Some(window_vibrancy::NSVisualEffectState::Active),
             None,
         )

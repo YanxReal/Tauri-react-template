@@ -1,6 +1,5 @@
 import { invoke } from "@tauri-apps/api/core"
 import * as React from "react"
-import { useTheme } from "@/components/theme-provider"
 
 const VIBRANCY_KEY = "vibrancy"
 const VIBRANCY_ON = "1"
@@ -49,15 +48,14 @@ async function applyWindowEffect(
  * applied on top of the default (ON where supported). When enabled, the
  * webview stops painting a background (`html.vibrancy` in globals.css) so
  * the OS material shows through; the actual effect comes from the Rust
- * `window_effects_set` command. `dark` follows the active theme for Windows
- * Mica's tint; macOS material adapts automatically.
+ * `window_effects_set` command. `dark` is the RESUMED theme (resolved on
+ * <html>), so the crystal material follows the app theme — even when the
+ * user picks "system".
  */
 export function VibrancyProvider({ children }: { children: React.ReactNode }) {
-  const { theme } = useTheme()
   const [enabled, setEnabledState] = React.useState(false)
   const [supported, setSupported] = React.useState(false)
-
-  const dark = theme !== "light"
+  const [dark, setDark] = React.useState(false)
 
   // Boot: restore the persisted preference and probe platform support.
   // Absent preference means "default ON" — the probe applies the effect, so
@@ -79,6 +77,20 @@ export function VibrancyProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  // Track the RESOLVED theme on <html> (ThemeProvider toggles `.dark` there,
+  // including when the user picks "system") so the crystal material can
+  // follow the app theme.
+  React.useEffect(() => {
+    const update = () => setDark(resolvedDark())
+    update()
+    const observer = new MutationObserver(update)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    })
+    return () => observer.disconnect()
   }, [])
 
   // Re-apply whenever the toggle or the theme changes (Mica's dark tint
