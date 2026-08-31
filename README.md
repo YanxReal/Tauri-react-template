@@ -81,6 +81,26 @@ import { Button } from "@workspace/ui/components/button"
 - Rust: `cargo check --manifest-path src-tauri/Cargo.toml`
 - Add Tauri plugin: `pnpm --filter web add @tauri-apps/plugin-xxx` + `Cargo.toml` + `capabilities`
 
+## Native app feel — multiplataforma / cross-platform
+
+Esta es una **app multiplataforma** (desktop: **macOS, Windows, Linux**; mobile: **iOS, Android**) —
+no pienses solo en macOS o iOS. Cualquier cambio debe funcionar y testearse en todos los
+sistemas. Configuración actual de "sensación nativa", derivada del commit `c9ae1a4`:
+
+- `dragDropEnabled: false` + `zoomHotkeysEnabled: false` en TODAS las ventanas (`tauri.conf.json`
+  + `tauri.{macos,windows,linux}.conf.json` — las 4 configs, no solo macOS).
+- Viewport `user-scalable=no`, `maximum-scale=1.0` (desactiva el zoom del webview).
+- `globals.css`: `user-select:none` / `-webkit-user-drag:none` (excepto inputs/textarea/contenteditable),
+  `touch-action: manipulation` en `html,body` (scroll nativo conservado y fluido en WebKit).
+- `main.tsx`: bloqueo de `dragstart`, de zoom con rueda Ctrl/⌘, y links externos → `plugin-opener`.
+- `tauri-plugin-prevent-default` registrado con `Flags::debug()`: en **release** bloquea los
+  defaults del webview (context menu, devtools, reload); en **debug** lo conserva. El plugin
+  NO toca el scroll; el scroll del documento se validó sano (0↔max) por JS.
+- Mobile se apoya en las mismas reglas CSS/JS (`touch-action` desactiva el double-tap zoom en iOS).
+
+To verify: `pnpm typecheck && pnpm lint && pnpm build`, y testear scroll + click + no-zoom en una
+build real de cada plataforma.
+
 ## Mobile — iOS/macOS (Xcode) y Android
 
 - `src-tauri/gen/` está gitignored (autogen). La fuente de verdad del proyecto Xcode es el
