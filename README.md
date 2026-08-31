@@ -107,6 +107,21 @@ import { Button } from "@workspace/ui/components/button"
 - `make dev` (desktop) no requiere Xcode; basta Rust. `start_app()` + `platform/` en
   `src-tauri/src/` adaptan la entrada por plataforma.
 
+### DEVELOPMENT_TEAM (firma iOS)
+
+El template NO hardcodea tu Team ID: `scripts/Xcode/apple-xcode.sh` lo inyecta al
+regenerar con esta prioridad — **env `DEVELOPMENT_TEAM` → `scripts/.team-id` (gitignored)
+→ si no hay ninguno se omite y lo eliges a mano en Xcode → Signing & Capabilities**
+(necesario solo para el pipeline `tauri ios dev|build`; sim directo y macOS firman ad-hoc).
+Ejemplo persistente:
+
+```bash
+echo YOUR_TEAM_ID > scripts/.team-id   # una vez
+scripts/Xcode/apple-xcode.sh           # cada regeneración lo inyecta
+```
+
+Más detalle: [scripts/README.md](scripts/README.md#firma--development_team-auto-inyección).
+
 ## Scripts
 
 | Script | Description |

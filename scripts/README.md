@@ -69,9 +69,46 @@ NUNCA el `.xcodeproj` generado ni su Info.plist.
   que usa `config.scheme()` = `<app>_iOS` para `tauri ios dev|build`.
 - Entitlements estáticos por plataforma (ios.entitlements / macos.entitlements) vía
   `CODE_SIGN_ENTITLEMENTS[sdk=...]`.
-- Firma: `DEVELOPMENT_TEAM` en project.yml (igual que Prestly hardcodea el suyo) para el
-  pipeline CLI; el SDK `iphonesimulator` firma ad-hoc ("-") para los builds directos de
-  Xcode sobre sim sin cuenta de desarrollador.
+## Firma / DEVELOPMENT_TEAM (auto-inyección)
+
+El template **nunca hardcodea el Team ID**: lleva un sentinel
+`__TAURI_DEVELOPMENT_TEAM__` que `scripts/Xcode/apple-xcode.sh` resuelve ANTES de
+`xcodegen`, sobre la copia en `gen/`. Prioridad:
+
+1. env `DEVELOPMENT_TEAM` (p.ej. en CI)
+2. archivo `scripts/.team-id` (gitignored; persiste entre regeneraciones)
+3. ninguno → la línea se omite y el team se elige a mano en Xcode
+
+Cuándo hace falta team: SIEMPRE el pipeline `tauri ios dev|build` (cargo-mobile transita
+por device + archive/export — Xcode moderno lista los sims vía `devicectl` como devices).
+No hace falta para builds directos de Xcode sobre **sim** (firma ad-hoc `-`/Manual vía
+`CODE_SIGN_STYLE[sdk=iphonesimulator*]`) ni para macOS.
+
+Cómo hacerlo (elige UNA opción):
+
+```bash
+# (1) fleet: una sola generación con team
+DEVELOPMENT_TEAM=ABCDE12345 scripts/Xcode/apple-xcode.sh
+
+# (2) durable: escribe el team y regenera (recomendado)
+echo ABCDE12345 > scripts/.team-id
+scripts/Xcode/apple-xcode.sh
+
+# (3) a mano: sin config, regeneras y eliges en Xcode →
+#     Target → Signing & Capabilities. OJO: la elección manual se pierde al
+#     regenerar (gen/ se reconstruye completo) → para persistir usa .team-id.
+```
+
+Tu Team ID se ve en Xcode → Target → Signing & Capabilities (o Apple ID →
+Membership Details). Verificar que Xcode lo recibió:
+
+```bash
+xcodebuild -project src-tauri/gen/apple/tauri-react-template.xcodeproj \
+  -scheme tauri-react-template_Apple -configuration Debug \
+  -showBuildSettings | rg DEVELOPMENT_TEAM        # → "DEVELOPMENT_TEAM = ABCDE12345"
+```
+
+Sin team configurado el rg no debe devolver nada (elección manual).
 
 ## CLI
 
