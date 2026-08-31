@@ -180,7 +180,7 @@ html.vibrancy .native-glass {
    (top-0 / p-0 de Tailwind), así que vive en la capa utilities. */
 @layer utilities {
   html.titlebar {
-    --native-titlebar-height: 2.25rem; /* 36px */
+    --native-titlebar-height: 1.25rem; /* 20px */
   }
 
   /* La app entera baja debajo de la banda reservada. */

@@ -2,9 +2,18 @@ import { invoke } from "@tauri-apps/api/core"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { useEffect, useState } from "react"
 
-const BAND_PX = 36
+/** Reserved top band height — must match `--native-titlebar-height` (globals.css). */
+const BAND_PX = 20
 
-/** Targets that keep their click even inside the drag band (Prestly). */
+/**
+ * Drag limit: the reserved band PLUS the header strip (h-14 = 56px). The empty
+ * top band clears the native traffic lights; the header below it is also a
+ * drag surface (interactive targets are skipped), so grabbing "anywhere at
+ * the top" just works — no thin 20px sliver to hunt for.
+ */
+const DRAG_LIMIT_Y = BAND_PX + 56
+
+/** Targets that keep their click even inside the drag region (Prestly). */
 const INTERACTIVE_SELECTOR =
   "button, a, input, select, textarea, label, [role='button'], [data-no-drag]"
 
@@ -40,25 +49,28 @@ function usePlatform(): Platform {
 /**
  * macOS Overlay titlebars have no system drag surface (the WKWebView covers
  * the whole window), so drags are initiated manually — Prestly pattern:
- * any primary mousedown inside the reserved top band whose target is not
- * interactive starts a window drag; a double click toggles maximize. This
- * replicates Tauri's `data-tauri-drag-region` script semantics without a
- * DOM element.
+ * any primary mousedown inside the top drag region whose target is not
+ * interactive starts a window drag; a double click toggles maximize.
+ * `preventDefault` stops the webview from starting selection/focus, which
+ * otherwise makes dragging unreliable (works one time, not the next).
  */
 function useMacDragRegion(enabled: boolean): void {
   useEffect(() => {
     if (!enabled || !isTauriRuntime()) return
-    const appWindow = getCurrentWindow()
     const onMouseDown = (event: MouseEvent) => {
       if (event.button !== 0) return
-      if (event.clientY > BAND_PX) return
+      if (event.clientY > DRAG_LIMIT_Y) return
       const target = event.target instanceof Element ? event.target : null
       if (target?.closest(INTERACTIVE_SELECTOR)) return
       if (event.detail === 2) {
-        void appWindow.toggleMaximize()
+        event.preventDefault()
+        void getCurrentWindow().toggleMaximize()
         return
       }
-      if (event.detail === 1) void appWindow.startDragging()
+      if (event.detail === 1) {
+        event.preventDefault()
+        void getCurrentWindow().startDragging()
+      }
     }
     document.addEventListener("mousedown", onMouseDown)
     return () => document.removeEventListener("mousedown", onMouseDown)

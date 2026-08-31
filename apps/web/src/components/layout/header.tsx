@@ -2,10 +2,13 @@ import { Button } from "@workspace/ui/components/button"
 import { Languages, Moon, Sun } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useTheme } from "@/components/theme-provider"
+import { usePlatform } from "./native-chrome"
 
 export function Header() {
   const { t, i18n } = useTranslation()
   const { theme, setTheme } = useTheme()
+  const platform = usePlatform()
+  const isMac = platform === "macos"
 
   const toggleLanguage = () => {
     const next = i18n.language === "es" ? "en" : "es"
@@ -20,7 +23,11 @@ export function Header() {
 
   return (
     <header className="app-header sticky top-0 z-50 border-b bg-background/80 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+      <div
+        className={`mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 ${
+          isMac ? "pl-20 sm:pl-24" : ""
+        }`}
+      >
         <a
           href="/"
           className="flex items-center gap-2 font-semibold tracking-tight"

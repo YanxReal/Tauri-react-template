@@ -22,24 +22,21 @@ function runWindowAction(action: "minimize" | "maximize" | "close"): void {
 }
 
 /**
- * Files native window titlebar for frameless desktop windows (Prestly pattern).
+ * App-drawn titlebar for frameless desktop windows — Prestly pattern.
  *
- * macOS uses `titleBarStyle: "Overlay"` + `hiddenTitle`: the window keeps its
- * NATIVE rounded corners, shadow and traffic lights (system-drawn ABOVE the
- * webview) and this component renders NO element — Tauri needs a custom drag
- * region under Overlay (the webview swallows the titlebar mouse events), so
- * `useMacDragRegion` initiates drags over the reserved top band. The band
- * itself is reserved via `.titlebar` on <html> + an empty top strip so it is
- * a real drag surface.
+ * macOS uses `titleBarStyle: "Overlay"` + `hiddenTitle` (native corners,
+ * shadow, traffic lights ABOVE the webview) and renders NO element; the
+ * webview swallows titlebar mouse events, so `useMacDragRegion` replicates
+ * Tauri's injected drag script over the CSS-reserved top band.
  *
- * Windows/Linux use `decorations: false` with an app-drawn strip hosting the
- * caption buttons; `data-tauri-drag-region` lets Tauri's own script handle
- * dragging and double-click-to-maximize. Rounded corners on Windows come from
- * DWM in Rust.
+ * Windows/Linux use `decorations: false` with an app-drawn strip hosting
+ * the caption buttons; `data-tauri-drag-region` lets Tauri's own script
+ * handle dragging + double-click-to-maximize. Windows rounded corners come
+ * from DWM in Rust.
  *
- * Every variant mounts the `titlebar` class on <html> so CSS reserves the band
- * (globals.css) and pushes the app content below it. Renders nothing in the
- * non-Tauri browser dev server or on mobile.
+ * Every variant mounts `titlebar` on <html> so the stylesheet reserves the
+ * band (globals.css) and pushes the app content below it. Renders nothing
+ * outside Tauri desktop.
  */
 export function TitleBar() {
   const { t } = useTranslation()
@@ -47,17 +44,17 @@ export function TitleBar() {
   const [maximized, setMaximized] = useState(false)
 
   const visible = platform !== null && DESKTOP_PLATFORMS.has(platform)
-  const isMac = platform === "macos"
   const hasCaption = platform === "windows" || platform === "linux"
 
-  // Reserve the top band on <html> for the drag/caption strip.
+  useMacDragRegion(visible && platform === "macos")
+
   useEffect(() => {
     if (!visible) return
     document.documentElement.classList.add("titlebar")
     return () => document.documentElement.classList.remove("titlebar")
   }, [visible])
 
-  // Windows/Linux: believable maximize state for the restore glyph.
+  // Windows/Linux: track maximized state for the restore glyph.
   useEffect(() => {
     if (!hasCaption) return
     const appWindow = getCurrentWindow()
@@ -81,23 +78,13 @@ export function TitleBar() {
     }
   }, [hasCaption])
 
-  // macOS Overlay: reserved top band = drag surface.
-  useMacDragRegion(visible && isMac)
+  if (!visible || platform === "macos") return null
 
-  const barHeight = BAND_PX
-
-  if (!visible || isMac) {
-    // macOS: the empty reserved band is the drag surface; traffic lights are
-    // system-drawn. No element rendered — CSS reserves the band already.
-    return null
-  }
-
-  // Windows/Linux: app-drawn caption strip.
   return (
     <header
       data-tauri-drag-region
       className="native-glass fixed inset-x-0 top-0 z-50 flex select-none items-stretch justify-end"
-      style={{ height: `${barHeight}px` }}
+      style={{ height: `${BAND_PX}px` }}
     >
       <CaptionButton
         label={t("header.minimize")}
@@ -143,7 +130,7 @@ function CaptionButton({
       data-no-drag
       aria-label={label}
       onClick={onClick}
-      className={`flex h-full w-[46px] items-center justify-center text-muted-foreground transition-colors ${
+      className={`flex w-[46px] items-center justify-center text-muted-foreground transition-colors ${
         danger
           ? "hover:bg-red-600 hover:text-white"
           : "hover:bg-muted hover:text-foreground"
