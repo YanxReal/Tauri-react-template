@@ -10,6 +10,7 @@
     "frontendDist": "../apps/web/dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "tauri-react-template",

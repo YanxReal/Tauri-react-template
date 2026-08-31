@@ -5,7 +5,7 @@ Plantilla bilingüe Tauri v2 + React 19 + Vite 8 + Tailwind v4 — lista para us
 
 ## Stack
 
-- **Runtime:** Node >=24, pnpm >=10, Rust 1.77+
+- **Runtime:** Node >=24, pnpm >=10, Rust stable (1.85+, edition 2021)
 - **Frontend:** React 19.2, Vite 8.2, TypeScript 5.9 (strict), Tailwind 4.3 (`@tailwindcss/vite`), Biome 2.5, Vitest 4 + Testing Library, i18next (EN/ES)
 - **Desktop:** Tauri 2.11 (`@tauri-apps/api` + `plugin-opener`), Cargo edition 2021
 - **Monorepo:** Turborepo 2.10, workspaces `apps/*` + `packages/*`, path alias `@` → `apps/web/src`, `@workspace/ui/*`
@@ -80,6 +80,32 @@ import { Button } from "@workspace/ui/components/button"
 - `src-tauri/tauri.conf.json:build` → `beforeDevCommand: "pnpm dev"`, `frontendDist: "../apps/web/dist"`
 - Rust: `cargo check --manifest-path src-tauri/Cargo.toml`
 - Add Tauri plugin: `pnpm --filter web add @tauri-apps/plugin-xxx` + `Cargo.toml` + `capabilities`
+
+## Mobile — iOS/macOS (Xcode) y Android
+
+- `src-tauri/gen/` está gitignored (autogen). La fuente de verdad del proyecto Xcode es el
+  template `src-tauri/vendor/tauri-cli-2.11.4/templates/mobile/ios/` (target único
+  `tauri-react-template_Apple`, destinos **iOS + macOS** vía `apple.xcconfig` y la phase
+  "Build Rust Code"). Regenera y compila con:
+
+  ```bash
+  scripts/ios-xcode.sh            # xcodegen → src-tauri/gen/apple
+  scripts/ios-xcode.sh --build    # + iOS simulator (CLI) y macOS host
+  make gen-apple                  # alias de scripts/ios-xcode.sh
+  ```
+
+- Usa SIEMPRE el CLI stock (el `cargo tauri` instalado puede ser un build modificado):
+
+  ```bash
+  pnpm dlx @tauri-apps/cli@2.11.4 ios build --target aarch64-sim --debug
+  pnpm dlx @tauri-apps/cli@2.11.4 android build --debug --target aarch64
+  make dev-ios            # iOS simulator (vía CLI + scheme _iOS)
+  make build-ios          # iOS simulator build
+  make dev-android-emulator   # APK debug → emulador
+  ```
+
+- `make dev` (desktop) no requiere Xcode; basta Rust. `start_app()` + `platform/` en
+  `src-tauri/src/` adaptan la entrada por plataforma.
 
 ## Scripts
 

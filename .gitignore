@@ -43,3 +43,5 @@ src-tauri/Cargo.lock
 
 # OS
 Thumbs.db
+# Team de desarrollador (opcional; lo inyecta scripts/ios-xcode.sh).
+scripts/.team-id

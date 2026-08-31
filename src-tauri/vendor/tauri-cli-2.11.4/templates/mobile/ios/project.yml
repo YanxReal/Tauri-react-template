@@ -1,0 +1,343 @@
+# Template unificado Apple — UN target (`tauri-react-template_Apple`), DOS
+# destinos (iOS/iPhoneSimulator + macOS). Todo lo que difiere entre
+# plataformas vive en `apple.xcconfig` ([sdk=...]) y en el branch PLATFORM_NAME
+# de la phase "Build Rust Code".
+#
+# Este archivo es fuente de verdad (NUNCA editar el .xcodeproj directamente):
+# `scripts/ios-xcode.sh` regenera src-tauri/gen/apple completo (gitignored)
+# con `xcodegen generate`. El CLI stock (`tauri ios init`) genera solo iOS;
+# usa el script para tener también el destino macOS.
+name: tauri-react-template
+options:
+  bundleIdPrefix: com.tauri-react-template.app
+  deploymentTarget:
+    iOS: 15.0
+fileGroups: [../../src, apple.xcconfig]
+configs:
+  debug: debug
+  release: release
+  # Config dedicada a hot reload de Rust via el pipeline real de tauri
+  # (xcode-script, full IPC con el parent `tauri ios dev`). Ver la phase
+  # "Build Rust Code".
+  hotreload: hotreload
+settingGroups:
+  app:
+    base:
+      PRODUCT_NAME: tauri-react-template
+      PRODUCT_BUNDLE_IDENTIFIER: com.tauri-react-template.app
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+targets:
+  tauri-react-template_Apple:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+      - path: Assets.xcassets
+      # `Externals` NO debe listarse aquí: XcodeGen añadiría una phase
+      # "Copy Bundle Resources" por cada `.a` → "Multiple commands produce
+      # .../libapp.a". Se linkea vía apple.xcconfig (-lapp + search paths).
+      - path: tauri-react-template_Apple
+      - path: assets
+        buildPhase: resources
+        type: folder
+      - path: LaunchScreen.storyboard
+      - path: ../../icons/icon.icns
+        buildPhase: resources
+    info:
+      path: tauri-react-template_Apple/Info.plist
+      properties:
+        LSRequiresIPhoneOS: true
+        UILaunchStoryboardName: LaunchScreen
+        # UIKit scene-based lifecycle es OBLIGATORIO con el SDK iOS 27
+        # (Technote TN3187); sin él la app trapa al lanzar con
+        # `_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`.
+        # tao activa su soporte de scenes cuando
+        # UIApplicationSupportsMultipleScenes = true y registra
+        # TaoSceneDelegate en su AppDelegate.
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleApplication:
+              - UISceneConfigurationName: TaoScene
+                UISceneDelegateClassName: TaoSceneDelegate
+        # Acceso a red local requerido en iOS 14+ (dev server por LAN/USB en
+        # `tauri ios dev`). ATS se relaja solo para hosts de red local sin
+        # desactivarse para internet.
+        NSLocalNetworkUsageDescription: The app communicates with the local development server during development.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        UIRequiredDeviceCapabilities: [arm64, metal]
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        CFBundleShortVersionString: 0.1.0
+        CFBundleVersion: "0.1.0"
+        # --- claves macOS (ignoradas por iOS) ---
+        LSMinimumSystemVersion: "15.0"
+        NSHighResolutionCapable: true
+        CFBundleIconName: AppIcon
+    # Entitlements por plataforma (static, ver apple.xcconfig). NO usar el
+    # bloque XcodeGen `entitlements:` — inyectaría UN CODE_SIGN_ENTITLEMENTS
+    # incondicional que pisa los [sdk=...] de apple.xcconfig.
+    configFiles:
+      debug: apple.xcconfig
+      release: apple.xcconfig
+      hotreload: apple.xcconfig
+    scheme:
+      environmentVariables:
+        RUST_BACKTRACE: full
+        RUST_LOG: info
+    settings:
+      base:
+        ENABLE_BITCODE: false
+        ARCHS: [arm64]
+        VALID_ARCHS: arm64 
+        # Team de desarrollador: NO va hardcodeado. Regenera con
+        # scripts/ios-xcode.sh y este valor se inyecta automáticamente
+        # (prioridad: $DEVELOPMENT_TEAM del entorno → scripts/.team-id).
+        # Sin config, la línea se omite y el team lo eliges en Xcode →
+        # Target → Signing & Capabilities (necesario para el pipeline
+        # `tauri ios dev|build`, que transita por device + archive/export).
+        DEVELOPMENT_TEAM: __TAURI_DEVELOPMENT_TEAM__ 
+        LIBRARY_SEARCH_PATHS[arch=x86_64]: $(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)
+        LIBRARY_SEARCH_PATHS[arch=arm64]: $(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)
+        ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: true
+        EXCLUDED_ARCHS[sdk=iphoneos*]: x86_64
+        ALWAYS_SEARCH_USER_PATHS: NO
+        USE_HEADERMAP: YES
+      groups: [app]
+    preBuildScripts:
+      # Xcode corre las script phases con PATH mínimo (sin ~/.cargo/bin ni
+      # pnpm), así que exportamos ambos. Hay TRES pipelines:
+      #
+      #  - `release`: standalone desde Xcode, producción (pnpm build +
+      #    staticlib con `tauri/custom-protocol`, sin CLI padre, compila desde
+      #    cero: optimizado).
+      #  - `debug`: IGUAL que release (frontend embebido con
+      #    `tauri/custom-protocol`, app completa standalone) pero compilando
+      #    en perfil debug incremental → RÁPIDO. Sin Vite (el HMR es cosa de
+      #    hotreload).
+      #  - `hotreload`: full IPC con el parent `tauri ios dev` (xcode-script)
+      #    y Vite para HMR. Sin parent, ABRE una terminal con `tauri ios dev
+      #    --open` (el parent levanta Vite vía beforeDevCommand) y espera;
+      #    si el parent no aparece, avisa y arranca Vite él mismo para el
+      #    fallback standalone. NUNCA cuelga: el parent se detecta con un
+      #    probe WebSocket JSON-RPC real (timeout), no con un TCP connect.
+      #
+      # Platform split: macosx compila el crate como staticlib host (nunca
+      # xcode-script); en hotreload abre la terminal con Vite (devUrl 1420 +
+      # HMR). iOS va por el pipeline según la config.
+      - script: |
+          export PATH="$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+          case "$CONFIGURATION" in
+            release|debug) (cd "$SRCROOT/../../../apps/web" && pnpm build) || exit 1 ;;
+          esac
+
+          mkdir -p "$SRCROOT/Externals"
+
+          # Detección del parent `tauri ios dev|build`: escribe su options
+          # server (WebSocket JSON-RPC, método "options") en
+          # $TMPDIR/<identifier>-server-addr. Para saber si HAY sesión IPC viva
+          # sin falsos positivos no basta con que el puerto acepte TCP: hay que
+          # completar el handshake WebSocket y pedir "options" con respuesta
+          # (timeout breve). Así un addr stale/muerto NUNCA cuelga la compilación
+          # (el xcode-script stock se queda esperando si el ws no contesta).
+          IPCADDR_FILE="$TMPDIR/com.tauri-react-template.app-server-addr"
+          probe_parent() {
+            [ -f "$IPCADDR_FILE" ] || return 1
+            PARENT_PORT=$(sed 's/.*://' "$IPCADDR_FILE" 2>/dev/null)
+            [ -n "$PARENT_PORT" ] || return 1
+            python3 - "$PARENT_PORT" <<'PY' >/dev/null 2>&1
+          import base64, json, os, socket, struct, sys, time
+
+          try:
+              port = int(sys.argv[1])
+          except Exception:
+              sys.exit(1)
+          key = base64.b64encode(os.urandom(16)).decode()
+          try:
+              s = socket.create_connection(("127.0.0.1", port), 0.5)
+          except OSError:
+              sys.exit(1)
+          s.settimeout(1.0)
+          try:
+              s.sendall(
+                  (
+                      "GET / HTTP/1.1\r\n"
+                      f"Host: 127.0.0.1:{port}\r\n"
+                      "Upgrade: websocket\r\n"
+                      "Connection: Upgrade\r\n"
+                      f"Sec-WebSocket-Key: {key}\r\n"
+                      "Sec-WebSocket-Version: 13\r\n"
+                      "\r\n"
+                  ).encode()
+              )
+              buf = b""
+              while b"\r\n\r\n" not in buf:
+                  chunk = s.recv(1024)
+                  if not chunk:
+                      break
+                  buf += chunk
+              if b" 101 " not in buf.split(b"\r\n", 1)[0]:
+                  sys.exit(1)
+              payload = json.dumps(
+                  {"jsonrpc": "2.0", "id": 1, "method": "options", "params": []}
+              ).encode()
+              mask = os.urandom(4)
+              n = len(payload)
+              if n < 126:
+                  hdr = b"\x81" + bytes([0x80 | n])
+              elif n < 65536:
+                  hdr = b"\x81\xfe" + struct.pack(">H", n)
+              else:
+                  hdr = b"\x81\xff" + struct.pack(">Q", n)
+              s.sendall(hdr + mask + bytes(b ^ mask[i % 4] for i, b in enumerate(payload)))
+              deadline = time.time() + 1.5
+              res = b""
+              while time.time() < deadline:
+                  try:
+                      chunk = s.recv(8192)
+                  except OSError:
+                      break
+                  if not chunk:
+                      break
+                  res += chunk
+                  if b'"result"' in res:
+                      sys.exit(0)
+          finally:
+              s.close()
+          sys.exit(1)
+          PY
+          }
+
+          # Terminal VISIBLE en primer plano vía LaunchServices (`open -a Terminal
+          # <script>.command`), el mismo mecanismo que Prestly: sin AppleScript
+          # → sin permisos de Automation (TCC) y `open` nunca bloquea la phase
+          # (devuelve al instante; el runscript de la ventana es asíncrono).
+          # Los `.command` viven en el repo (no en gen/, que se regenera):
+          #   apps/web/scripts/ios-dev-server.command  → Vite (:1420 + HMR)
+          #   scripts/ios-dev-parent.command           → `tauri ios dev --open`
+          launch_dev_server_terminal() {
+            curl -sf http://localhost:1420 >/dev/null 2>&1 && return 0
+            open -a Terminal "$SRCROOT/../../../apps/web/scripts/ios-dev-server.command"
+          }
+
+          launch_parent() {
+            open -a Terminal "$SRCROOT/../../../scripts/ios-dev-parent.command"
+          }
+
+          build_standalone() {
+            if [ "$PLATFORM_NAME" = "macosx" ]; then
+              TARGET="" DEST="macosx"
+            elif [ "$PLATFORM_NAME" = "iphoneos" ]; then
+              TARGET="aarch64-apple-ios" DEST="iphoneos"
+            else
+              TARGET="aarch64-apple-ios-sim" DEST="iphonesimulator"
+            fi
+            if [ -n "$TARGET" ]; then
+              BUILD_TARGET="--target $TARGET"
+            else
+              BUILD_TARGET=""
+            fi
+
+            if [ "$CONFIGURATION" = "release" ]; then
+              cargo build --manifest-path "$SRCROOT/../../Cargo.toml" --lib $BUILD_TARGET --release --features tauri/custom-protocol || exit 1
+              LIB="$SRCROOT/../../target/${TARGET:+$TARGET/}release/libtauri_react_template_lib.a"
+            else
+              # debug embebe el frontend (custom-protocol, como release) pero
+              # en perfil debug incremental = RÁPIDO. hotreload (fallback) NO
+              # lleva custom-protocol: el frontend sale de Vite (devUrl).
+              FEATURES=""; [ "$CONFIGURATION" = "debug" ] && FEATURES="--features tauri/custom-protocol"
+              cargo build --manifest-path "$SRCROOT/../../Cargo.toml" --lib $BUILD_TARGET $FEATURES || exit 1
+              LIB="$SRCROOT/../../target/${TARGET:+$TARGET/}debug/libtauri_react_template_lib.a"
+            fi
+
+            mkdir -p "$SRCROOT/Externals/$DEST/$CONFIGURATION"
+            cp -f "$LIB" "$SRCROOT/Externals/$DEST/$CONFIGURATION/libapp.a"
+          }
+
+          # Pipeline real de tauri (cargo-mobile2): compila con las options
+          # que el parent le sirve por IPC (features, config merges, env vars
+          # como TAURI_DEV_HOST) y stagea
+          # Externals/<arch>/<PROFILE>/libapp.a (Profile::Debug para cualquier
+          # configuración != release). El linker del proyecto busca por SDK
+          # (Externals/<PLATFORM_NAME>/<CONFIGURATION>), así que normalizamos
+          # copiando el lib fresco ahí (evita que un lib standalone stale de
+          # otro pipeline gane el enlazado).
+          xcode_script_build() {
+            pnpm dlx @tauri-apps/cli@2.11.4 ios xcode-script -v --platform ${PLATFORM_DISPLAY_NAME:?} --sdk-root ${SDKROOT:?} --framework-search-paths "${FRAMEWORK_SEARCH_PATHS:?}" --header-search-paths "${HEADER_SEARCH_PATHS:?}" --gcc-preprocessor-definitions "${GCC_PREPROCESSOR_DEFINITIONS:-}" --configuration ${CONFIGURATION:?} ${FORCE_COLOR} ${ARCHS:?} || exit 1
+            local ARCH; ARCH="${ARCHS%% *}"
+            local PROFILE=debug
+            mkdir -p "$SRCROOT/Externals/$PLATFORM_NAME/$CONFIGURATION"
+            cp -f "$SRCROOT/Externals/$ARCH/$PROFILE/libapp.a" "$SRCROOT/Externals/$PLATFORM_NAME/$CONFIGURATION/libapp.a" || exit 1
+          }
+
+          if [ "$PLATFORM_NAME" = "macosx" ]; then
+            # macOS: standalone siempre (nunca xcode-script). hotreload abre la
+            # terminal (Vite devUrl 1420 + HMR en primer plano) y compila la
+            # app SIN custom-protocol para que consuma el dev server.
+            if [ "$CONFIGURATION" = "hotreload" ]; then
+              echo "info: Hot Reload (macOS): abriendo terminal con Vite para HMR..." >&2
+              launch_dev_server_terminal
+            fi
+            build_standalone
+          elif [ "$CONFIGURATION" = "release" ]; then
+            # release: standalone producción (pnpm build + custom-protocol).
+            build_standalone
+          elif [ "$CONFIGURATION" = "hotreload" ]; then
+            # hotreload: full IPC con el parent `tauri ios dev` (xcode-script)
+            # + Vite para HMR. Si no hay parent, se abre una TERMINAL con
+            # `tauri ios dev --open` (el parent levanta Vite vía su
+            # beforeDevCommand) y se espera al options server. Nunca cuelga:
+            # sin parent tras el timeout, avisa y cae a standalone con Vite.
+            if probe_parent; then
+              xcode_script_build
+            else
+              echo "info: Hot Reload: abriendo terminal con 'tauri ios dev --open'..." >&2
+              launch_parent
+              for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+                sleep 2
+                probe_parent && break
+              done
+              if probe_parent; then
+                echo "info: parent detectado -> full IPC (xcode-script)." >&2
+                xcode_script_build
+              else
+                echo "warning: sin parent; abro terminal con Vite y uso fallback standalone." >&2
+                launch_dev_server_terminal
+                build_standalone
+              fi
+            fi
+          else
+            # debug: standalone IGUAL a release (frontend embebido
+            # custom-protocol, app completa) pero perfil debug incremental =
+            # RÁPIDO. Sin Vite (el HMR es cosa de hotreload). No espera al
+            # CLI, no toca xcode-script.
+            build_standalone
+          fi
+        name: Build Rust Code
+        basedOnDependencyAnalysis: false
+        outputFiles:
+          - $(SRCROOT)/Externals/iphoneos/${CONFIGURATION}/libapp.a
+          - $(SRCROOT)/Externals/iphonesimulator/${CONFIGURATION}/libapp.a
+          - $(SRCROOT)/Externals/macosx/${CONFIGURATION}/libapp.a
+# Scheme `{name}_iOS` requerido por `tauri ios dev|build` (cargo-mobile2 usa
+# `config.scheme()` = `<app>_iOS` para correr xcodebuild y leer
+# `<app>_iOS/Info.plist`). Es un shim que construye el target `_Apple`: así el
+# CLI stock compila sin tocar el proyecto iOS único.
+schemes:
+  tauri-react-template_iOS:
+    build:
+      targets:
+        tauri-react-template_Apple: all
+    run:
+      config: debug
+    archive:
+      config: release

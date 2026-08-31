@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Shell macOS mínimo. Proyecto genérico: SIN App Sandbox para que el
+	     build debug/local firme ad-hoc sin provisioning profile.
+	     Si distribuyes via Mac App Store, activa:
+	     com.apple.security.app-sandbox = true
+	     com.apple.security.network.client = true
+	     (incompatible con ad-hoc signing fuera de Xcode profile-driven). -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+</dict>
+</plist>

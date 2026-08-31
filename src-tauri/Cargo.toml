@@ -1,10 +1,10 @@
 [package]
 name = "tauri-react-template"
 version = "0.1.0"
-description = "Tauri + React + Vite template with Tailwind v4, Biome and i18n"
+description = "Tauri + React + Vite template — generic multi-platform (iOS/Android/desktop) with Xcode layers"
 authors = ["you"]
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.85"
 
 [lib]
 name = "tauri_react_template_lib"
@@ -14,7 +14,31 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = "2"
+# Generic OS info for frontend (optional, no Keychain). Uncomment if you need
+# `platform_info` richer than `platform::current_platform()`.
+# tauri-plugin-os = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+log = "0.4"
+env_logger = "0.11"
+
+# Window translucency stub (macOS vibrancy / Windows Mica) — compiled on
+# every target, but no-op unless you cfg-gate usage in platform/{macOS,Windows}.
+# Keep as dev dependency style: enable when you uncomment the setup code in lib.rs.
+# window-vibrancy = "0.8"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[lints.clippy]
+await_holding_lock = "deny"
+# Prestly style: no .await while holding a Mutex guard.
+# Keep to enforce correct async discipline as the template grows.
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = false
