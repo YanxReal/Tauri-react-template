@@ -1,6 +1,5 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 
-#[cfg(desktop)]
 use tauri::Manager;
 
 pub mod platform;
@@ -57,6 +56,21 @@ pub fn run() {
             #[cfg(desktop)]
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.center();
+            }
+
+            // En release (perfil sin `debug_assertions`) eliminamos el menú
+            // contextual NATIVO del webview — Recargar/Volver/Adelante en
+            // WKWebView (macOS), WebView2 (Windows) y WebKitGTK (Linux); en
+            // iOS/Android suprime el menú de long-press. Se intercepta el
+            // evento `contextmenu` desde el frontend (la única vía oficial en
+            // Tauri v2, igual en todos los OS). Debug conserva el menú: el
+            // "Recargar" es útil en desarrollo.
+            if !cfg!(debug_assertions) {
+                for (_, window) in app.webview_windows() {
+                    let _ = window.eval(
+                        "(function(){ try { document.addEventListener('contextmenu', function(e){ e.preventDefault(); }, false); } catch(_){} })();",
+                    );
+                }
             }
 
             // Log plataforma al iniciar (útil para debug multi-OS)
