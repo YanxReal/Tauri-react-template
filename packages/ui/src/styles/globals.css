@@ -176,16 +176,44 @@ html.vibrancy .native-glass {
    La clase `.titlebar` vive en <html>, la monta el componente TitleBar en
    Tauri desktop (nunca en el navegador/móvil). Reserva la banda superior
    (—native-titlebar-height) para el arrastre/los controles de ventana y
-   empuja el contenido debajo de ella. Necesita ganar a las utilities
-   (top-0 / p-0 de Tailwind), así que vive en la capa utilities. */
+   empuja el contenido debajo de ella.
+
+   macOS es una ventana TRANSPARENTE con esquinas redondeadas nativas. Si el
+   `body` pintara un fondo opaco hasta el borde, taparía las esquinas y se
+   verían cuadradas (peor aún al desactivar el cristal). Solución: html/body
+   transparentes SIEMPRE y el fondo + recorte redondeado viven en el
+   `.app-shell` (border-radius + scroll interno). Así las esquinas quedan
+   curvas con o sin cristal. Necesita ganar a las utilities (top-0 / p-0 de
+   Tailwind), así que vive en la capa utilities. */
 @layer utilities {
   html.titlebar {
     --native-titlebar-height: 1.25rem; /* 20px */
   }
 
-  /* La app entera baja debajo de la banda reservada. */
+  /* Viewport y body transparentes: la forma redondeada del window se ve; el
+     overflow del contenido lo maneja el .app-shell (scroll interno). */
+  html.titlebar,
+  html.titlebar body {
+    background: transparent;
+    overflow: hidden;
+    height: 100%;
+  }
+
+  /* La app entera: el fondo (opaco u opcionalmente translúcido con cristal)
+     recortado a la forma redondeada, y scroll interno. Empieza debajo de la
+     banda reservada. */
   html.titlebar .app-shell {
+    height: 100dvh;
+    overflow-y: auto;
+    border-radius: 10px;
+    background-color: var(--background);
     padding-top: var(--native-titlebar-height);
+  }
+
+  /* Cristal: el material del OS se transluce a través del fondo del shell
+     (teñido con el tema). */
+  html.vibrancy .app-shell {
+    background-color: color-mix(in oklab, var(--background) 62%, transparent);
   }
 
   /* El header sticky se pega JUSTO debajo de la banda al hacer scroll

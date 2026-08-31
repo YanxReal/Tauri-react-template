@@ -51,8 +51,12 @@ function usePlatform(): Platform {
  * the whole window), so drags are initiated manually — Prestly pattern:
  * any primary mousedown inside the top drag region whose target is not
  * interactive starts a window drag; a double click toggles maximize.
- * `preventDefault` stops the webview from starting selection/focus, which
- * otherwise makes dragging unreliable (works one time, not the next).
+ * IMPORTANT: do NOT call `preventDefault()` here on macOS — Tauri's
+ * `startDragging` uses `[NSWindow performWindowDragWithEvent: currentEvent]`,
+ * which needs the live current mouse event; `preventDefault` cancels the
+ * tracking and the window never moves. (Windows/Linux get dragging natively
+ * from Tauri's injected `data-tauri-drag-region` script, which is what
+ * `preventDefault`s there.)
  */
 function useMacDragRegion(enabled: boolean): void {
   useEffect(() => {
@@ -63,14 +67,10 @@ function useMacDragRegion(enabled: boolean): void {
       const target = event.target instanceof Element ? event.target : null
       if (target?.closest(INTERACTIVE_SELECTOR)) return
       if (event.detail === 2) {
-        event.preventDefault()
         void getCurrentWindow().toggleMaximize()
         return
       }
-      if (event.detail === 1) {
-        event.preventDefault()
-        void getCurrentWindow().startDragging()
-      }
+      if (event.detail === 1) void getCurrentWindow().startDragging()
     }
     document.addEventListener("mousedown", onMouseDown)
     return () => document.removeEventListener("mousedown", onMouseDown)

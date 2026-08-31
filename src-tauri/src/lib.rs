@@ -147,6 +147,13 @@ pub fn run() {
                 }
             }
 
+            // macOS: NO necesita código nativo para esquinas redondeadas —
+            // con `decorations: true` (default), `transparent: true` y
+            // `titleBarStyle: Overlay`, el marco nativo de macOS dibuja
+            // esquinas redondeadas en las 4 esquinas a cualquier tamaño.
+            // Windows necesita DWMWCP_ROUND porque decorations:false crea
+            // un WS_POPUP cuadrado por defecto.
+
             // Centrado forzado en desktop — `center:true` en tauri.conf no siempre
             // se honra si el OS restaura la posición previa (Windows/macOS resume).
             #[cfg(desktop)]

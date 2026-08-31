@@ -9,6 +9,11 @@ export function Header() {
   const { theme, setTheme } = useTheme()
   const platform = usePlatform()
   const isMac = platform === "macos"
+  // Windows/Linux (decorations:false): el header de página también es zona de
+  // arrastre. Tauri's `data-tauri-drag-region` excluye automáticamente los
+  // elementos interactivos (button/a/input) dentro de él, así que logo/nav/
+  // toggles siguen clickeables mientras el resto de la franja arrastra.
+  const isDragRegionWinLinux = platform === "windows" || platform === "linux"
 
   const toggleLanguage = () => {
     const next = i18n.language === "es" ? "en" : "es"
@@ -22,7 +27,10 @@ export function Header() {
   }
 
   return (
-    <header className="app-header sticky top-0 z-50 border-b bg-background/80 backdrop-blur">
+    <header
+      className="app-header sticky top-0 z-50 border-b bg-background/80 backdrop-blur"
+      {...(isDragRegionWinLinux ? { "data-tauri-drag-region": true } : {})}
+    >
       <div
         className={`mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 ${
           isMac ? "pl-20 sm:pl-24" : ""

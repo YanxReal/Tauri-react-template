@@ -35,6 +35,10 @@ env_logger = "0.11"
 window-vibrancy = "0.8"
 
 # --- Target-specific dependencies ------------------------------------------
+# macOS NO necesita deps nativas para esquinas redondeadas — el marco
+# nativo (decorations:true + transparent + Overlay) las dibuja a cualquier
+# tamaño. Solo Windows necesita DWMWCP_ROUND para el frameless.
+
 # Esquinas redondeadas nativas en Windows 11 (preferencia DWM). Prestly usa
 # DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND) en
 # windows[0] — solo para target Windows (WS_POPUP es cuadrado por defecto).
