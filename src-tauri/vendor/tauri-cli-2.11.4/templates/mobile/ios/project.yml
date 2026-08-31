@@ -222,11 +222,11 @@ targets:
           # → sin permisos de Automation (TCC) y `open` nunca bloquea la phase
           # (devuelve al instante; el runscript de la ventana es asíncrono).
           # Los `.command` viven en el repo (no en gen/, que se regenera):
-          #   apps/web/scripts/ios-dev-server.command  → Vite (:1420 + HMR)
+          #   apps/web/scripts/xcode/xcode-dev-server.command → Vite (:1420 + HMR)
           #   scripts/Xcode/xcode-dev-parent.command → `tauri ios dev --open`
           launch_dev_server_terminal() {
             curl -sf http://localhost:1420 >/dev/null 2>&1 && return 0
-            open -a Terminal "$SRCROOT/../../../apps/web/scripts/ios-dev-server.command"
+            open -a Terminal "$SRCROOT/../../../apps/web/scripts/xcode/xcode-dev-server.command"
           }
 
           launch_parent() {

@@ -4,5 +4,5 @@
 # `open -a Terminal` cuando nada escucha en :1420, así el HMR funciona con
 # logs visibles. Cerrar la ventana detiene el servidor.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 exec pnpm dev

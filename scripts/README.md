@@ -41,13 +41,13 @@ NUNCA el `.xcodeproj` generado ni su Info.plist.
     NUNCA deja que el build se cuelgue) → abre en Terminal el parent `tauri ios dev --open`
     ([`--host <LAN>`](./README.md#hot-reload-full-ipc--tauri-ios-dev) para device físico),
     espera hasta ~40s y reintenta. Sin parent → abre la terminal del dev server
-    (`apps/web/scripts/ios-dev-server.command`), avisa y cae a standalone.
+    (`apps/web/scripts/xcode/xcode-dev-server.command`), avisa y cae a standalone.
   - `release` → standalone con `--features tauri/custom-protocol` para producción (compila
     desde cero: correcto para release).
 - Terminal visible en PRIMER PLANO sin AppleScript: la phase usa `open -a Terminal
   <script>.command` (estilo Prestly; LaunchServices → sin permisos TCC, `open` no bloquea
   nunca la phase). Dos runscripts en el repo (persisten a la regen):
-  `apps/web/scripts/ios-dev-server.command` (Vite :1420 + HMR) y
+  `apps/web/scripts/xcode/xcode-dev-server.command` (Vite :1420 + HMR) y
   `scripts/Xcode/xcode-dev-parent.command` (`tauri ios dev --open` con `--host <LAN>` si hay red).
 - Ojo de doble Vite: en hotreload, el parent levanta Vite (su `beforeDevCommand`) y falla si
   `:1420` ya está ocupado ("beforeDevCommand terminated with a non-zero..."). No dejar un Vite
