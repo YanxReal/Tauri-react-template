@@ -41,7 +41,9 @@
   "status": {
     "title": "¡Proyecto listo!",
     "description": "Ya puedes añadir componentes y empezar a construir.",
-    "note": "Ya hemos añadido el componente de botón por ti.",
+    "note": "Componentes listos para que empieces a construir al instante.",
+    "greetButton": "Saludar desde Rust",
+    "greetFallback": "API de Tauri no disponible en el navegador",
     "tauriNote": "Prueba la API de Tauri: {{message}}"
   },
   "footer": {
@@ -54,5 +56,9 @@
     "label": "Efecto cristal / vidrio",
     "hint": "Translucidez nativa de la ventana (vibrancy en macOS, Mica en Windows 11).",
     "unavailable": "No compatible en esta plataforma."
+  },
+  "glassCards": {
+    "label": "Tarjetas glass",
+    "hint": "Cambia el template entre los componentes estándar y los componentes glass reutilizables de @workspace/ui."
   }
 }

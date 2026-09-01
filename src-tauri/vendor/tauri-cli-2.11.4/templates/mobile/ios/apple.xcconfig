@@ -1,60 +1,47 @@
-// tauri-react-template_Apple — capa de adaptación por SDK para el target
-// Apple unificado (iOS + macOS). Adaptado de Prestly, generalizado.
+// {{app.name}}_Apple — per-SDK adaptation layer for the unified Apple target.
 //
-// UN target compila AMBOS destinos (iOS + macOS). Todo lo que difiere vive
-// tras estos condicionales [sdk=...]; el lado Rust queda simétrico
-// (main.mm -> start_app() -> libapp.a).
+// ONE Xcode target builds BOTH destinations (iOS + macOS). Everything
+// that differs between them lives behind these [sdk=...] conditionals;
+// the Rust side stays symmetric (main.mm -> ffi::start_app() -> libapp.a).
 
-// Ambos platforms son destinos válidos del mismo target.
+// Both platforms are valid destinations of the single target.
 //
-// NO añadir SUPPORTED_DESTINATIONS aquí: actúa como WHITELIST y esconde los
-// devices/simulators concretos de la barra de destinos de Xcode. Los
-// destinos se DERIVAN de SUPPORTED_PLATFORMS + TARGETED_DEVICE_FAMILY.
+// Do NOT add SUPPORTED_DESTINATIONS here: it acts as a WHITELIST and
+// hides every concrete device/simulator from Xcode's destination bar
+// (only a generic "+" add-entry remains). Destinations are DERIVED
+// correctly from SUPPORTED_PLATFORMS + TARGETED_DEVICE_FAMILY below —
+// verified showing Any Mac (+ "Designed for [iPad,iPhone]"), the physical
+// iPhone, every iPhone/iPad simulator.
 SUPPORTED_PLATFORMS = macosx iphoneos iphonesimulator
 
-// iPhone (1) + iPad (2). iPad es una device family de platform=iOS; esto
-// hace iPad destino de primera clase (incl. macOS "Designed for iPad").
-// OJO xcconfig: SIN comillas en 1,2 (si van entre comillas el valor se rompe
-// y Xcode no matchea ningún device family).
+// iPhone (1) + iPad (2). There is no separate "iPad platform": iPad is a
+// device family of platform=iOS, so this setting is what makes iPad a
+// first-class destination (including macOS "Designed for iPad").
+// xcconfig GOTCHA: NO quotes around 1,2 — quotes become part of the value
+// and Xcode then fails to match ANY device family (iPhones went
+// "incompatible").
 TARGETED_DEVICE_FAMILY = 1,2
 
-// Shell macOS host-native; 15.0 cubre todas las APIs tao/wry usadas.
+// The macOS shell is host-native; 15.0 covers every tao/wry API in use.
 MACOSX_DEPLOYMENT_TARGET = 15.0
 
-// El core Rust se enlaza como static library (-lapp) en AMBAS plataformas.
-// Cada SDK tiene su propio directorio Externals (macosx/iphoneos/iphonesimulator)
-// donde la phase "Build Rust Code" stagea el libapp.a correspondiente.
+// The Rust core links as a static library (-lapp) on BOTH platforms —
+// only the slice directory differs: arch-split on iOS, host-native on
+// macOS (Externals/macosx/<config>, produced by "Build Rust Code").
 OTHER_LDFLAGS = $(inherited) -lapp
 LIBRARY_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(PROJECT_DIR)/Externals/macosx/$(CONFIGURATION)
-LIBRARY_SEARCH_PATHS[sdk=iphoneos*] = $(inherited) $(PROJECT_DIR)/Externals/iphoneos/$(CONFIGURATION)
-LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*] = $(inherited) $(PROJECT_DIR)/Externals/iphonesimulator/$(CONFIGURATION)
 
-// Entitlements por plataforma (archivos estáticos junto a Info.plist).
-// iOS ignora anything macOS; la parte macOS NO declara sandbox para que
-// debug/run local firme ad-hoc sin profile (si publicas en Mac App Store,
-// añade com.apple.security.app-sandbox + network.client al macos.entitlements).
-CODE_SIGN_ENTITLEMENTS[sdk=iphone*] = tauri-react-template_Apple/ios.entitlements
-CODE_SIGN_ENTITLEMENTS[sdk=macosx*] = tauri-react-template_Apple/macos.entitlements
+// Per-platform entitlements (static files next to Info.plist). The macOS
+// side carries the App Sandbox required for Mac App Store distribution.
+CODE_SIGN_ENTITLEMENTS[sdk=iphone*] = {{app.name}}_Apple/ios.entitlements
+CODE_SIGN_ENTITLEMENTS[sdk=macosx*] = {{app.name}}_Apple/macos.entitlements
 
-// Firma. cargo-mobile/SIEMPRE usa `-sdk iphoneos` y — con Xcode moderno —
-// devicectl lista TAMBIÉN los simuladores como devices de triple device, así
-// que `tauri ios dev` recorre el pipeline device (build+archive+export) incluso
-// para un sim. Ese pipeline necesita DEVELOPMENT_TEAM (lo pone project.yml,
-// igual que Prestly). El SDK iphonesimulator firma ad-hoc "-"/Manual para los
-// builds directos de Xcode sobre sim sin cuenta de desarrollador.
-//
-// Para cambiar de team: `scripts/Xcode/apple-xcode.sh` lo inyecta al regenerar
-// (env DEVELOPMENT_TEAM o scripts/.team-id); sin config se omite y se elige
-// en Xcode → target → Signing & Capabilities.
-CODE_SIGN_STYLE[sdk=iphonesimulator*] = Manual
-CODE_SIGN_IDENTITY[sdk=iphonesimulator*] = -
-
-// Superficie de frameworks. WebKit/Metal/CoreGraphics/QuartzCore/Security
-// existen en ambos; UIKit es iOS-only y AppKit lo reemplaza en macOS
-// (glue de ventanas de tao/wry). Carbon da las APIs de keyboard-layout de tao
-// (TIS*/LM*) que el build desktop por cargo consigue vía sus propios flags.
+// Framework surface. WebKit/Metal/CoreGraphics/QuartzCore/Security exist
+// on both; UIKit is iOS-only and AppKit replaces it on macOS (tao/wry
+// window glue). Carbon supplies tao's keyboard-layout APIs (TIS*/LM*)
+// that plain-cargo desktop builds get via cargo's own link flags.
 OTHER_LDFLAGS[sdk=iphone*] = $(inherited) -framework UIKit -framework MetalKit -framework CoreGraphics -framework Metal -framework QuartzCore -framework Security -framework WebKit
-OTHER_LDFLAGS[sdk=macosx*] = $(inherited) -framework AppKit -framework Cocoa -framework MetalKit -framework CoreGraphics -framework Metal -framework QuartzCore -framework Security -framework WebKit -framework Carbon -framework OSAKit
+OTHER_LDFLAGS[sdk=macosx*] = $(inherited) -framework AppKit -framework MetalKit -framework CoreGraphics -framework Metal -framework QuartzCore -framework Security -framework WebKit -framework Carbon -framework OSAKit
 
-// Recursos iOS-only no existen en el lado Mac.
+// iOS-only resources do not exist on the Mac side.
 EXCLUDED_SOURCE_FILE_NAMES[sdk=macosx*] = LaunchScreen.storyboard

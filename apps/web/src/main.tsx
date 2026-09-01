@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client"
 
 import "@workspace/ui/globals.css"
 import "./i18n/config.ts"
+import { GlassCardsProvider } from "@/components/glass-cards-provider.tsx"
 import { ThemeProvider } from "@/components/theme-provider.tsx"
 import { VibrancyProvider } from "@/components/vibrancy-provider.tsx"
 import { App } from "./App.tsx"
@@ -51,7 +52,9 @@ createRoot(root).render(
   <StrictMode>
     <ThemeProvider>
       <VibrancyProvider>
-        <App />
+        <GlassCardsProvider>
+          <App />
+        </GlassCardsProvider>
       </VibrancyProvider>
     </ThemeProvider>
   </StrictMode>

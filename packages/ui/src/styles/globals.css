@@ -160,38 +160,30 @@ textarea,
    transluce a través del fondo del body, pero teñido con el color del tema
    (claro/oscuro) para que el cristal SIGA al tema de la app y no al sistema
    (patrón Prestly: el fondo lo pinta la app; aquí añadimos translucidez).
-   `.vibrancy` vive en <html>, la alterna VibrancyProvider. */
+   `.vibrancy` vive en <html>, la alterna VibrancyProvider.
+   32% deja pasar mucho más material nativo — el cristal ahora sí se nota. */
 html.vibrancy body {
-  background-color: color-mix(in oklab, var(--background) 62%, transparent);
-}
-
-/* La franja del titlebar (banda superior reservada) también es cristal: su
-   fondo translúcido deja ver el material del OS por debajo de los controles
-   de ventana. */
-html.vibrancy .native-glass {
-  background: transparent;
+  background-color: color-mix(in oklab, var(--background) 32%, transparent);
 }
 
 /* --- Ventana frameless (patrón Prestly, §144.5) -----------------------------
-   La clase `.titlebar` vive en <html>, la monta el componente TitleBar en
-   Tauri desktop (nunca en el navegador/móvil). Reserva la banda superior
-   (—native-titlebar-height) para el arrastre/los controles de ventana y
-   empuja el contenido debajo de ella.
+    La clase `.titlebar` vive en <html>, la monta el componente TitleBar en
+    Tauri desktop (nunca en el navegador/móvil). Prestly usa --control-height
+    36px como franja reservada: el TitleBar fijo ocupa esa franja y el
+    contenido (app-shell/header) hace padding-top para NO deslizar debajo.
 
-   macOS es una ventana TRANSPARENTE con esquinas redondeadas nativas. Si el
-   `body` pintara un fondo opaco hasta el borde, taparía las esquinas y se
-   verían cuadradas (peor aún al desactivar el cristal). Solución: html/body
-   transparentes SIEMPRE y el fondo + recorte redondeado viven en el
-   `.app-shell` (border-radius + scroll interno). Así las esquinas quedan
-   curvas con o sin cristal. Necesita ganar a las utilities (top-0 / p-0 de
-   Tailwind), así que vive en la capa utilities. */
+    macOS: la ventana es TRANSPARENTE con esquinas redondeadas nativas.
+    `.app-shell` es el contenedor de scroll (overflow-y:auto) que lleva el
+    fondo y el border-radius, así el header + contenido quedan recortados
+    DENTRO de las decoraciones redondeadas (el header no sobresale). html/body
+    son siempre transparentes. */
 @layer utilities {
   html.titlebar {
-    --native-titlebar-height: 1.25rem; /* 20px */
+    --native-titlebar-height: 1.25rem; /* 20px — padding para traffic lights */
+    --control-height: 2.25rem; /* 36px — franja Win/Linux (Prestly) */
   }
 
-  /* Viewport y body transparentes: la forma redondeada del window se ve; el
-     overflow del contenido lo maneja el .app-shell (scroll interno). */
+  /* Viewport transparente: la forma redondeada del window se ve. */
   html.titlebar,
   html.titlebar body {
     background: transparent;
@@ -199,26 +191,122 @@ html.vibrancy .native-glass {
     height: 100%;
   }
 
-  /* La app entera: el fondo (opaco u opcionalmente translúcido con cristal)
-     recortado a la forma redondeada, y scroll interno. Empieza debajo de la
-     banda reservada. */
+  /* .app-shell: contenedor de scroll que recorta TODO (header incluido) a la
+     forma redondeada y pinta el fondo. */
   html.titlebar .app-shell {
     height: 100dvh;
     overflow-y: auto;
     border-radius: 10px;
     background-color: var(--background);
-    padding-top: var(--native-titlebar-height);
   }
 
-  /* Cristal: el material del OS se transluce a través del fondo del shell
-     (teñido con el tema). */
+  /* Cristal: el material del OS se transluce a través del fondo.
+     32% = mucho más translúcido que el 62% anterior — efecto bien visible. */
   html.vibrancy .app-shell {
-    background-color: color-mix(in oklab, var(--background) 62%, transparent);
+    background-color: color-mix(in oklab, var(--background) 32%, transparent);
   }
 
-  /* El header sticky se pega JUSTO debajo de la banda al hacer scroll
-     (en vez de quedar oculto tras ella). */
+  /* El header sticky se pega al tope de .app-shell al hacer scroll. */
   html.titlebar .app-header {
-    top: var(--native-titlebar-height);
+    top: 0;
   }
+
+  /* Win/Linux: sin padding extra — el Header y los caption buttons
+     comparten la misma fila horizontal (alineados). El TitleBar ya no
+     reserva franja separada. */
+}
+
+/* Ein UI theming — https://ui.eindev.ir/docs/theming / dark-mode
+   Glass components are dark-first (text-white / bg-white/10). When the app
+   is in light mode + glass-cards active, override the glass tokens so text
+   is dark and surfaces read as light glass, without touching the reusable
+   glass-* components. */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: 16px;
+  --glow-cyan: rgba(6, 182, 212, 0.3);
+  --glow-purple: rgba(147, 51, 234, 0.3);
+  --glow-pink: rgba(236, 72, 153, 0.3);
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+}
+
+html.light {
+  --glass-bg: rgba(0, 0, 0, 0.03);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --text-primary: rgba(0, 0, 0, 0.9);
+  --text-secondary: rgba(0, 0, 0, 0.6);
+  --text-muted: rgba(0, 0, 0, 0.45);
+  --glow-cyan: rgba(6, 182, 212, 0.15);
+  --glow-purple: rgba(147, 51, 234, 0.15);
+}
+
+/* Light + glass-cards: invert glass surfaces/text so they stay legible.
+   Targets the Tailwind utilities the glass-* components use (bg-white/10,
+   border-white/20, text-white, etc). Higher specificity than the utilities
+   themselves, no !important needed due to html.light.glass-cards prefix. */
+html.light.glass-cards .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+html.light.glass-cards .bg-white\/15 {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+html.light.glass-cards .bg-white\/20 {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+html.light.glass-cards .border-white\/20 {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+html.light.glass-cards .border-white\/25 {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+html.light.glass-cards .border-white\/30 {
+  border-color: rgba(0, 0, 0, 0.12);
+}
+html.light.glass-cards .border-white\/40 {
+  border-color: rgba(0, 0, 0, 0.14);
+}
+html.light.glass-cards .text-white {
+  color: rgba(0, 0, 0, 0.9);
+}
+html.light.glass-cards .text-white\/60 {
+  color: rgba(0, 0, 0, 0.6);
+}
+html.light.glass-cards .text-white\/70 {
+  color: rgba(0, 0, 0, 0.7);
+}
+html.light.glass-cards .text-white\/80 {
+  color: rgba(0, 0, 0, 0.75);
+}
+html.light.glass-cards .from-white\/20 {
+  --tw-gradient-from: rgba(0, 0, 0, 0.06);
+}
+html.light.glass-cards .to-transparent {
+  --tw-gradient-to: transparent;
+}
+
+/* Hover en modo claro + glass: el hover:text-white por defecto vuelve
+   blanco (ilegible sobre glass claro). Invertimos también los hovers. */
+html.light.glass-cards .hover\:bg-white\/10:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+html.light.glass-cards .hover\:bg-white\/15:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+html.light.glass-cards .hover\:bg-white\/30:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+html.light.glass-cards .hover\:border-white\/40:hover {
+  border-color: rgba(0, 0, 0, 0.14);
+}
+html.light.glass-cards .hover\:border-white\/60:hover {
+  border-color: rgba(0, 0, 0, 0.18);
+}
+html.light.glass-cards .hover\:text-white:hover {
+  color: rgba(0, 0, 0, 0.9);
+}
+html.light.glass-cards .hover\:text-white\/80:hover {
+  color: rgba(0, 0, 0, 0.8);
 }

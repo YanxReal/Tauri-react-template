@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- macOS shell: Mac App Store sandbox compliance.
+	     - app-sandbox: mandatory for MAS distribution.
+	     - network.client: outgoing TLS to Supabase / Cloudflare Turnstile.
+	     - The native Keychain secure store (§43/§44) uses the DEFAULT
+	       container-scoped keychain: single-app access needs NO
+	       keychain-access-groups. Do NOT add that entitlement here — it is
+	       RESTRICTED: outside Xcode's profile-driven signing, declaring it
+	       makes launchd SIGKILL the process at spawn (verified 2026-08);
+	       for MAS archives Xcode expands $(AppIdentifierPrefix) and embeds
+	       a valid profile instead, but the default keychain already covers
+	       everything Prestly stores. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+</dict>
+</plist>

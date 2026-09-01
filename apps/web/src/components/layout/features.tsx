@@ -1,10 +1,16 @@
+import {
+  GlassCard,
+  GlassCardContent,
+} from "@workspace/ui/components/glass-card"
 import { Code2, Languages, Layers } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { useGlassCards } from "@/components/glass-cards-provider"
 
 const icons = [Code2, Languages, Layers] as const
 
 export function Features() {
   const { t } = useTranslation()
+  const { enabled: glassEnabled } = useGlassCards()
   const items = t("features.items", { returnObjects: true }) as Array<{
     title: string
     description: string
@@ -26,6 +32,25 @@ export function Features() {
       <ul className="mt-6 grid gap-4 sm:grid-cols-3">
         {items.map((item, idx) => {
           const Icon = icons[idx] ?? Code2
+          if (glassEnabled) {
+            return (
+              <li key={item.title} className="list-none">
+                <GlassCard className="h-full">
+                  <GlassCardContent className="p-5">
+                    <div className="flex size-9 items-center justify-center rounded-lg bg-white/15">
+                      <Icon className="size-4" aria-hidden />
+                    </div>
+                    <h3 className="mt-3 font-medium text-white">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1 text-sm leading-relaxed text-white/60">
+                      {item.description}
+                    </p>
+                  </GlassCardContent>
+                </GlassCard>
+              </li>
+            )
+          }
           return (
             <li key={item.title} className="rounded-xl border bg-card p-5">
               <div className="flex size-9 items-center justify-center rounded-lg bg-muted">

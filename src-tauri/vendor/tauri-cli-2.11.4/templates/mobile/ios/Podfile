@@ -1,9 +1,17 @@
 # Uncomment the next line to define a global platform for your project
-# platform :ios, '15.0'
 
-target 'tauri-react-template_Apple' do
-platform :ios, '15.0'
-  # Pods for tauri-react-template_Apple
+target '{{app.name}}_iOS' do
+platform :ios, '{{apple.ios-version}}'
+  # Pods for {{app.name}}_iOS
+  {{~#each ios-pods}}
+  pod '{{this.name}}'{{#if this.version}}, '{{this.version}}'{{/if}}{{/each}}
+end
+
+target '{{app.name}}_macOS' do
+platform :osx, '{{apple.macos-version}}'
+  # Pods for {{app.name}}_macOS
+  {{~#each macos-pods}}
+  pod '{{this.name}}'{{#if this.version}}, '{{this.version}}'{{/if}}{{/each}}
 end
 
 # Delete the deployment target for iOS and macOS, causing it to be inherited from the Podfile

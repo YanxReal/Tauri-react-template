@@ -2,16 +2,8 @@ import { invoke } from "@tauri-apps/api/core"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { useEffect, useState } from "react"
 
-/** Reserved top band height — must match `--native-titlebar-height` (globals.css). */
-const BAND_PX = 20
-
-/**
- * Drag limit: the reserved band PLUS the header strip (h-14 = 56px). The empty
- * top band clears the native traffic lights; the header below it is also a
- * drag surface (interactive targets are skipped), so grabbing "anywhere at
- * the top" just works — no thin 20px sliver to hunt for.
- */
-const DRAG_LIMIT_Y = BAND_PX + 56
+/** Fusioned header height for macOS drag zone (h-[64px]) */
+const DRAG_LIMIT_Y = 64
 
 /** Targets that keep their click even inside the drag region (Prestly). */
 const INTERACTIVE_SELECTOR =
@@ -49,14 +41,13 @@ function usePlatform(): Platform {
 /**
  * macOS Overlay titlebars have no system drag surface (the WKWebView covers
  * the whole window), so drags are initiated manually — Prestly pattern:
- * any primary mousedown inside the top drag region whose target is not
+ * any primary mousedown inside the fusioned header whose target is not
  * interactive starts a window drag; a double click toggles maximize.
  * IMPORTANT: do NOT call `preventDefault()` here on macOS — Tauri's
  * `startDragging` uses `[NSWindow performWindowDragWithEvent: currentEvent]`,
  * which needs the live current mouse event; `preventDefault` cancels the
  * tracking and the window never moves. (Windows/Linux get dragging natively
- * from Tauri's injected `data-tauri-drag-region` script, which is what
- * `preventDefault`s there.)
+ * from Tauri's injected `data-tauri-drag-region` script on the header.)
  */
 function useMacDragRegion(enabled: boolean): void {
   useEffect(() => {
@@ -77,4 +68,4 @@ function useMacDragRegion(enabled: boolean): void {
   }, [enabled])
 }
 
-export { BAND_PX, isTauriRuntime, useMacDragRegion, usePlatform }
+export { isTauriRuntime, useMacDragRegion, usePlatform }

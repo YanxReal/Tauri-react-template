@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- iOS shell: native Keychain secure store (§43/§44). iOS apps are
+	     sandboxed by design — no App Sandbox entitlements exist here. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.yanxstudio.prestly</string>
+	</array>
+</dict>
+</plist>

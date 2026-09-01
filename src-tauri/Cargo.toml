@@ -39,6 +39,15 @@ window-vibrancy = "0.8"
 # nativo (decorations:true + transparent + Overlay) las dibuja a cualquier
 # tamaño. Solo Windows necesita DWMWCP_ROUND para el frameless.
 
+# Ajuste de los traffic lights nativos de macOS ("bajarlos / agrandarlos"):
+# se accede a los NSButton de la ventana vía AppKit y se modifica su frame.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", features = ["NSWindow", "NSButton", "NSView"] }
+objc2-foundation = { version = "0.3", features = ["NSGeometry", "NSTimer", "NSRunLoop", "NSString", "NSNotification"] }
+block2 = "0.6"
+tokio = { version = "1", features = ["rt", "time", "sync"] }
+
 # Esquinas redondeadas nativas en Windows 11 (preferencia DWM). Prestly usa
 # DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND) en
 # windows[0] — solo para target Windows (WS_POPUP es cuadrado por defecto).

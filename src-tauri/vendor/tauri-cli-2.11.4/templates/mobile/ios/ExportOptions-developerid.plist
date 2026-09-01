@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Direct distribution outside the Mac App Store: archive with Xcode
+         (Product > Archive on the prestly_Apple scheme, destination My Mac),
+         then
+         xcodebuild -exportArchive -exportOptionsPlist THIS_FILE
+         and notarize the exported app:
+           xcrun notarytool submit Prestly.app.zip --keychain-profile ... --wait
+           xcrun stapler staple Prestly.app
+         Requires: Developer ID Application certificate + Hardened Runtime
+         (enabled automatically for Developer ID exports). -->
+    <key>method</key>
+    <string>developer-id</string>
+    <key>teamID</key>
+    <string>36ZZP8X3F5</string>
+    <key>signingCertificate</key>
+    <string>Developer ID Application</string>
+</dict>
+</plist>

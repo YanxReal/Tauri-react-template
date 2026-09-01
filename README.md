@@ -87,6 +87,19 @@ Esta es una **app multiplataforma** (desktop: **macOS, Windows, Linux**; mobile:
 no pienses solo en macOS o iOS. Cualquier cambio debe funcionar y testearse en todos los
 sistemas. Configuración actual de "sensación nativa", derivada del commit `c9ae1a4`:
 
+### macOS traffic lights — live-resize sin flicker (wry#1747, tauri#13044)
+
+`titleBarStyle: Overlay` + `hiddenTitle` deja el webview bajo los traffic lights. AppKit los
+resetea a `12px` nativos en cada pase de layout (`setContentView:`, webview load, `NSWindowDidResize`,
+`NSViewFrameDidChange`), y `drawRect:` de `WryWebViewParent` no basta (wry#1747). En macOS 26 el race es peor.
+
+**Fix HuLa (3 mecanismos en `src-tauri/src/lib.rs`):**
+- `WindowEvent::Focused/Resized/ScaleFactorChanged` (`init.rs` hook) — fallback general.
+- `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (macOS 26+ más fiable que `WindowEvent`).
+- Polling live-resize a `60fps` (`NSTimer` en `NSRunLoopCommonModes` + `needs_update` `±0.6px`) mientras `inLiveResize` — dispara durante `NSEventTrackingRunLoopMode`, no solo al soltar.
+
+Posición final: `Close 22.5 / Mini 44.5 / Zoom 66.5` (22px centros, `15px` con `grow 3`, `lower 8`, `shift_right 16` + `extra_gap 0/2/4`, `pl-[96px] sm:pl-[108px]` en header). `setAutoresizingMask(0)` evita que AppKit los vuelva a autoresize entre frames. Ver `lib.rs:adjust_macos_traffic_lights` + `ensure_traffic_lights_observer`.
+
 - `dragDropEnabled: false` + `zoomHotkeysEnabled: false` en TODAS las ventanas (`tauri.conf.json`
   + `tauri.{macos,windows,linux}.conf.json` — las 4 configs, no solo macOS).
 - Viewport `user-scalable=no`, `maximum-scale=1.0` (desactiva el zoom del webview).
@@ -127,13 +140,42 @@ build real de cada plataforma.
   ```bash
   pnpm dlx @tauri-apps/cli@2.11.4 ios build --target aarch64-sim --debug
   pnpm dlx @tauri-apps/cli@2.11.4 android build --debug --target aarch64
-  make dev-ios            # iOS simulator (vía CLI + scheme _iOS)
-  make build-ios          # iOS simulator build
+  make dev:ios            # iOS simulator (cargo tauri parcheado + simctl, sin EBADARCH)
+  make dev-ios-physical   # iPhone físico (cargo tauri parcheado + --host 169.254.x.x)
   make dev-android-emulator   # APK debug → emulador
   ```
 
 - `make dev` (desktop) no requiere Xcode; basta Rust. `start_app()` + `platform/` en
   `src-tauri/src/` adaptan la entrada por plataforma.
+
+### Parche Xcode 26 — `cargo-mobile2` y `cargo-tauri` vendoreados
+
+Xcode 26 hace que `xcrun devicectl list devices --json-output` liste también los **simuladores** (`reality: "simulated"`). El `cargo-mobile2` del registry (0.22.4) no los filtraba y `tauri ios dev` los trataba como físico → `aarch64-apple-ios`/`-sdk iphoneos`/`devicectl install` sobre un simulador → `MIInstallerErrorDomain 15 / EBADARCH [iOS,arm64] vs [iOS-simulator]`.
+
+**Fix en plantilla (no en `gen`, nunca tocar `gen`):**
+- `src-tauri/vendor/cargo-mobile2-0.22.4/src/apple/device/devicectl/device_list.rs` añade `reality: Option<String>` y filtro `reality != "simulated"` (ver `Prestly`).
+- `src-tauri/vendor/tauri-cli-2.11.4/Cargo.toml` parchea `[patch.crates-io] cargo-mobile2 = { path = "../cargo-mobile2-0.22.4" }`.
+
+Instálalo una vez por clon:
+```bash
+make install-tauri-cli # compila vendor/tauri-cli y lo instala en ~/.cargo/bin/cargo-tauri
+cargo tauri ios dev "iPhone 17" # usa el binario parcheado → Starting simulator ... -sdk iphonesimulator → simctl
+```
+`pnpm tauri ios dev` (Node CLI) sigue usando el `cargo-mobile2` del registry sin parche — para iOS usa `cargo tauri`.
+
+> **Al actualizar `cargo-mobile2`:** el fix ya está en `cargo-mobile2` `0.22.5` (dev, commit `ee65fb1` — *Fixed iOS simulators being listed as connected physical devices on Xcode 27*) pero aún no está publicado en crates.io (último publicado `0.22.4` del 29 Apr 2025). **Esperamos al release oficial** y dejamos el vendor parcheado tal cual. Cuando `0.22.5` salga y `tauri-cli` lo pida, se borrará el vendor y el `[patch]`. Si actualizas manualmente antes, re-vendorea la nueva versión y reaplica el filtro `reality`, o el bug vuelve.
+
+### Info.plist — plantilla vs autogen
+
+Solo se edita la **plantilla**:
+- `src-tauri/Info.plist` — fuente para **macOS** (`tauri.macos.conf.json: bundle.macOS.infoPlist`) y para **iOS** (`tauri.ios.conf.json: bundle.iOS.infoPlist`). Ahí van `NSAppTransportSecurity` (`NSAllowsLocalNetworking` + `NSAllowsArbitraryLoads` para `http://192.0.0.2:1420`/`ws://` de HMR), `NSLocalNetworkUsageDescription` y `NSBonjourServices`.
+- `src-tauri/gen/apple/.../Info.plist` y `src-tauri/gen/android/.../AndroidManifest.xml` son **autogen** — se regeneran desde la plantilla + defaults de Tauri. No los edites; todo lo que pongas ahí se pierde en `tauri ios init` / `apple-xcode.sh`.
+
+Sí: si necesitas tocar Info.plist, edita **esos 2** (en la práctica 1 archivo `Info.plist` compartido vía `tauri.*.conf.json`) y **todos** los demás (`gen`) consumen de ahí.
+
+### Dev sin TUI de Turbo
+
+`pnpm dev` = `turbo dev` (TUI `?1000h`). `tauri dev` lo mata con `SIGTERM` y dejaba la TTY en modo mouse → `zsh: command not found: 35;22;36M` sin haber clicado. `tauri.conf.json: build.beforeDevCommand` ahora es `pnpm --filter web dev` (vite directo, sin turbo), así `tauri ios dev` no habilita `?1000h` y no deja la terminal garbled. `pnpm dev` web sigue con TUI si lo lanzas directo.
 
 ### DEVELOPMENT_TEAM (firma iOS)
 
