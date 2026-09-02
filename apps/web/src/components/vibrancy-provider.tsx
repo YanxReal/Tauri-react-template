@@ -58,15 +58,14 @@ export function VibrancyProvider({ children }: { children: React.ReactNode }) {
   const [dark, setDark] = React.useState(false)
 
   // Boot: restore the persisted preference and probe platform support.
-  // Absent preference means "default ON" — the probe applies the effect, so
-  // it only materializes where the platform supports it; elsewhere the probe
-  // fails and the toggle stays hidden. A stored "off" probes with a no-op
-  // clear, which still reveals whether the platform supports the effect.
+  // Default OFF — user must explicitly enable. Probe with wanted (false by
+  // default) still returns ok=true on supported platforms (clear is a no-op
+  // that succeeds), so we can detect support without applying the effect.
   React.useEffect(() => {
     let cancelled = false
     void (async () => {
       const stored = localStorage.getItem(VIBRANCY_KEY)
-      const wanted = stored === VIBRANCY_ON || stored === null
+      const wanted = stored === VIBRANCY_ON
       const ok = await applyWindowEffect(wanted, resolvedDark())
       if (cancelled) return
       if (ok) {

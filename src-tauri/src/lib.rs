@@ -300,6 +300,17 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Linux WebKitGTK: DMABUF renderer causa flicker, Error 71 Wayland y RAM desbocada en resize
+    // (NVIDIA + Wayland). Ver https://v2.tauri.app/develop/debug/linux-graphics/ y tauri#9394
+    #[cfg(target_os = "linux")]
+    {
+        // Desactiva el fast path DMABUF, usa el renderer seguro (costo mínimo, evita crash/resize RAM)
+        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        // NVIDIA Wayland explicit sync bug (Error 71 dispatching to Wayland display)
+        std::env::set_var("__NV_DISABLE_EXPLICIT_SYNC", "1");
+        // Opcional: si sigue el colapso, descomentar la siguiente línea (desactiva compositing acelerado)
+        // std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+    }
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         // Native-app feel (multi-OS): bloquea atajos/menús de "sitio web".

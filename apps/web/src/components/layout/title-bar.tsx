@@ -17,15 +17,17 @@ export function TitleBar() {
   useMacDragRegion(visible && isMac)
 
   useEffect(() => {
-    if (!visible) return
-    document.documentElement.classList.add("titlebar")
+    if (!visible || !platform) return
+    document.documentElement.classList.add("titlebar", platform)
     if (platform === "windows" || platform === "linux")
       document.documentElement.classList.add("titlebar-win")
     if (isMac) document.documentElement.classList.add("titlebar-mac")
+    if (platform === "linux") document.documentElement.classList.add("linux")
     return () => {
-      document.documentElement.classList.remove("titlebar")
+      document.documentElement.classList.remove("titlebar", platform)
       document.documentElement.classList.remove("titlebar-win")
       document.documentElement.classList.remove("titlebar-mac")
+      document.documentElement.classList.remove("linux")
     }
   }, [visible, platform, isMac])
 

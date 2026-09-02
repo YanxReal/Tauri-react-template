@@ -10,15 +10,19 @@ import { useTranslation } from "react-i18next"
 import { useGlassCards } from "@/components/glass-cards-provider"
 import { Features } from "@/components/layout/features"
 import { Footer } from "@/components/layout/footer"
-import { GlassCardsToggle } from "@/components/layout/glass-cards-toggle"
+import { GlassEffectToggle } from "@/components/layout/glass-effect-toggle"
 import { Header } from "@/components/layout/header"
 import { Hero } from "@/components/layout/hero"
 import { TitleBar } from "@/components/layout/title-bar"
-import { VibrancyToggle } from "@/components/layout/vibrancy-toggle"
+import { usePlatform } from "@/components/layout/native-chrome"
 
 export function App() {
   const { t, i18n } = useTranslation()
   const { enabled: glassEnabled } = useGlassCards()
+  const platform = usePlatform()
+  const isLinux = platform === "linux"
+  // Linux WebKitGTK no soporta blur de forma estable (glitches amarillos + RAM) -> fallback a sólido
+  const effectiveGlass = glassEnabled && !isLinux
   const [greet, setGreet] = useState<string | null>(null)
 
   useEffect(() => {
@@ -64,7 +68,7 @@ export function App() {
           aria-labelledby="status-heading"
           className="mx-auto max-w-6xl px-4 py-8 sm:px-6"
         >
-          {glassEnabled ? (
+          {effectiveGlass ? (
             <GlassCard>
               <GlassCardContent className="p-6">
                 <h2 id="status-heading" className="font-semibold">
@@ -82,8 +86,7 @@ export function App() {
                 </div>
 
                 <div className="mt-4 flex items-center gap-3">
-                  <VibrancyToggle />
-                  <GlassCardsToggle />
+                  <GlassEffectToggle />
                 </div>
 
                 {greet && (
@@ -116,8 +119,7 @@ export function App() {
               </div>
 
               <div className="mt-4 flex items-center gap-3">
-                <VibrancyToggle />
-                <GlassCardsToggle />
+                <GlassEffectToggle />
               </div>
 
               {greet && (

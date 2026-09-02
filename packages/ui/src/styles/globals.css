@@ -148,6 +148,18 @@ body {
   touch-action: pan-x pan-y;
 }
 
+/* Windows/Linux frameless: app-region:drag para WebView2/WebKitGTK touch/pen */
+[data-tauri-drag-region] {
+  app-region: drag;
+}
+[data-tauri-drag-region] button,
+[data-tauri-drag-region] a,
+[data-tauri-drag-region] input,
+[data-tauri-drag-region] select,
+[data-tauri-drag-region] textarea {
+  app-region: no-drag;
+}
+
 input,
 textarea,
 [contenteditable="true"] {
@@ -160,10 +172,13 @@ textarea,
    transluce a través del fondo del body, pero teñido con el color del tema
    (claro/oscuro) para que el cristal SIGA al tema de la app y no al sistema
    (patrón Prestly: el fondo lo pinta la app; aquí añadimos translucidez).
-   `.vibrancy` vive en <html>, la alterna VibrancyProvider.
-   32% deja pasar mucho más material nativo — el cristal ahora sí se nota. */
+   32% en oscuro deja ver Mica/vibrancy, en claro lo dejamos más opaco
+   para desaumentar la transparencia (antes 12% muy translúcido). */
 html.vibrancy body {
   background-color: color-mix(in oklab, var(--background) 32%, transparent);
+}
+html.light.vibrancy body {
+  background-color: color-mix(in oklab, var(--background) 42%, transparent);
 }
 
 /* --- Ventana frameless (patrón Prestly, §144.5) -----------------------------
@@ -191,19 +206,83 @@ html.vibrancy body {
     height: 100%;
   }
 
-  /* .app-shell: contenedor de scroll que recorta TODO (header incluido) a la
-     forma redondeada y pinta el fondo. */
+  /* .app-shell: contenedor de scroll que recorta TODO (header incluido).
+     Solo macOS necesita border-radius CSS (ventana transparente Overlay);
+     Win/Linux usan DWM/native rounding, así que sin radius para no dejar
+     esquinitas sin colorear en header/footer. */
   html.titlebar .app-shell {
     height: 100dvh;
     overflow-y: auto;
-    border-radius: 10px;
     background-color: var(--background);
   }
+  html.titlebar-mac .app-shell {
+    border-radius: 10px;
+  }
+  html.titlebar-win .app-shell {
+    border-radius: 0;
+  }
+  html.linux .app-shell {
+    border-radius: 10px;
+  }
+  /* Linux WebKitGTK: backdrop-blur es carísimo y causa RAM desbocada en resize;
+     lo desactivamos y contenemos el repaint. Ver Tauri linux-graphics docs. */
+  html.linux .app-header,
+  html.linux .app-shell {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  html.linux .app-shell {
+    contain: layout paint;
+  }
+  /* Linux: glass cards con blur provocan glitches amarillos y lentitud extrema
+     (segunda captura). Los desactivamos por completo y caen a sólido. */
+  html.linux .glass-card,
+  html.linux [data-glass],
+  html.linux .backdrop-blur,
+  html.linux .backdrop-blur-xl {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  html.linux .bg-white\/10,
+  html.linux .bg-white\/15,
+  html.linux .bg-white\/20,
+  html.linux .border-white\/20,
+  html.linux .border-white\/30 {
+    background-color: var(--card) !important;
+    border-color: var(--border) !important;
+  }
+  /* Windows: transparent true mejora resize pero blur+100dvh causa layout thrashing;
+     contenemos el shell para que el compositor no repinte todo en cada frame. */
+  html.titlebar-win .app-shell {
+    contain: layout paint;
+    will-change: transform;
+  }
 
-  /* Cristal: el material del OS se transluce a través del fondo.
-     32% = mucho más translúcido que el 62% anterior — efecto bien visible. */
+  /* Cristal: 32% oscuro / 42% claro — en claro más opaco para desaumentar. */
   html.vibrancy .app-shell {
     background-color: color-mix(in oklab, var(--background) 32%, transparent);
+  }
+  html.light.vibrancy .app-shell {
+    background-color: color-mix(in oklab, var(--background) 42%, transparent);
+  }
+  /* Header: con vibrancy lo hacemos translúcido pero en claro más opaco.
+     Blur solo en macOS (vibrancy nativo); en Win Mica ya da el material y
+     en Linux el blur es carísimo (RAM). */
+  html.vibrancy .app-header {
+    background-color: color-mix(in oklab, var(--background) 52%, transparent) !important;
+  }
+  html.titlebar-mac.vibrancy .app-header {
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+  }
+  html.light.vibrancy .app-header {
+    background-color: color-mix(in oklab, var(--background) 58%, transparent) !important;
+  }
+  /* Win/Linux: sin blur CSS, solo color (Mica ya tiene blur nativo, Linux no) */
+  html.windows .app-header,
+  html.linux .app-header {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 
   /* El header sticky se pega al tope de .app-shell al hacer scroll. */

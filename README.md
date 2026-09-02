@@ -118,9 +118,22 @@ Patrón de **Prestly**: toggle nativo de translucidez de la ventana.
 - **Rust**: `window-vibrancy = "0.8"` (crate, no plugin). Comando sync `window_effects_set {enabled, dark?}` en `src-tauri/src/lib.rs` — vibrancy (`NSVisualEffectView`) en macOS, Mica en Windows 11; Linux/mobile responden `unsupported` (no-op). Patrón de Prestly: el comando debe ser **sync** (corre en el main thread; `window-vibrancy` exige el main thread).
 - **Frontend**: `VibrancyProvider` + `useVibrancy()` (`apps/web/src/components/vibrancy-provider.tsx`). Persistencia en `localStorage` (`vibrancy`), ON por defecto donde hay soporte nativo. Al activarse añade `html.vibrancy` → `globals.css` pone `body { background: transparent }` para que el material del OS se vea. `dark` sigue al tema (tint de Mica en Windows).
 - **Toggle**: `<VibrancyToggle />` (`apps/web/src/components/layout/vibrancy-toggle.tsx`) — usa el `Switch` de shadcn/Base UI y desaparece si `!supported` (Linux/mobile/browser).
+- **Combinado actual**: `GlassEffectToggle` (`apps/web/src/components/layout/glass-effect-toggle.tsx`) controla `glass-cards` + `vibrancy` juntos, por defecto **OFF** (`VibrancyProvider` ya no hace `|| stored===null`). En Linux se fuerza OFF.
 
 To verify: `pnpm typecheck && pnpm lint && pnpm build`, y testear scroll + click + no-zoom en una
 build real de cada plataforma.
+
+### Linux — limitaciones conocidas / Known issues
+
+**1. Curvas de ventana sin glass (`a1.png`):** con `decorations:false transparent:true` el WM no decora, y `html.titlebar-win .app-shell {border-radius:0}` dejaba la ventana cuadrada. **Solución actual:** `html.linux .app-shell {border-radius:10px}` + `header/footer {rounded-none}` — el `app-shell` recorta a 10px y el sistema no necesita decorar. Sin glass va fluido.
+
+**2. Glass cards + WebKitGTK → glitches amarillos y RAM desbocada (`a2.png`):** `backdrop-blur` + `DMABUF` en WebKitGTK 4.1 (sobre todo NVIDIA/Wayland) dispara `AcceleratedSurfaceDMABuf was unable to construct a complete framebuffer` y `Error 71` + RAM al redimensionar (Tauri `linux-graphics` docs, `wry#1747`). **Solución actual (veto):** en Linux se fuerza `glass OFF` — `glass-cards-provider.tsx` `useGlassCards() → false` si `platform==='linux'`, `GlassEffectToggle` deshabilitado con tooltip, y `globals.css` `html.linux .glass-card/backdrop-blur { backdrop-filter:none; background:var(--card) }` + `contain:paint`. Además `src-tauri/src/lib.rs` fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes de `Builder` y `html.linux { backdrop-filter:none }` para header/shell.
+
+**Plan A — Glass degradado sin blur (no implementado, recomendado):** en Linux renderizar `GlassCard` sin `backdrop-blur`, solo `bg-white/[0.06] + border` translúcido + `box-shadow` sutil. Mantiene estética translúcida sin DMABUF, compatible 100% y sin amarillos. Requiere `glass-card.tsx` variante `if (platform==='linux') return <div className="rounded-xl border bg-white/[0.06]">` y `globals.css` `html.linux .glass-card { background:rgba(255,255,255,0.06) }`.
+
+**Plan B — Detección GPU (no implementado):** habilitar `backdrop-blur` solo en `Mesa/Intel/AMD` (donde `WEBKIT_DISABLE_DMABUF_RENDERER` no es necesario) y mantener veto en `NVIDIA`. Necesita `navigator.gpu` / `WEBGL_debug_renderer_info` (WebKit enmascara `Apple GPU`) + `localStorage` flag `glass-linux-force`. Más frágil.
+
+Se deja el **veto** como está; si quieres vidrio en Linux, implementamos el Plan A.
 
 ## Mobile — iOS/macOS (Xcode) y Android
 

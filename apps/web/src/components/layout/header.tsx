@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useGlassCards } from "@/components/glass-cards-provider"
 import { useTheme } from "@/components/theme-provider"
-import { usePlatform } from "./native-chrome"
+import { usePlatform, useWindowDragRegion } from "./native-chrome"
 
 function runWindowAction(action: "minimize" | "maximize" | "close"): void {
   const w = getCurrentWindow()
@@ -67,6 +67,8 @@ export function Header() {
   const isWinLinux = platform === "windows" || platform === "linux"
   const [maximized, setMaximized] = useState(false)
 
+  useWindowDragRegion(isWinLinux)
+
   useEffect(() => {
     if (!isWinLinux) return
     const appWindow = getCurrentWindow()
@@ -101,9 +103,9 @@ export function Header() {
 
   return (
     <header
-      className={`app-header relative flex items-center border-b backdrop-blur pt-[env(safe-area-inset-top)] md:sticky md:top-0 md:z-40 ${
+      className={`app-header relative flex items-center rounded-none border-b backdrop-blur pt-[env(safe-area-inset-top)] md:sticky md:top-0 md:z-40 ${
         glassEnabled ? "border-white/20 bg-white/10" : "bg-background"
-      } ${isMac ? "h-[64px]" : "h-14"}`}
+      } ${isMac ? "h-[52px]" : "h-14"}`}
       {...(isWinLinux ? { "data-tauri-drag-region": true } : {})}
     >
       {/* Capa de arrastre detrás del contenido — solo Win/Linux */}
@@ -120,6 +122,7 @@ export function Header() {
             ? "mx-auto w-full max-w-6xl h-full pl-[96px] sm:pl-[108px]"
             : "mx-auto h-full w-full max-w-6xl"
         }`}
+        {...(isWinLinux ? { "data-tauri-drag-region": true } : {})}
       >
         <a
           href="/"
@@ -148,7 +151,7 @@ export function Header() {
                 : "text-muted-foreground hover:text-foreground"
             } transition-colors`}
           >
-            Shadcn UI
+            ShadcnUI
           </a>
           <a
             href="https://ui.eindev.ir"

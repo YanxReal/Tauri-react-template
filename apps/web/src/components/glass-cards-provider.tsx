@@ -1,5 +1,7 @@
 import * as React from "react"
 
+import { usePlatform } from "@/components/layout/native-chrome"
+
 const GLASS_CARDS_KEY = "glass-cards"
 const GLASS_CARDS_ON = "1"
 const GLASS_CARDS_OFF = "0"
@@ -65,6 +67,12 @@ export function useGlassCards() {
   const ctx = React.useContext(GlassCardsContext)
   if (ctx === undefined) {
     throw new Error("useGlassCards must be used within a GlassCardsProvider")
+  }
+  const platform = usePlatform()
+  // Linux WebKitGTK: glass con backdrop-blur causa glitches amarillos y RAM desbocada
+  // (segunda captura). Forzamos OFF en Linux aunque el toggle esté ON.
+  if (platform === "linux") {
+    return { enabled: false, setEnabled: ctx.setEnabled }
   }
   return ctx
 }

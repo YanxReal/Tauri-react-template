@@ -9,7 +9,7 @@ export function Footer() {
 
   return (
     <footer
-      className={`border-t backdrop-blur-xl ${
+      className={`rounded-none border-t backdrop-blur-xl ${
         glassEnabled ? "border-white/20 bg-white/10" : "bg-background"
       }`}
     >
