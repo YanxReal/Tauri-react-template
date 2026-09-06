@@ -57,6 +57,16 @@ windows = { version = "0.61", features = [
     "Win32_Graphics_Dwm",
 ] }
 
+# Sombra de ventana en Linux. `tauri` no expone sombra nativa (WindowConfig.shadow
+# dice "Linux: Unsupported"): la dibuja el compositor + tema GTK vía el nodo CSS
+# `decoration { box-shadow; margin; border-radius }` de `window.background.csd`.
+# Con `decorations:false + transparent:true` ese nodo no existe -> ventana plana.
+# Aplicamos un CssProvider GTK en `setup` que lo restaura (shadow + border-radius),
+# dejando margen donde el compositor compone la sombra. Acceso al window GTK vía
+# `WebviewWindow::gtk_window()` (solo main thread).
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 

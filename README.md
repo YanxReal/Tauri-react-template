@@ -125,6 +125,12 @@ build real de cada plataforma.
 
 ### Linux — limitaciones conocidas / Known issues
 
+**0. Sombra de ventana del sistema (`shadow`):** `tauri`/`tao` **no soportan** `WindowConfig.shadow` en Linux (docs: *"Linux: Unsupported"*). En GTK la sombra la dibuja el compositor + tema vía el nodo CSS `window.background.csd decoration { box-shadow; margin; border-radius }`; con `decorations:false transparent:true` ese nodo no se genera y la ventana frameless queda **plana** (sin sombra). **Solución:** dos capas complementarias en `src-tauri/src/lib.rs::apply_linux_window_shadow`:
+- **Capa primaria (nativa GTK):** `window.gtk_window()` + `CssProvider` (prioridad APPLICATION) que fuerza `.csd`, restaura `decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ variante `:backdrop`) y añade la clase `gtk-shadow` al `<html>` por `window.eval`.
+- **Capa fallback (webview):** si el compositor ignora CSD (Sway/Hyprland SSD-only, X11 sin compositor) no llega `gtk-shadow` → `globals.css` aplica `margin:12px + box-shadow` sobre `.app-shell` (html/body `overflow:visible`). Cuando `gtk-shadow` está presente el fallback queda desactivado para evitar sombra doble.
+- Maximizado/fullscreen/tiled: `margin:0; box-shadow:none; border-radius:0`.
+Requisito build: `gtk = "0.18"` (target Linux) ya va en `Cargo.toml`.
+
 **1. Curvas de ventana sin glass (`a1.png`):** con `decorations:false transparent:true` el WM no decora, y `html.titlebar-win .app-shell {border-radius:0}` dejaba la ventana cuadrada. **Solución actual:** `html.linux .app-shell {border-radius:10px}` + `header/footer {rounded-none}` — el `app-shell` recorta a 10px y el sistema no necesita decorar. Sin glass va fluido.
 
 **2. Glass cards + WebKitGTK → glitches amarillos y RAM desbocada (`a2.png`):** `backdrop-blur` + `DMABUF` en WebKitGTK 4.1 (sobre todo NVIDIA/Wayland) dispara `AcceleratedSurfaceDMABuf was unable to construct a complete framebuffer` y `Error 71` + RAM al redimensionar (Tauri `linux-graphics` docs, `wry#1747`). **Solución actual (veto):** en Linux se fuerza `glass OFF` — `glass-cards-provider.tsx` `useGlassCards() → false` si `platform==='linux'`, `GlassEffectToggle` deshabilitado con tooltip, y `globals.css` `html.linux .glass-card/backdrop-blur { backdrop-filter:none; background:var(--card) }` + `contain:paint`. Además `src-tauri/src/lib.rs` fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes de `Builder` y `html.linux { backdrop-filter:none }` para header/shell.

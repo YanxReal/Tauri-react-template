@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 
-import { useMacDragRegion, usePlatform } from "./native-chrome"
+import { useMacDragRegion, usePlatform, useWindowStateClasses } from "./native-chrome"
 
 const DESKTOP_PLATFORMS = new Set(["macos", "windows", "linux"])
 
@@ -15,6 +15,7 @@ export function TitleBar() {
   const isMac = platform === "macos"
 
   useMacDragRegion(visible && isMac)
+  useWindowStateClasses(platform)
 
   useEffect(() => {
     if (!visible || !platform) return

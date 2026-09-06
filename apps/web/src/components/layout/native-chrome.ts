@@ -97,4 +97,47 @@ function useWindowDragRegion(enabled: boolean): void {
   }, [enabled])
 }
 
-export { isTauriRuntime, useMacDragRegion, usePlatform, useWindowDragRegion }
+/**
+ * Actualiza clases de estado de ventana (`window-maximized` /
+ * `window-fullscreen`) en <html>. En Linux lo usa el CSS para quitar el
+ * margen + sombra cuando la ventana está maximizada o a pantalla completa
+ * (la sombra solo tiene sentido en ventana "flotante"). Reescucha en cada
+ * resize por si maximiza/restaura con arrastre/toggle.
+ */
+function useWindowStateClasses(platform: Platform): void {
+  useEffect(() => {
+    if (platform !== "linux" || !isTauriRuntime()) return
+    const win = getCurrentWindow()
+    let unlisten: (() => void) | undefined
+    let active = true
+
+    const sync = async () => {
+      if (!active) return
+      const el = document.documentElement
+      const [max, fs] = await Promise.all([win.isMaximized(), win.isFullscreen()])
+      if (!active) return
+      el.classList.toggle("window-maximized", max)
+      el.classList.toggle("window-fullscreen", fs)
+    }
+
+    void win
+      .onResized(() => void sync())
+      .then(fn => {
+        if (active) unlisten = fn
+      })
+    void sync()
+
+    return () => {
+      active = false
+      unlisten?.()
+    }
+  }, [platform])
+}
+
+export {
+  isTauriRuntime,
+  useMacDragRegion,
+  usePlatform,
+  useWindowDragRegion,
+  useWindowStateClasses,
+}

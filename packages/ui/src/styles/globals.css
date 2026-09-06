@@ -224,16 +224,62 @@ html.light.vibrancy body {
   html.linux .app-shell {
     border-radius: 10px;
   }
+  /* --- Sombra de ventana en Linux ------------------------------------------
+     Tauri/tao NO soportan `shadow` en Linux (WindowConfig.shadow = unsupported):
+     el compositor + tema GTK dibujan la sombra vía el nodo CSD
+     `window.background.csd decoration { box-shadow }`. En ventanas frameless
+     (`decorations:false`) + transparentes ese nodo no existe -> ventana plana.
+
+     Tenemos DOS estrategias complementarias (solo una activa a la vez):
+     1) Sombra NATIVA GTK (preferida): `lib.rs::apply_linux_window_shadow`
+        inyecta un CssProvider GTK que restaura `decoration { box-shadow; margin;
+        border-radius }` y añade la clase `gtk-shadow` al <html>.
+     2) Fallback CSS en el webview: si el compositor ignora CSD (Sway/Hyprland
+        SSD-only, X11 sin compositor) no llega la clase -> este box-shadow/margin
+        replica la sombra de sistema sin depender del compositor.
+     Cuando `gtk-shadow` está presente desactivamos el fallback (evita sombra doble). */
+  html.linux .app-shell {
+    border-radius: 10px;
+  }
+  /* Fallback (solo si NO hay sombra GTK nativa): margen + box-shadow */
+  html.linux:not(.gtk-shadow) .app-shell {
+    margin: 12px;
+    height: calc(100dvh - 24px);
+    /* Doble capa sutil -> difusión suave tipo Adwaita/Breeze */
+    box-shadow:
+      0 16px 48px rgba(0, 0, 0, 0.35),
+      0 2px 8px rgba(0, 0, 0, 0.18);
+  }
+  /* El shadow vive en el margen transparente; si html/body recortan con
+     overflow:hidden la sombra se corta. En Linux dejamos visible para que
+     respire (el scroll sigue en .app-shell con overflow-y:auto). */
+  html.linux,
+  html.linux body {
+    overflow: visible;
+  }
+  /* Maximizado / a pantalla completa: sin margen ni sombra (bordes al borde) */
+  html.linux:is(.window-maximized, .window-fullscreen) .app-shell,
+  html.linux .app-shell:is(:fullscreen) {
+    margin: 0;
+    height: 100dvh;
+    box-shadow: none;
+    border-radius: 0;
+  }
+  /* Maximizado: volvemos a hidden para que no haya scroll del body */
+  html.linux:is(.window-maximized, .window-fullscreen),
+  html.linux:is(.window-maximized, .window-fullscreen) body {
+    overflow: hidden;
+  }
   /* Linux WebKitGTK: backdrop-blur es carísimo y causa RAM desbocada en resize;
-     lo desactivamos y contenemos el repaint. Ver Tauri linux-graphics docs. */
+     lo desactivamos. Ver Tauri linux-graphics docs. */
   html.linux .app-header,
   html.linux .app-shell {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
-  html.linux .app-shell {
-    contain: layout paint;
-  }
+  /* El shadow necesita que la sombra NO se recorte: quitamos `contain: paint`
+     solo del shell (el blur ya está desactivado en linux, así que no hay
+     repaint caro que contener). */
   /* Linux: glass cards con blur provocan glitches amarillos y lentitud extrema
      (segunda captura). Los desactivamos por completo y caen a sólido. */
   html.linux .glass-card,

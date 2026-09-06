@@ -298,6 +298,74 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
     REGISTERED.with(|s| s.borrow_mut().insert(label));
 }
 
+/// Sombra de ventana + border-radius nativos en Linux.
+///
+/// `tauri` no expone sombra nativa en Linux (WindowConfig.shadow = "Linux:
+/// Unsupported"). En GTK la sombra la dibuja el tema vía el nodo CSS
+/// `window.background.csd decoration { box-shadow; margin; border-radius }`.
+/// Con `decorations:false + transparent:true` ese nodo no se genera y la
+/// ventana frameless queda plana (sin sombra, esquinas cuadradas).
+///
+/// Truco usado por `custom-window-decorations-gtk4` y confirmado por el
+/// compartimento `decoration` de los temas GTK: forzamos la clase `.csd` y
+/// aplicamos un `GtkCssProvider` (prioridad APPLICATION) que restaura el
+/// `decoration` con box-shadow + margin (espacio que el compositor "ve" para
+/// componer la sombra) + border-radius. En maximizado/tiled se aplanan para
+/// no mostrar sombra fantasma.
+#[cfg(target_os = "linux")]
+fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
+    use gtk::prelude::*;
+
+    let Ok(gtk_window) = window.gtk_window() else {
+        return;
+    };
+
+    // Fuerza CSD para que GTK genere el nodo `decoration` aunque esté frameless.
+    gtk_window.style_context().add_class("csd");
+
+    let css = r#"
+        window.background.csd decoration {
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.38), 0 4px 16px rgba(0, 0, 0, 0.22);
+            margin: 12px;
+            border-radius: 10px;
+        }
+        window.background.csd decoration:backdrop {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+        }
+        window.background.csd {
+            border-radius: 10px;
+        }
+        window.background.csd.maximized decoration,
+        window.background.csd.tiled decoration {
+            box-shadow: none;
+            margin: 0;
+            border-radius: 0;
+        }
+    "#;
+
+    let provider = gtk::CssProvider::new();
+    if let Err(e) = provider.load_from_data(css.as_bytes()) {
+        log::warn!("linux shadow css failed: {e}");
+        return;
+    }
+
+    // GTK3: provider por screen (no hay add_provider_for_display en gtk-rs 0.18).
+    // Prioridad APPLICATION -> aplica a nuestra app sin pisar el tema GTK.
+    if let Some(screen) = gtk::prelude::WidgetExt::screen(&gtk_window) {
+        gtk::StyleContext::add_provider_for_screen(
+            &screen,
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+    }
+
+    // Avisamos al frontend para que DESACTIVE el fallback CSS (box-shadow del
+    // webview) cuando la sombra GTK nativa ya está activa -> evita sombra doble.
+    let _ = window.eval("document.documentElement.classList.add('gtk-shadow')");
+
+    log::info!("linux window shadow applied via GTK decoration css");
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Linux WebKitGTK: DMABUF renderer causa flicker, Error 71 Wayland y RAM desbocada en resize
@@ -350,6 +418,12 @@ pub fn run() {
                         }
                     }
                 }
+            }
+
+            // Linux: sombra de ventana vía GTK CssProvider (see fn doc).
+            #[cfg(target_os = "linux")]
+            if let Some(window) = app.get_webview_window("main") {
+                apply_linux_window_shadow(&window);
             }
 
             // macOS: las esquinas redondeadas son nativas (decorations:true +
