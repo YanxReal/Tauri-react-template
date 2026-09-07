@@ -39,18 +39,18 @@ Patrón de **Prestly**: toggle nativo de translucidez.
 
 ## Linux — issues conocidos
 
-### 0. Sombra de ventana (`shadow` no soportado) — solo nativo
+### 0. Sombra de ventana (`shadow` no soportado) — híbrida (nativa + fallback)
 
-`tauri`/`tao` no soportan `WindowConfig.shadow` en Linux (*"Linux: Unsupported"*). Con `decorations:false transparent:true` el nodo GTK `window.background.csd decoration { box-shadow; margin; border-radius }` no se genera → ventana plana.
+`tauri`/`tao` no soportan `WindowConfig.shadow` en Linux (*"Linux: Unsupported"*). Con `decorations:false transparent:true` el nodo GTK `window.background.csd decoration { box-shadow; margin; border-radius }` no se genera → ventana plana. La investigación mostró que `decorations:false` crea una `GdkWindow` **undecorated** sin frame, por lo que incluso forzando `.csd` y `add_provider_for_screen` falla en Wayland puro (`screen == None`) y el nodo `decoration` nunca renderiza.
 
-**Fix — solo nativo en `lib.rs:315` `apply_linux_window_shadow` (sin fallback CSS):**
+**Fix — híbrida en `lib.rs:315` `apply_linux_window_shadow` + `globals.css:241`:**
 
-- `window.gtk_window()` + `.add_class("csd")` fuerza el nodo `decoration` aunque la ventana sea frameless.
-- `GtkCssProvider` se registra **directo al `StyleContext` de la ventana** vía `add_provider(..., APPLICATION)` — funciona en X11 y Wayland. La implementación anterior usaba `add_provider_for_screen`, que devuelve `None` en Wayland puro (`screen == None`) y fue la causa de que la sombra no se viera aunque el código se ejecutara. Como shim de compatibilidad, si existe `GdkScreen` (X11) también se llama a `add_provider_for_screen`.
-- CSS: `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` + variante `:backdrop` + `window.background.csd { border-radius:10px }`. Maximizado/tiled/fullscreen → `box-shadow:none; margin:0; border-radius:0`.
-- Sin fallback webview (`html.linux:not(.gtk-shadow) .app-shell { box-shadow }` eliminado). El border-radius propio de la ventana vive en `globals.css:241` `html.linux .app-shell { border-radius:10px }`.
+- **Nativa:** `window.gtk_window()` + `.add_class("csd")` + `GtkCssProvider` anclado **directo al `StyleContext` de la ventana** vía `add_provider(..., APPLICATION)` — Wayland-safe (antes `add_provider_for_screen` era `None` en Wayland). CSS `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`). Maximizado/tiled/fullscreen → `none`.
+- **Fallback (garantizado):** `globals.css:241` `html.linux .app-shell { margin:12px; height:calc(100dvh - 24px); box-shadow: 0 16px 48px rgba(0,0,0,.35) }` dibuja la sombra **dentro** del webview sobre el fondo transparente. `html.titlebar.linux { overflow:visible }` (mayor especificidad que `html.titlebar { overflow:hidden }`) evita recorte. Maximizado/fullscreen la limpia.
 
-Requisito build: `gtk = "0.18"` (`Cargo.toml:67`, solo linux, GTK3 `webkit2gtk 4.1`). Si el proyecto migra a `webkitgtk 6.0` + `gtk4`, el mismo CSS sirve con `gtk4::CssProvider` + `add_provider_for_display(&display, ...)`, pero el fix actual usa `StyleContext::add_provider` que es Wayland-safe en GTK3.
+Ambas capas pueden coexistir; el fallback garantiza sombra aunque el compositor ignore CSD (Sway/Hyprland, X11 sin `picom`).
+
+Requisito build: `gtk = "0.18"` (`Cargo.toml:67`, solo linux, GTK3 `webkit2gtk 4.1`). Path `gtk4` (`webkitgtk 6.0`, `gtk4::CssProvider` + `add_provider_for_display`) usa mismo CSS.
 
 ### 1. Esquinas sin glass
 

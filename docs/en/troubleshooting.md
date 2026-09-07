@@ -14,7 +14,7 @@ Ensure `lib.rs:107` `adjust_macos_traffic_lights` + `ensure_traffic_lights_obser
 
 ## No window shadow on Linux / flat window
 
-Now **native only** (`lib.rs:315` `StyleContext::add_provider` — Wayland-safe). The previous bug was `add_provider_for_screen` with `screen == None` on pure Wayland → provider never registered. Now check `journalctl` / `RUST_LOG=info` for `linux shadow: provider added via window StyleContext (Wayland/X11 without screen)` vs `via window + screen (X11)`. If still flat, verify compositor draws `CSD decoration` shadows (Sway/Hyprland SSD-only ignore CSD by design; X11 without `picom/compton` has no compositor shadow).
+Hybrid now: **native** (`lib.rs:315` `StyleContext::add_provider` Wayland-safe) + **fallback** (`globals.css:241` `html.linux .app-shell { box-shadow }`). If still flat, check `journalctl` / `RUST_LOG=info` for `linux shadow: provider added via window StyleContext (Wayland/X11 without screen)` vs `via window + screen (X11)` and verify `html.titlebar.linux { overflow:visible }` is not overridden. On Sway/Hyprland or X11 without `picom/compton`, the fallback guarantees a shadow; native alone would be ignored.
 
 ## Glass yellow glitches / RAM blow-up on Linux
 

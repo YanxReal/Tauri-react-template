@@ -14,7 +14,7 @@ Asegúrate de que `lib.rs:107` `adjust_macos_traffic_lights` + `ensure_traffic_l
 
 ## No hay sombra en Linux / ventana plana
 
-Ahora **solo nativo** (`lib.rs:315` `StyleContext::add_provider` — Wayland-safe). El bug previo era `add_provider_for_screen` con `screen == None` en Wayland puro → provider nunca registrado. Ahora mira `journalctl` / `RUST_LOG=info` para `linux shadow: provider added via window StyleContext (Wayland/X11 without screen)` vs `via window + screen (X11)`. Si sigue plana, verifica que el compositor dibuje sombras `CSD decoration` (Sway/Hyprland SSD-only ignoran CSD por diseño; X11 sin `picom/compton` no tiene sombra).
+Ahora **híbrida**: **nativa** (`lib.rs:315` `StyleContext::add_provider` Wayland-safe) + **fallback** (`globals.css:241` `html.linux .app-shell { box-shadow }`). Si sigue plana, revisa `journalctl` / `RUST_LOG=info` para `linux shadow: provider added via window StyleContext (Wayland/X11 without screen)` vs `via window + screen (X11)` y verifica que `html.titlebar.linux { overflow:visible }` no esté sobreescrito. En Sway/Hyprland o X11 sin `picom/compton`, el fallback garantiza sombra; solo nativa sería ignorada.
 
 ## Glitches amarillos glass / RAM disparada en Linux
 

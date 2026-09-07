@@ -81,9 +81,9 @@ Background and fix documented in `docs/en/native-feel.md`. Implementation in `li
 - `needs_traffic_lights_update` + `ensure_traffic_lights_observer` (`NSWindowDidResizeNotification`/`DidMove`) + **60 fps polling** (`NSTimer` in `NSRunLoopCommonModes`) during `NSEventTrackingRunLoopMode` (live-resize).
 - `setAutoresizingMask(0)` prevents AppKit from re-resetting.
 
-## Linux window shadow — native only
+## Linux window shadow — hybrid (native + fallback)
 
-`lib.rs:315` `apply_linux_window_shadow` — native only, no webview fallback. It forces `.csd` on the `GtkWindow` and registers a `GtkCssProvider` **directly on the window's `StyleContext`** via `add_provider(..., APPLICATION)` (Wayland-safe; previously `add_provider_for_screen` returned `None` on pure Wayland and shadows were invisible). CSS: `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`). Maximized/tiled/fullscreen clears it. The `gtk4` path (webkitgtk `6.0`) would use the same CSS with `gtk4::CssProvider` + `add_provider_for_display`, but the current `gtk=0.18` (GTK3) fix uses per-window provider. `globals.css:241` only keeps `html.linux .app-shell { border-radius:10px }`.
+`lib.rs:315` `apply_linux_window_shadow` — hybrid: native `GtkCssProvider` **directly on the window's `StyleContext`** via `add_provider(..., APPLICATION)` (Wayland-safe; previously `add_provider_for_screen` was `None` on Wayland) plus guaranteed webview fallback `globals.css:241` `html.linux .app-shell { margin:12px; box-shadow }` with `html.titlebar.linux { overflow:visible }`. Native CSS `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`); maximized/tiled/fullscreen clears both. `gtk4` path (`webkitgtk 6.0`) would use same CSS with `gtk4::CssProvider` + `add_provider_for_display`; current `gtk=0.18` (GTK3) uses per-window provider.
 
 Also sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` (`lib.rs:371`) to avoid WebKitGTK DMABUF crashes.
 
