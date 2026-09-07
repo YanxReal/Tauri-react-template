@@ -52,6 +52,11 @@ Pattern from **Prestly**: native translucency toggle.
 
 Build requirement: `gtk = "0.18"` + `gdk = "0.18"` (`Cargo.toml:67`, linux target only, GTK3 `webkit2gtk 4.1`). `gtk4` path (`webkitgtk 6.0`, `gtk4::CssProvider` + `add_provider_for_display` + `gdk::Toplevel::set_shadow_width`) uses same CSS.
 
+**Option B — fallback + compositor shader (security, no extra Rust):**
+
+- **Fallback webview** (in `globals.css:260`): `html.linux:not(.gtk-shadow) .app-shell { margin:12px; height:calc(100dvh - 24px); box-shadow: 0 16px 48px rgba(0,0,0,.35) }` draws the shadow **inside** the webview when `lib.rs` fails to add `gtk-shadow` (Sway/Hyprland SSD-only, X11 without `picom`). Maximized/fullscreen clears it. `lib.rs:435` adds `gtk-shadow` via `window.eval` when native succeeds, so native and fallback never double.
+- **Compositor shader** (pure system, no code): `mutter-rounded` (`gsettings set org.gnome.mutter round-corners-radius 10`), `Niri` `geometry-corner-radius 12; clip-to-geometry true` + `shadow { softness 30; draw-behind-window false }`, `Hyprland` `decoration { rounding 10; shadow { enabled true } }`, `swayfx` `corner_radius 10`. These give true 4-corner native on any Tauri `decorations:false` window, even without `HeaderBar`, but require user compositor to be Niri/Hyprland/swayfx or patched Mutter. Documented as alternative when CSD is ignored.
+
 ### 1. Rounded corners without glass
 
 `decorations:false transparent:true` leaves the window square. Fix: `html.linux .app-shell {border-radius:10px}` + header/footer `rounded-none` — `app-shell` clips to 10px. See `globals.css:224`.

@@ -52,6 +52,11 @@ Patrón de **Prestly**: toggle nativo de translucidez.
 
 Requisito build: `gtk = "0.18"` + `gdk = "0.18"` (`Cargo.toml:67`, solo linux, GTK3 `webkit2gtk 4.1`). Path `gtk4` (`webkitgtk 6.0`, `gtk4::CssProvider` + `add_provider_for_display` + `gdk::Toplevel::set_shadow_width`) usa mismo CSS.
 
+**Opción B — fallback + shader del compositor (seguridad, sin código extra en Rust):**
+
+- **Fallback webview** (en `globals.css:260`): `html.linux:not(.gtk-shadow) .app-shell { margin:12px; height:calc(100dvh - 24px); box-shadow: 0 16px 48px rgba(0,0,0,.35) }` dibuja la sombra **dentro** del webview cuando `lib.rs` no logra añadir `gtk-shadow` (Sway/Hyprland SSD-only, X11 sin `picom`). Maximizado/fullscreen lo limpia. `lib.rs:435` añade `gtk-shadow` vía `window.eval` cuando lo nativo tiene éxito, así nativo y fallback nunca se duplican.
+- **Shader del compositor** (puro sistema, sin código app): `mutter-rounded` (`gsettings set org.gnome.mutter round-corners-radius 10`), `Niri` `geometry-corner-radius 12; clip-to-geometry true` + `shadow { softness 30; draw-behind-window false }`, `Hyprland` `decoration { rounding 10; shadow { enabled true } }`, `swayfx` `corner_radius 10`. Estos dan 4 esquinas nativas reales en cualquier ventana Tauri aunque sea `decorations:false`, sin tocar Rust — ver `docs/native-feel.md` Opción B.
+
 ### 1. Esquinas sin glass
 
 `decorations:false transparent:true` deja la ventana cuadrada. Fix: `html.linux .app-shell {border-radius:10px}` + header/footer `rounded-none` — el `app-shell` recorta a 10px. Ver `globals.css:224`.

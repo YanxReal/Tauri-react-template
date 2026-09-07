@@ -432,7 +432,15 @@ fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
         }
     });
 
-    log::info!("linux window shadow applied — native GTK only (CSD HeaderBar + shadow_width, no CSS fallback)");
+    // Opción B — seguridad: si el compositor ignora CSD (Sway/Hyprland SSD-only,
+    // X11 sin compositor), la sombra nativa no se verá. Avisamos al frontend para
+    // que active el fallback CSS (html.linux:not(.gtk-shadow) .app-shell) como
+    // respaldo sin romper lo nativo (cuando existe, el fallback se desactiva).
+    // El fallback es webview (box-shadow en .app-shell) y compositor shader
+    // (mutter-rounded / niri geometry-corner-radius) documentado en docs.
+    let _ = window.eval("document.documentElement.classList.add('gtk-shadow')");
+
+    log::info!("linux window shadow applied — native GTK (CSD HeaderBar + shadow_width) + B fallback ready");
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

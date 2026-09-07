@@ -224,27 +224,33 @@ html.light.vibrancy body {
   html.linux .app-shell {
     border-radius: 10px;
   }
-   /* --- Sombra de ventana en Linux — solo nativa ---------------------------------
+   /* --- Sombra de ventana en Linux — nativa + Opción B fallback ------------------
       Tauri/tao NO soportan `shadow` en Linux (WindowConfig.shadow = unsupported).
       La sombra la dibuja el compositor + tema GTK vía `window.background.csd
       decoration { box-shadow }`. Con `decorations:false + transparent:true`
       ese nodo no existe -> ventana plana.
 
-      100% nativo (sin fallback webview): `lib.rs::apply_linux_window_shadow`
+      Opción A (nativa pura, recomendada): `lib.rs::apply_linux_window_shadow`
       fuerza `.csd` (decorations:true + HeaderBar dummy invisible) y registra
       `CssProvider` directo al `StyleContext` de la ventana (`add_provider`
       Wayland-safe; `add_provider_for_screen` fallaba con `screen==None` en
       Wayland). `margin:12px` + `box-shadow` + `border-radius:10px` viven en
-      `decoration` y el compositor los compone **fuera** del webview. Las 4
-      esquinas se curvan vía `window.csd/window.background.csd` + `decoration`
-      (todas las variantes: .csd/.solid-csd) y el clip del contenido vía
-      `html.linux .app-shell { border-radius:10px; contain:paint }` + `overflow-y:auto`
-      del shell base (sin `overflow:hidden` que mataba el scroll; `overflow:auto`
-      solo no clipa en WebKitGTK sin `contain:paint`). Tiled mantiene radio (solo
-      maximizado/fullscreen lo quita) para que al arrastrar cerca del borde no se
-      pierdan las inferiores.
-      `gtk4` (webkitgtk 6.0) usaría mismo CSS con `gtk4::CssProvider` +
-      `add_provider_for_display`; con `gtk=0.18` es `add_provider` por ventana. */
+      `decoration` (todas las variantes: .csd/.solid-csd) y el compositor los
+      compone **fuera** del webview. Las 4 esquinas se curvan vía `window.csd/
+      window.background.csd` + `decoration` y el clip del contenido vía
+      `html.linux .app-shell { border-radius:10px; overflow:hidden; contain:paint }`
+      + `#main-content { overflow-y:auto }` (scroll interno, no en shell).
+      Tiled mantiene radio (solo maximizado/fullscreen lo quita).
+
+      Opción B (seguridad, cuando el compositor ignora CSD — Sway/Hyprland
+      SSD-only, X11 sin picom): si `lib.rs` no logra añadir `gtk-shadow`
+      (eval falla), este fallback dibuja la sombra **dentro** del webview:
+      `html.linux:not(.gtk-shadow) .app-shell` con `box-shadow` + `margin`.
+      Además, shaders del compositor (mutter-rounded, niri
+      `geometry-corner-radius 12`, Hyprland `rounding 10 + shadow`) pueden
+      dar 4 esquinas nativas sin código app — ver docs/native-feel.md Opción B.
+      `gtk4` (webkitgtk 6.0) usaría `gtk4::CssProvider` + `add_provider_for_display`. */
+   /* A — nativa: clip outer + scroll inner */
    html.linux .app-shell {
      border-radius: 10px;
      overflow: hidden;
@@ -257,11 +263,27 @@ html.light.vibrancy body {
      overflow-x: hidden;
      border-radius: inherit;
    }
-   /* Solo maximizado/fullscreen quita radio y contain; tiled lo mantiene para no perder
-      las inferiores al arrastrar cerca del borde (GNOME pone .tiled al hacer snap) */
+   /* Solo maximizado/fullscreen quita radio y contain; tiled lo mantiene */
    html.linux:is(.window-maximized, .window-fullscreen) .app-shell {
      border-radius: 0;
      contain: none;
+     overflow: visible;
+   }
+   html.linux:is(.window-maximized, .window-fullscreen) #main-content {
+     overflow: visible;
+   }
+   /* B — fallback webview (solo si el compositor ignora CSD, sin gtk-shadow) */
+   html.linux:not(.gtk-shadow) .app-shell {
+     margin: 12px;
+     height: calc(100dvh - 24px);
+     box-shadow:
+       0 16px 48px rgba(0, 0, 0, 0.35),
+       0 2px 8px rgba(0, 0, 0, 0.18);
+   }
+   html.linux:not(.gtk-shadow):is(.window-maximized, .window-fullscreen) .app-shell {
+     margin: 0;
+     height: 100dvh;
+     box-shadow: none;
    }
   /* Linux WebKitGTK: backdrop-blur es carísimo y causa RAM desbocada en resize;
      lo desactivamos. Ver Tauri linux-graphics docs. */
