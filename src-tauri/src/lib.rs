@@ -348,16 +348,35 @@ fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
 
     // Con transparent:false (pedido) el GdkWindow queda opaco RGB y el
     // `border-radius:10px` solo pinta la capa CSS pero el buffer opaco
-    // asoma cuadrado por debajo (tu reporte “algo debajo sobresale”).
-    // Forzamos RGBA visual + app_paintable y limpiamos opaque_region para
-    // que las esquinas sean realmente transparentes aunque la ventana se
-    // considere opaca para el webview.
+    // asoma cuadrado por debajo (tu reporte “algo debajo sobresale” + captura
+    // con esquinas blancas 1px). Forzamos RGBA visual + app_paintable y
+    // limpiamos opaque_region para que las esquinas sean realmente
+    // transparentes aunque la ventana se considere opaca para el webview.
+    // En Wayland `WidgetExt::screen` es None, así que probamos Display/Screen default.
+    let mut rgba_set = false;
     if let Some(screen) = gtk::prelude::WidgetExt::screen(&gtk_window) {
         if let Some(rgba) = screen.rgba_visual() {
             gtk_window.set_visual(Some(&rgba));
+            rgba_set = true;
+        }
+    }
+    if !rgba_set {
+        if let Some(screen) = gdk::Screen::default() {
+            if let Some(rgba) = screen.rgba_visual() {
+                gtk_window.set_visual(Some(&rgba));
+                rgba_set = true;
+            }
+        }
+    }
+    if !rgba_set {
+        if let Some(display) = gdk::Display::default() {
+            // gdk::Display no tiene rgba_visual directo, pero screen default ya probado
+            let _ = display;
         }
     }
     gtk_window.set_app_paintable(true);
+    // Wayfire #2125: opacity 0.99 fuerza a GTK a reportar región opaca vacía
+    gtk_window.set_opacity(0.99);
     if let Some(gdk_win) = gtk_window.window() {
         gdk_win.set_opaque_region(None);
     }
@@ -365,6 +384,8 @@ fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
         if let Some(gdk_win) = win.window() {
             gdk_win.set_opaque_region(None);
         }
+        // Reafirmar opacity por si el tema la resetea en realize
+        win.set_opacity(0.99);
     });
 
     // CSD: genera el nodo decoration aunque la ventana sea frameless.
