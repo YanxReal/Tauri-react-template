@@ -45,10 +45,11 @@ Pattern from **Prestly**: native translucency toggle.
 
 **Fix — 100% native in `lib.rs:315` `apply_linux_window_shadow` + `globals.css:241`:**
 
-- `window.gtk_window()` + `.add_class("csd")` + `GtkCssProvider` attached **directly to the window's `StyleContext`** via `add_provider(..., APPLICATION)` — Wayland-safe (previous `add_provider_for_screen` was `None` on Wayland). CSS `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`) + `window.background.csd { border-radius:10px }`. Maximized/tiled/fullscreen → `none`. No webview fallback.
+- `window.gtk_window()` + **dummy `HeaderBar` as `titlebar`** (invisible, `set_visible(false)`) forces `gtk_window_should_use_csd() → true` → `use_client_shadow = true` so the compositor actually creates the `decoration` node even though the window is `decorations:false` (without titlebar, `GdkWindow` is undecorated and has no frame). Then `.add_class("csd")` + `GtkCssProvider` attached **directly to the window's `StyleContext`** via `add_provider(..., APPLICATION)` — Wayland-safe (previous `add_provider_for_screen` was `None` on Wayland). CSS `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`) + `window.background.csd { border-radius:10px }`. Maximized/tiled/fullscreen → `none`.
+- `gdk_window.set_shadow_width(12,12,12,12)` (`_GTK_FRAME_EXTENTS`) informs the WM about the invisible shadow extents so snap/maximize doesn't count it.
 - `globals.css:241` `html.linux .app-shell { border-radius:10px; overflow:hidden }` clips content to the same 10px radius on all 4 corners (top + **bottom**). Maximized/fullscreen → `border-radius:0`. The `decoration` margin + shadow is composited **outside** the webview by the compositor; the `overflow:hidden` ensures the bottom corners are not squared by inner content.
 
-Build requirement: `gtk = "0.18"` (`Cargo.toml:67`, linux target only, GTK3 `webkit2gtk 4.1`). `gtk4` path (`webkitgtk 6.0`, `gtk4::CssProvider` + `add_provider_for_display`) uses same CSS.
+Build requirement: `gtk = "0.18"` + `gdk = "0.18"` (`Cargo.toml:67`, linux target only, GTK3 `webkit2gtk 4.1`). `gtk4` path (`webkitgtk 6.0`, `gtk4::CssProvider` + `add_provider_for_display` + `gdk::Toplevel::set_shadow_width`) uses same CSS.
 
 ### 1. Rounded corners without glass
 

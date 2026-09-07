@@ -303,27 +303,26 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
 /// `tauri`/`tao` no exponen `WindowConfig.shadow` en Linux ("Linux: Unsupported").
 /// En GTK la sombra la dibuja el compositor+tema vía el nodo
 /// `window.background.csd decoration { box-shadow; margin; border-radius }`.
-/// Con `decorations:false + transparent:true` ese nodo no existe y la ventana
-/// frameless queda plana.
+/// Con `decorations:false + transparent:true` Tao crea `GdkWindow` undecorated
+/// sin frame y el nodo `decoration` nunca existe — por eso el CSS solo no
+/// genera sombra aunque se fuerce `.csd`.
 ///
-/// Estrategia 100% nativa (sin workaround webview):
-/// - Forzamos `.csd` en la `GtkWindow` para que GTK genere el nodo `decoration`.
-/// - Inyectamos `GtkCssProvider` **directo al `StyleContext` de la ventana**
-///   (`add_provider`) — funciona en X11 y Wayland. El camino antiguo
-///   `add_provider_for_screen` falla en Wayland puro (`screen == None`) y fue
-///   la causa de que la sombra no se viera aunque el código se ejecutara.
-///   Mantenemos fallback a `add_provider_for_screen` solo si existe screen
-///   (compat X11), pero el provider queda siempre atado a la ventana.
-/// - `margin:12px` en `decoration` es el espacio donde el compositor compone
-///   la sombra; `border-radius:10px` en `.csd` recorta la ventana.
-/// - En maximizado/tiled/fullscreen la sombra se desactiva (margen 0).
+/// Estrategia 100% nativa (sin workaround webview) — forzar CSD real:
+/// 1) `HeaderBar` dummy invisible como `titlebar` → `gtk_window_should_use_csd()`
+///    pasa a `true` → `use_client_shadow = true` y el compositor reserva sombras.
+/// 2) Forzamos `.csd` + `CssProvider` **directo al `StyleContext` de la ventana**
+///    (`add_provider` Wayland-safe; `add_provider_for_screen` falla con
+///    `screen==None` en Wayland puro).
+/// 3) `gdk_window.set_shadow_width(12,12,12,12)` informa `_GTK_FRAME_EXTENTS`
+///    para que snap/maximize no cuente el área invisible de la sombra.
+/// 4) `margin:12px` + `box-shadow` + `border-radius:10px` en `decoration` y
+///    `window.background.csd { border-radius:10px }` aseguran las 4 esquinas
+///    (arriba **y abajo**) — el clip inferior lo hace `html.linux .app-shell
+///    { border-radius:10px; overflow:hidden }` en `globals.css:241`.
+/// En maximizado/tiled/fullscreen la sombra se desactiva (margen 0).
 ///
-/// Nota `gtk4`: si el proyecto migra a `webkitgtk 6.0` + `gtk4`, el mismo CSS
-/// sirve pero el provider es `gtk4::CssProvider` y se registra con
-/// `gtk4::StyleContext::add_provider_for_display(&display, &provider, PRIORITY)`.
-/// Con `gtk=0.18` (GTK3) el `add_provider` por ventana es el que funciona en
-/// ambos backends y es el que usamos aquí. No se usa fallback CSS
-/// (`html.linux .app-shell { box-shadow }`) — eliminado a petición.
+/// Nota `gtk4`: con `webkitgtk 6.0` + `gtk4` sería `gtk4::CssProvider` +
+/// `add_provider_for_display(&display, ...)` + `gdk::Toplevel::set_shadow_width`.
 #[cfg(target_os = "linux")]
 fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
     use gtk::prelude::*;
@@ -332,6 +331,16 @@ fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
         log::warn!("linux shadow: gtk_window() unavailable");
         return;
     };
+
+    // 1) Forzar CSD real: HeaderBar dummy invisible como titlebar.
+    //    Sin esto, `decorations:false` deja `GdkWindow` undecorated sin
+    //    `use_client_shadow`, y el nodo `decoration` nunca se crea (Wayland).
+    //    Con titlebar, GTK activa CSD y el compositor reserva sombras.
+    let header = gtk::HeaderBar::new();
+    header.set_visible(false);
+    header.set_show_close_button(false);
+    header.set_title(None::<&str>);
+    gtk_window.set_titlebar(Some(&header));
 
     // CSD: genera el nodo decoration aunque la ventana sea frameless.
     gtk_window.style_context().add_class("csd");
@@ -376,13 +385,26 @@ fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
             &provider,
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
-        log::info!("linux shadow: provider added via window + screen (X11)");
+        log::info!("linux shadow: provider added via window + screen (X11) + CSD HeaderBar");
     } else {
-        log::info!("linux shadow: provider added via window StyleContext (Wayland/X11 without screen)");
+        log::info!("linux shadow: provider added via window StyleContext (Wayland) + CSD HeaderBar");
     }
 
-    // Diagnóstico útil: deja rastro para `journalctl` y para debug del compositor.
-    log::info!("linux window shadow applied — native GTK only (no CSS fallback)");
+    // 3) Informar al WM el tamaño de la sombra para _GTK_FRAME_EXTENTS.
+    //    Sin esto, snap/maximize cuenta el área invisible y la ventana "salta".
+    //    Hacerlo en realize (cuando GdkWindow existe) y también ahora si ya está realizada.
+    if let Some(gdk_win) = gtk_window.window() {
+        gdk_win.set_shadow_width(12, 12, 12, 12);
+        log::info!("linux shadow: gdk_window shadow_width 12 set");
+    }
+    gtk_window.connect_realize(move |win| {
+        if let Some(gdk_win) = win.window() {
+            gdk_win.set_shadow_width(12, 12, 12, 12);
+            log::info!("linux shadow: gdk_window shadow_width 12 set on realize");
+        }
+    });
+
+    log::info!("linux window shadow applied — native GTK only (CSD HeaderBar + shadow_width, no CSS fallback)");
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

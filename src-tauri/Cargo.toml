@@ -66,6 +66,7 @@ windows = { version = "0.61", features = [
 # `WebviewWindow::gtk_window()` (solo main thread).
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
+gdk = "0.18"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
