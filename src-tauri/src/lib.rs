@@ -352,7 +352,7 @@ fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
     // Forzamos RGBA visual + app_paintable y limpiamos opaque_region para
     // que las esquinas sean realmente transparentes aunque la ventana se
     // considere opaca para el webview.
-    if let Some(screen) = gtk_window.screen() {
+    if let Some(screen) = gtk::prelude::WidgetExt::screen(&gtk_window) {
         if let Some(rgba) = screen.rgba_visual() {
             gtk_window.set_visual(Some(&rgba));
         }
