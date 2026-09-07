@@ -14,7 +14,7 @@ Ensure `lib.rs:107` `adjust_macos_traffic_lights` + `ensure_traffic_lights_obser
 
 ## No window shadow on Linux / flat window
 
-Expected if compositor ignores CSD. Check `lib.rs:315` `apply_linux_window_shadow` runs (`gtk_window()` succeeds) and `html.gtk-shadow` class appears. If not (Sway/Hyprland), fallback `html.linux:not(.gtk-shadow) .app-shell` provides shadow. On `X11` without compositor no shadow is possible.
+Now **native only** (`lib.rs:315` `StyleContext::add_provider` — Wayland-safe). The previous bug was `add_provider_for_screen` with `screen == None` on pure Wayland → provider never registered. Now check `journalctl` / `RUST_LOG=info` for `linux shadow: provider added via window StyleContext (Wayland/X11 without screen)` vs `via window + screen (X11)`. If still flat, verify compositor draws `CSD decoration` shadows (Sway/Hyprland SSD-only ignore CSD by design; X11 without `picom/compton` has no compositor shadow).
 
 ## Glass yellow glitches / RAM blow-up on Linux
 

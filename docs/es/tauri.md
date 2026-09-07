@@ -81,9 +81,9 @@ Contexto y fix en `docs/es/native-feel.md`. Implementación en `lib.rs:107`:
 - `needs_traffic_lights_update` + `ensure_traffic_lights_observer` (`NSWindowDidResizeNotification`/`DidMove`) + **polling a 60 fps** (`NSTimer` en `NSRunLoopCommonModes`) durante `NSEventTrackingRunLoopMode` (live-resize).
 - `setAutoresizingMask(0)` evita que AppKit vuelva a resetear.
 
-## Sombra de ventana en Linux
+## Sombra de ventana en Linux — solo nativo
 
-`lib.rs:315` `apply_linux_window_shadow` — inyecta un `CssProvider` GTK (`STYLE_PROVIDER_PRIORITY_APPLICATION`) que restaura `window.background.csd decoration { box-shadow; margin; border-radius }` cuando `decorations:false transparent:true` lo dejaría plano. El fallback del frontend está en `globals.css` (`html.linux:not(.gtk-shadow) .app-shell`).
+`lib.rs:315` `apply_linux_window_shadow` — solo nativo, sin fallback webview. Fuerza `.csd` en la `GtkWindow` y registra un `GtkCssProvider` **directo al `StyleContext` de la ventana** vía `add_provider(..., APPLICATION)` (Wayland-safe; antes `add_provider_for_screen` devolvía `None` en Wayland puro y las sombras eran invisibles). CSS: `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`). Maximizado/tiled/fullscreen lo limpia. El path `gtk4` (webkitgtk `6.0`) usaría el mismo CSS con `gtk4::CssProvider` + `add_provider_for_display`, pero el fix actual con `gtk=0.18` (GTK3) usa provider por ventana. `globals.css:241` solo mantiene `html.linux .app-shell { border-radius:10px }`.
 
 También fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder` (`lib.rs:371`) para evitar crashes DMABUF de WebKitGTK.
 

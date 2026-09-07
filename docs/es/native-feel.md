@@ -39,17 +39,18 @@ Patrón de **Prestly**: toggle nativo de translucidez.
 
 ## Linux — issues conocidos
 
-### 0. Sombra de ventana (`shadow` no soportado)
+### 0. Sombra de ventana (`shadow` no soportado) — solo nativo
 
 `tauri`/`tao` no soportan `WindowConfig.shadow` en Linux (*"Linux: Unsupported"*). Con `decorations:false transparent:true` el nodo GTK `window.background.csd decoration { box-shadow; margin; border-radius }` no se genera → ventana plana.
 
-**Fix — dos capas complementarias en `lib.rs:315` `apply_linux_window_shadow`:**
+**Fix — solo nativo en `lib.rs:315` `apply_linux_window_shadow` (sin fallback CSS):**
 
-- **Primaria (GTK nativo):** `window.gtk_window()` + `CssProvider` (prioridad APPLICATION) que fuerza `.csd`, restaura `decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`) y añade clase `gtk-shadow` vía `window.eval`.
-- **Fallback (webview):** si el compositor ignora CSD (Sway/Hyprland SSD-only, X11 sin compositor), no llega `gtk-shadow` → `globals.css:244` aplica `margin:12px + box-shadow` sobre `.app-shell` (html/body `overflow:visible`). Cuando la sombra nativa existe el fallback se desactiva (no duplica).
-- Maximizado/fullscreen/tiled: `margin:0; box-shadow:none; border-radius:0`.
+- `window.gtk_window()` + `.add_class("csd")` fuerza el nodo `decoration` aunque la ventana sea frameless.
+- `GtkCssProvider` se registra **directo al `StyleContext` de la ventana** vía `add_provider(..., APPLICATION)` — funciona en X11 y Wayland. La implementación anterior usaba `add_provider_for_screen`, que devuelve `None` en Wayland puro (`screen == None`) y fue la causa de que la sombra no se viera aunque el código se ejecutara. Como shim de compatibilidad, si existe `GdkScreen` (X11) también se llama a `add_provider_for_screen`.
+- CSS: `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` + variante `:backdrop` + `window.background.csd { border-radius:10px }`. Maximizado/tiled/fullscreen → `box-shadow:none; margin:0; border-radius:0`.
+- Sin fallback webview (`html.linux:not(.gtk-shadow) .app-shell { box-shadow }` eliminado). El border-radius propio de la ventana vive en `globals.css:241` `html.linux .app-shell { border-radius:10px }`.
 
-Requisito build: `gtk = "0.18"` (`Cargo.toml:67`, solo linux).
+Requisito build: `gtk = "0.18"` (`Cargo.toml:67`, solo linux, GTK3 `webkit2gtk 4.1`). Si el proyecto migra a `webkitgtk 6.0` + `gtk4`, el mismo CSS sirve con `gtk4::CssProvider` + `add_provider_for_display(&display, ...)`, pero el fix actual usa `StyleContext::add_provider` que es Wayland-safe en GTK3.
 
 ### 1. Esquinas sin glass
 

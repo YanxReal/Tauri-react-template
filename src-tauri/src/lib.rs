@@ -298,29 +298,42 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
     REGISTERED.with(|s| s.borrow_mut().insert(label));
 }
 
-/// Sombra de ventana + border-radius nativos en Linux.
+/// Sombra de ventana + border-radius nativos en Linux (solo vía GTK, sin fallback CSS).
 ///
-/// `tauri` no expone sombra nativa en Linux (WindowConfig.shadow = "Linux:
-/// Unsupported"). En GTK la sombra la dibuja el tema vía el nodo CSS
+/// `tauri`/`tao` no exponen `WindowConfig.shadow` en Linux ("Linux: Unsupported").
+/// En GTK la sombra la dibuja el compositor+tema vía el nodo
 /// `window.background.csd decoration { box-shadow; margin; border-radius }`.
-/// Con `decorations:false + transparent:true` ese nodo no se genera y la
-/// ventana frameless queda plana (sin sombra, esquinas cuadradas).
+/// Con `decorations:false + transparent:true` ese nodo no existe y la ventana
+/// frameless queda plana.
 ///
-/// Truco usado por `custom-window-decorations-gtk4` y confirmado por el
-/// compartimento `decoration` de los temas GTK: forzamos la clase `.csd` y
-/// aplicamos un `GtkCssProvider` (prioridad APPLICATION) que restaura el
-/// `decoration` con box-shadow + margin (espacio que el compositor "ve" para
-/// componer la sombra) + border-radius. En maximizado/tiled se aplanan para
-/// no mostrar sombra fantasma.
+/// Estrategia 100% nativa (sin workaround webview):
+/// - Forzamos `.csd` en la `GtkWindow` para que GTK genere el nodo `decoration`.
+/// - Inyectamos `GtkCssProvider` **directo al `StyleContext` de la ventana**
+///   (`add_provider`) — funciona en X11 y Wayland. El camino antiguo
+///   `add_provider_for_screen` falla en Wayland puro (`screen == None`) y fue
+///   la causa de que la sombra no se viera aunque el código se ejecutara.
+///   Mantenemos fallback a `add_provider_for_screen` solo si existe screen
+///   (compat X11), pero el provider queda siempre atado a la ventana.
+/// - `margin:12px` en `decoration` es el espacio donde el compositor compone
+///   la sombra; `border-radius:10px` en `.csd` recorta la ventana.
+/// - En maximizado/tiled/fullscreen la sombra se desactiva (margen 0).
+///
+/// Nota `gtk4`: si el proyecto migra a `webkitgtk 6.0` + `gtk4`, el mismo CSS
+/// sirve pero el provider es `gtk4::CssProvider` y se registra con
+/// `gtk4::StyleContext::add_provider_for_display(&display, &provider, PRIORITY)`.
+/// Con `gtk=0.18` (GTK3) el `add_provider` por ventana es el que funciona en
+/// ambos backends y es el que usamos aquí. No se usa fallback CSS
+/// (`html.linux .app-shell { box-shadow }`) — eliminado a petición.
 #[cfg(target_os = "linux")]
 fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
     use gtk::prelude::*;
 
     let Ok(gtk_window) = window.gtk_window() else {
+        log::warn!("linux shadow: gtk_window() unavailable");
         return;
     };
 
-    // Fuerza CSD para que GTK genere el nodo `decoration` aunque esté frameless.
+    // CSD: genera el nodo decoration aunque la ventana sea frameless.
     gtk_window.style_context().add_class("csd");
 
     let css = r#"
@@ -336,7 +349,9 @@ fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
             border-radius: 10px;
         }
         window.background.csd.maximized decoration,
-        window.background.csd.tiled decoration {
+        window.background.csd.tiled decoration,
+        window.background.csd.maximized,
+        window.background.csd.tiled {
             box-shadow: none;
             margin: 0;
             border-radius: 0;
@@ -345,25 +360,29 @@ fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
 
     let provider = gtk::CssProvider::new();
     if let Err(e) = provider.load_from_data(css.as_bytes()) {
-        log::warn!("linux shadow css failed: {e}");
+        log::warn!("linux shadow: css load failed: {e}");
         return;
     }
 
-    // GTK3: provider por screen (no hay add_provider_for_display en gtk-rs 0.18).
-    // Prioridad APPLICATION -> aplica a nuestra app sin pisar el tema GTK.
+    // Camino principal: provider atado a la ventana — funciona en X11 y Wayland.
+    gtk_window
+        .style_context()
+        .add_provider(&provider, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+    // Compat X11: si hay screen, también registrarlo globalmente (no hace daño en Wayland).
     if let Some(screen) = gtk::prelude::WidgetExt::screen(&gtk_window) {
         gtk::StyleContext::add_provider_for_screen(
             &screen,
             &provider,
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
+        log::info!("linux shadow: provider added via window + screen (X11)");
+    } else {
+        log::info!("linux shadow: provider added via window StyleContext (Wayland/X11 without screen)");
     }
 
-    // Avisamos al frontend para que DESACTIVE el fallback CSS (box-shadow del
-    // webview) cuando la sombra GTK nativa ya está activa -> evita sombra doble.
-    let _ = window.eval("document.documentElement.classList.add('gtk-shadow')");
-
-    log::info!("linux window shadow applied via GTK decoration css");
+    // Diagnóstico útil: deja rastro para `journalctl` y para debug del compositor.
+    log::info!("linux window shadow applied — native GTK only (no CSS fallback)");
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

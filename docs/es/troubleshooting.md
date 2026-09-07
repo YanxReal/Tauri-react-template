@@ -14,7 +14,7 @@ Asegúrate de que `lib.rs:107` `adjust_macos_traffic_lights` + `ensure_traffic_l
 
 ## No hay sombra en Linux / ventana plana
 
-Esperable si el compositor ignora CSD. Comprueba que `lib.rs:315` `apply_linux_window_shadow` corra (`gtk_window()` ok) y la clase `html.gtk-shadow` aparezca. Si no (Sway/Hyprland), el fallback `html.linux:not(.gtk-shadow) .app-shell` aporta sombra. En `X11` sin compositor no hay sombra posible.
+Ahora **solo nativo** (`lib.rs:315` `StyleContext::add_provider` — Wayland-safe). El bug previo era `add_provider_for_screen` con `screen == None` en Wayland puro → provider nunca registrado. Ahora mira `journalctl` / `RUST_LOG=info` para `linux shadow: provider added via window StyleContext (Wayland/X11 without screen)` vs `via window + screen (X11)`. Si sigue plana, verifica que el compositor dibuje sombras `CSD decoration` (Sway/Hyprland SSD-only ignoran CSD por diseño; X11 sin `picom/compton` no tiene sombra).
 
 ## Glitches amarillos glass / RAM disparada en Linux
 

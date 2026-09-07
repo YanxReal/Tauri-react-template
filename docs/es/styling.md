@@ -47,7 +47,7 @@ Cadena de providers: `VibrancyProvider` (`vibrancy-provider.tsx` — `localStora
 
 `globals.css:132` — `* { user-select:none; -webkit-user-drag:none }` salvo inputs; `html,body { touch-action: pan-x pan-y }` (scroll nativo, sin pinch-zoom).
 
-`globals.css:241` — sombra Linux: `html.linux:not(.gtk-shadow) .app-shell { margin:12px; box-shadow: ... }` vs sombra nativa GTK `gtk-shadow`.
+`globals.css:241` — sombra Linux: solo nativo `html.linux .app-shell { border-radius:10px }` + GTK `decoration { box-shadow; margin }` en `lib.rs:315` (Wayland-safe `StyleContext::add_provider`). Sin fallback webview.
 
 Ver `docs/es/native-feel.md` para el fundamento completo por OS.
 

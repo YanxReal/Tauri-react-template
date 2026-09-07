@@ -52,7 +52,7 @@ Key milestones you must know (chronological):
 | `9177b88` | `fix: ventana arrastrable y esquinas redondeadas en las 3 plataformas` | Permissions `core:window:allow-start-dragging`, `app-shell` as scroll container with `border-radius`. |
 | `938f89a` | `fix: traffic lights live-resize sin flicker + header alineado + windows NSIS/Wix` | **HuLa 3-mecanismo** for macOS traffic lights (WindowEvent + NSNotificationCenter + 60fps NSTimer), positions `22.5/44.5/66.5`. |
 | `93657d3` | `fix: linux glass veto + curvas ventana + toggle combinado` | Linux glass OFF (yellow DMABUF glitches + RAM), `WEBKIT_DISABLE_DMABUF_RENDERER`, combined toggle, `build-linux.sh`. |
-| `9da8602` | `fix: sombra de ventana nativa en Linux via GTK CssProvider + fallback webview` | GTK `CssProvider` restores `decoration { box-shadow }`, fallback `app-shell` shadow, `gtk-shadow` class. |
+| `9da8602` | `fix: sombra de ventana nativa en Linux via GTK CssProvider + fallback webview` | GTK `CssProvider` restores `decoration { box-shadow }`, fallback `app-shell` shadow, `gtk-shadow` class. → superseded by Wayland-safe `StyleContext::add_provider` (native only, no fallback). |
 
 > **Rule of thumb:** if you see `// Prestly pattern` or `// HuLa fix` in comments, that line is load-bearing. Don't remove it without re-reading the commit that added it. See `docs/en/native-feel.md` and `docs/en/mobile.md` for the long-form explanations.
 
@@ -180,7 +180,7 @@ These invariants were earned through painful commits (see §1 table). Removing a
 | `window_effects_set` stays **sync** (main thread) | `src-tauri/src/lib.rs:78` | `f997723` | `window-vibrancy` panics/off-thread failure. The command MUST NOT become `async`. |
 | `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` | `src-tauri/src/lib.rs:371` | `93657d3`, `9da8602` | Yellow `backdrop-blur` glitches + RAM blow-up on Linux/NVIDIA/Wayland. |
 | `titleBarStyle: Overlay` + `hiddenTitle` + live-resize fix (3 mechanisms) | `tauri.macos.conf.json`, `lib.rs:107` | `938f89a` | macOS traffic lights flicker/jump during resize (wry#1747, tauri#13044). |
-| GTK `CssProvider` + fallback `app-shell` shadow | `lib.rs:315`, `globals.css:241` | `9da8602` | Linux frameless window has no shadow (flat, no depth). |
+| GTK `CssProvider` (native only, Wayland-safe via `StyleContext::add_provider`) | `lib.rs:315`, `globals.css:241` | `9da8602` (+ fix Wayland `screen==None`) | Linux frameless window has no shadow (flat, no depth). |
 | `prevent-default` with `Flags::debug()` (blocks in release, keeps in debug) | `lib.rs:390` | `c9ae1a4`, `f23a894` | Context menu / Reload leaks into release builds, or devtools lost in debug. |
 | `host: true` in `vite.config.ts` | `apps/web/vite.config.ts:25` | `10a74e4` | `tauri ios dev` health-check on LAN IP fails, hot-reload never connects. |
 
