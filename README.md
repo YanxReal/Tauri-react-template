@@ -3,6 +3,11 @@
 Bilingual Tauri v2 + React 19 + Vite 8 + Tailwind v4 starter — ready for your private use.
 Plantilla bilingüe Tauri v2 + React 19 + Vite 8 + Tailwind v4 — lista para uso privado.
 
+> **Documentation / Documentación**
+> - 🇬🇧 English: [`docs/en/README.md`](docs/en/README.md) — [Getting Started](docs/en/getting-started.md) · [Architecture](docs/en/architecture.md) · [Frontend](docs/en/frontend.md) · [Tauri](docs/en/tauri.md) · [Styling](docs/en/styling.md) · [i18n](docs/en/i18n.md) · [Mobile](docs/en/mobile.md) · [Native Feel](docs/en/native-feel.md) · [Scripts](docs/en/scripts.md) · [Troubleshooting](docs/en/troubleshooting.md) · [Changelog](docs/en/changelog.md)
+> - 🇪🇸 Español: [`docs/es/README.md`](docs/es/README.md) — [Primeros pasos](docs/es/getting-started.md) · [Arquitectura](docs/es/architecture.md) · [Frontend](docs/es/frontend.md) · [Tauri](docs/es/tauri.md) · [Estilos](docs/es/styling.md) · [i18n](docs/es/i18n.md) · [Móvil](docs/es/mobile.md) · [Sensación nativa](docs/es/native-feel.md) · [Scripts](docs/es/scripts.md) · [Solución de problemas](docs/es/troubleshooting.md) · [Changelog](docs/es/changelog.md)
+> - Bilingual router: [`docs/README.md`](docs/README.md) · Agent contract: [`AGENTS.md`](AGENTS.md) (parity rule EN ↔ ES)
+
 ## Stack
 
 - **Runtime:** Node >=24, pnpm >=10, Rust stable (1.85+, edition 2021)
