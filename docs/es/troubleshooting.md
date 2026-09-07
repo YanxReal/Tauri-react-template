@@ -14,7 +14,7 @@ Asegúrate de que `lib.rs:107` `adjust_macos_traffic_lights` + `ensure_traffic_l
 
 ## No hay sombra en Linux / ventana plana
 
-Ahora **híbrida**: **nativa** (`lib.rs:315` `StyleContext::add_provider` Wayland-safe) + **fallback** (`globals.css:241` `html.linux .app-shell { box-shadow }`). Si sigue plana, revisa `journalctl` / `RUST_LOG=info` para `linux shadow: provider added via window StyleContext (Wayland/X11 without screen)` vs `via window + screen (X11)` y verifica que `html.titlebar.linux { overflow:visible }` no esté sobreescrito. En Sway/Hyprland o X11 sin `picom/compton`, el fallback garantiza sombra; solo nativa sería ignorada.
+Ahora **solo nativa** (`lib.rs:315` `StyleContext::add_provider` Wayland-safe, sin fallback webview). Si sigue plana, revisa `journalctl` / `RUST_LOG=info` para `linux shadow: provider added via window StyleContext (Wayland/X11 without screen)` vs `via window + screen (X11)` y verifica `html.linux .app-shell { border-radius:10px; overflow:hidden }` recorta las 4 esquinas. En Sway/Hyprland o X11 sin `picom/compton`, el compositor puede ignorar sombras `decoration` — solo nativa quedará invisible por diseño a petición.
 
 ## Glitches amarillos glass / RAM disparada en Linux
 

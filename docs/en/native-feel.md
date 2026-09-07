@@ -39,16 +39,14 @@ Pattern from **Prestly**: native translucency toggle.
 
 ## Linux — known issues
 
-### 0. Window shadow (`shadow` unsupported) — hybrid (native + fallback)
+### 0. Window shadow (`shadow` unsupported) — native only
 
-`tauri`/`tao` don't support `WindowConfig.shadow` on Linux (*"Linux: Unsupported"*). With `decorations:false transparent:true` the GTK `window.background.csd decoration { box-shadow; margin; border-radius }` node doesn't generate → flat window. Investigation showed `decorations:false` creates an **undecorated** `GdkWindow` with no frame, so even forcing `.csd` and `add_provider_for_screen` fails on pure Wayland (`screen == None`) and the `decoration` node never renders.
+`tauri`/`tao` don't support `WindowConfig.shadow` on Linux (*"Linux: Unsupported"*). With `decorations:false transparent:true` the GTK `window.background.csd decoration { box-shadow; margin; border-radius }` node doesn't generate → flat window.
 
-**Fix — hybrid in `lib.rs:315` `apply_linux_window_shadow` + `globals.css:241`:**
+**Fix — 100% native in `lib.rs:315` `apply_linux_window_shadow` + `globals.css:241`:**
 
-- **Native:** `window.gtk_window()` + `.add_class("csd")` + `GtkCssProvider` attached **directly to the window's `StyleContext`** via `add_provider(..., APPLICATION)` — Wayland-safe (previous `add_provider_for_screen` was `None` on Wayland). CSS `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`). Maximized/tiled/fullscreen → `none`.
-- **Fallback (guaranteed):** `globals.css:241` `html.linux .app-shell { margin:12px; height:calc(100dvh - 24px); box-shadow: 0 16px 48px rgba(0,0,0,.35) }` draws the shadow **inside** the webview on the transparent window background. `html.titlebar.linux { overflow:visible }` (higher specificity than `html.titlebar { overflow:hidden }`) prevents clipping. Maximized/fullscreen clears it.
-
-Both layers can coexist; the fallback guarantees a shadow even when the compositor ignores CSD (Sway/Hyprland, X11 without `picom`).
+- `window.gtk_window()` + `.add_class("csd")` + `GtkCssProvider` attached **directly to the window's `StyleContext`** via `add_provider(..., APPLICATION)` — Wayland-safe (previous `add_provider_for_screen` was `None` on Wayland). CSS `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`) + `window.background.csd { border-radius:10px }`. Maximized/tiled/fullscreen → `none`. No webview fallback.
+- `globals.css:241` `html.linux .app-shell { border-radius:10px; overflow:hidden }` clips content to the same 10px radius on all 4 corners (top + **bottom**). Maximized/fullscreen → `border-radius:0`. The `decoration` margin + shadow is composited **outside** the webview by the compositor; the `overflow:hidden` ensures the bottom corners are not squared by inner content.
 
 Build requirement: `gtk = "0.18"` (`Cargo.toml:67`, linux target only, GTK3 `webkit2gtk 4.1`). `gtk4` path (`webkitgtk 6.0`, `gtk4::CssProvider` + `add_provider_for_display`) uses same CSS.
 

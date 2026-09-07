@@ -224,50 +224,30 @@ html.light.vibrancy body {
   html.linux .app-shell {
     border-radius: 10px;
   }
-  /* --- Sombra de ventana en Linux — híbrida (nativa + fallback) ---------------
+  /* --- Sombra de ventana en Linux — solo nativa ---------------------------------
       Tauri/tao NO soportan `shadow` en Linux (WindowConfig.shadow = unsupported).
-      La sombra ideal la dibuja el compositor vía `window.background.csd
-      decoration { box-shadow }`, pero con `decorations:false + transparent:true`
-      la ventana es `undecorated` en GDK y el nodo `decoration` no siempre genera
-      frame aunque se fuerce `.csd` (sobre todo en Wayland). Por eso:
+      La sombra la dibuja el compositor + tema GTK vía `window.background.csd
+      decoration { box-shadow }`. Con `decorations:false + transparent:true`
+      ese nodo no existe -> ventana plana.
 
-      1) Nativa: `lib.rs::apply_linux_window_shadow` fuerza `.csd` y registra
-         `CssProvider` directo al `StyleContext` de la ventana
-         (`add_provider` Wayland-safe; `add_provider_for_screen` fallaba con
-         `screen==None`). Intenta sombra del compositor.
-      2) Fallback webview (garantizado): `html.linux .app-shell` con `margin:12px`
-         + `box-shadow` dibuja la sombra **dentro** del webview, sobre el fondo
-         transparente de la ventana. Funciona aunque el compositor ignore CSD
-         (Sway/Hyprland, X11 sin compositor). Ambas pueden coexistir.
+      100% nativo (sin fallback webview): `lib.rs::apply_linux_window_shadow`
+      fuerza `.csd` y registra `CssProvider` directo al `StyleContext` de la
+      ventana (`add_provider` Wayland-safe; `add_provider_for_screen` fallaba con
+      `screen==None` en Wayland). `margin:12px` + `box-shadow` + `border-radius:10px`
+      viven en `decoration` y el compositor los compone **fuera** del webview.
+      Las 4 esquinas (arriba y abajo) se curvan vía `window.background.csd`
+      + `decoration { border-radius:10px }` y el clip del contenido vía
+      `html.linux .app-shell { border-radius:10px; overflow:hidden }`.
+      Maximizado/tiled/fullscreen → sin sombra ni radio.
       `gtk4` (webkitgtk 6.0) usaría mismo CSS con `gtk4::CssProvider` +
       `add_provider_for_display`; con `gtk=0.18` es `add_provider` por ventana. */
   html.linux .app-shell {
     border-radius: 10px;
-    /* Fallback garantizado: margen + sombra dentro del webview */
-    margin: 12px;
-    height: calc(100dvh - 24px);
-    box-shadow:
-      0 16px 48px rgba(0, 0, 0, 0.35),
-      0 2px 8px rgba(0, 0, 0, 0.18);
-  }
-  /* La sombra vive en el margen transparente; si html/body recortan con
-      overflow:hidden se corta. En Linux dejamos visible (el scroll sigue en
-      .app-shell con overflow-y:auto). Necesita mayor especificidad que
-      html.titlebar,html.titlebar body (overflow:hidden). */
-  html.titlebar.linux,
-  html.titlebar.linux body {
-    overflow: visible;
-  }
-  /* Maximizado/fullscreen: sin margen ni sombra */
-  html.linux:is(.window-maximized, .window-fullscreen) .app-shell {
-    margin: 0;
-    height: 100dvh;
-    box-shadow: none;
-    border-radius: 0;
-  }
-  html.linux:is(.window-maximized, .window-fullscreen),
-  html.linux:is(.window-maximized, .window-fullscreen) body {
     overflow: hidden;
+  }
+  /* Maximizado/fullscreen/tiled: sin radio (ventana a borde) */
+  html.linux:is(.window-maximized, .window-fullscreen) .app-shell {
+    border-radius: 0;
   }
   /* Linux WebKitGTK: backdrop-blur es carísimo y causa RAM desbocada en resize;
      lo desactivamos. Ver Tauri linux-graphics docs. */

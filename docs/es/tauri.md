@@ -81,9 +81,9 @@ Contexto y fix en `docs/es/native-feel.md`. Implementación en `lib.rs:107`:
 - `needs_traffic_lights_update` + `ensure_traffic_lights_observer` (`NSWindowDidResizeNotification`/`DidMove`) + **polling a 60 fps** (`NSTimer` en `NSRunLoopCommonModes`) durante `NSEventTrackingRunLoopMode` (live-resize).
 - `setAutoresizingMask(0)` evita que AppKit vuelva a resetear.
 
-## Sombra de ventana en Linux — híbrida (nativa + fallback)
+## Sombra de ventana en Linux — solo nativa
 
-`lib.rs:315` `apply_linux_window_shadow` — híbrida: nativo `GtkCssProvider` **directo al `StyleContext` de la ventana** vía `add_provider(..., APPLICATION)` (Wayland-safe; antes `add_provider_for_screen` era `None` en Wayland) más fallback garantizado `globals.css:241` `html.linux .app-shell { margin:12px; box-shadow }` con `html.titlebar.linux { overflow:visible }`. Nativa `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`); maximizado/tiled/fullscreen limpia ambas. Path `gtk4` (`webkitgtk 6.0`) usaría mismo CSS con `gtk4::CssProvider` + `add_provider_for_display`; actual `gtk=0.18` (GTK3) usa provider por ventana.
+`lib.rs:315` `apply_linux_window_shadow` — 100% nativa, sin fallback webview. Fuerza `.csd` y registra `GtkCssProvider` **directo al `StyleContext` de la ventana** vía `add_provider(..., APPLICATION)` (Wayland-safe; antes `add_provider_for_screen` era `None` en Wayland). CSS `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`) + `window.background.csd { border-radius:10px }`; maximizado/tiled/fullscreen la limpia. `globals.css:241` `html.linux .app-shell { border-radius:10px; overflow:hidden }` recorta las 4 esquinas. Path `gtk4` (`webkitgtk 6.0`) usaría mismo CSS con `gtk4::CssProvider` + `add_provider_for_display`; actual `gtk=0.18` (GTK3) usa provider por ventana.
 
 También fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder` (`lib.rs:371`) para evitar crashes DMABUF de WebKitGTK.
 

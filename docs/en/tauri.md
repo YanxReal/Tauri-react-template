@@ -81,9 +81,9 @@ Background and fix documented in `docs/en/native-feel.md`. Implementation in `li
 - `needs_traffic_lights_update` + `ensure_traffic_lights_observer` (`NSWindowDidResizeNotification`/`DidMove`) + **60 fps polling** (`NSTimer` in `NSRunLoopCommonModes`) during `NSEventTrackingRunLoopMode` (live-resize).
 - `setAutoresizingMask(0)` prevents AppKit from re-resetting.
 
-## Linux window shadow — hybrid (native + fallback)
+## Linux window shadow — native only
 
-`lib.rs:315` `apply_linux_window_shadow` — hybrid: native `GtkCssProvider` **directly on the window's `StyleContext`** via `add_provider(..., APPLICATION)` (Wayland-safe; previously `add_provider_for_screen` was `None` on Wayland) plus guaranteed webview fallback `globals.css:241` `html.linux .app-shell { margin:12px; box-shadow }` with `html.titlebar.linux { overflow:visible }`. Native CSS `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`); maximized/tiled/fullscreen clears both. `gtk4` path (`webkitgtk 6.0`) would use same CSS with `gtk4::CssProvider` + `add_provider_for_display`; current `gtk=0.18` (GTK3) uses per-window provider.
+`lib.rs:315` `apply_linux_window_shadow` — 100% native, no webview fallback. Forces `.csd` and registers `GtkCssProvider` **directly on the window's `StyleContext`** via `add_provider(..., APPLICATION)` (Wayland-safe; previously `add_provider_for_screen` was `None` on Wayland). CSS `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`) + `window.background.csd { border-radius:10px }`; maximized/tiled/fullscreen clears it. `globals.css:241` `html.linux .app-shell { border-radius:10px; overflow:hidden }` clips all 4 corners. `gtk4` path (`webkitgtk 6.0`) would use same CSS with `gtk4::CssProvider` + `add_provider_for_display`; current `gtk=0.18` (GTK3) uses per-window provider.
 
 Also sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` (`lib.rs:371`) to avoid WebKitGTK DMABUF crashes.
 

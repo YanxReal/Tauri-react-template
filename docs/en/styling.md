@@ -47,7 +47,7 @@ Provider chain: `VibrancyProvider` (`vibrancy-provider.tsx` — `localStorage: v
 
 `globals.css:132` — `* { user-select:none; -webkit-user-drag:none }` except inputs; `html,body { touch-action: pan-x pan-y }` (native scroll, no pinch-zoom).
 
-`globals.css:241` — Linux shadow: hybrid `html.linux .app-shell { margin:12px; box-shadow }` (fallback guaranteed) + GTK `decoration { box-shadow; margin }` in `lib.rs:315` (Wayland-safe `StyleContext::add_provider`), `html.titlebar.linux { overflow:visible }`.
+`globals.css:241` — Linux shadow: native only `html.linux .app-shell { border-radius:10px; overflow:hidden }` + GTK `decoration { box-shadow; margin }` in `lib.rs:315` (Wayland-safe `StyleContext::add_provider`), all 4 corners rounded.
 
 See `docs/en/native-feel.md` for the full rationale per OS.
 
