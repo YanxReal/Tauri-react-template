@@ -326,6 +326,7 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
 #[cfg(target_os = "linux")]
 fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
     use gtk::prelude::*;
+    use gdk::prelude::*;
 
     let Ok(gtk_window) = window.gtk_window() else {
         log::warn!("linux shadow: gtk_window() unavailable");
@@ -345,11 +346,43 @@ fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
     header.set_title(None::<&str>);
     gtk_window.set_titlebar(Some(&header));
 
+    // Con transparent:false (pedido) el GdkWindow queda opaco RGB y el
+    // `border-radius:10px` solo pinta la capa CSS pero el buffer opaco
+    // asoma cuadrado por debajo (tu reporte “algo debajo sobresale”).
+    // Forzamos RGBA visual + app_paintable y limpiamos opaque_region para
+    // que las esquinas sean realmente transparentes aunque la ventana se
+    // considere opaca para el webview.
+    if let Some(screen) = gtk_window.screen() {
+        if let Some(rgba) = screen.rgba_visual() {
+            gtk_window.set_visual(Some(&rgba));
+        }
+    }
+    gtk_window.set_app_paintable(true);
+    if let Some(gdk_win) = gtk_window.window() {
+        gdk_win.set_opaque_region(None);
+    }
+    gtk_window.connect_realize(|win| {
+        if let Some(gdk_win) = win.window() {
+            gdk_win.set_opaque_region(None);
+        }
+    });
+
     // CSD: genera el nodo decoration aunque la ventana sea frameless.
     gtk_window.style_context().add_class("csd");
 
     let css = r#"
-        /* Todas las variantes que GTK puede generar según tema/compositor */
+        /* Todas las variantes que GTK puede generar según tema/compositor.
+           Con transparent:false necesitamos window.background transparente
+           para que el GdkWindow con RGBA no pinte cuadrado opaco detrás. */
+        window,
+        window.background,
+        window.background.csd,
+        window.background.solid-csd,
+        window.csd,
+        window.solid-csd {
+            background-color: transparent;
+            border-radius: 10px;
+        }
         window.background.csd decoration,
         window.background.solid-csd decoration,
         window.csd decoration,
@@ -364,12 +397,6 @@ fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
         window.csd decoration:backdrop,
         window.solid-csd decoration:backdrop {
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
-        }
-        window.background.csd,
-        window.background.solid-csd,
-        window.csd,
-        window.solid-csd {
-            border-radius: 10px;
         }
         /* Solo maximizado/fullscreen quita sombra y radio; tiled mantiene radio
            para que al arrastrar cerca del borde no se pierdan las inferiores */
