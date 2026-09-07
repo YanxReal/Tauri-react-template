@@ -224,31 +224,35 @@ html.light.vibrancy body {
   html.linux .app-shell {
     border-radius: 10px;
   }
-  /* --- Sombra de ventana en Linux — solo nativa ---------------------------------
+   /* --- Sombra de ventana en Linux — solo nativa ---------------------------------
       Tauri/tao NO soportan `shadow` en Linux (WindowConfig.shadow = unsupported).
       La sombra la dibuja el compositor + tema GTK vía `window.background.csd
       decoration { box-shadow }`. Con `decorations:false + transparent:true`
       ese nodo no existe -> ventana plana.
 
       100% nativo (sin fallback webview): `lib.rs::apply_linux_window_shadow`
-      fuerza `.csd` y registra `CssProvider` directo al `StyleContext` de la
-      ventana (`add_provider` Wayland-safe; `add_provider_for_screen` fallaba con
-      `screen==None` en Wayland). `margin:12px` + `box-shadow` + `border-radius:10px`
-      viven en `decoration` y el compositor los compone **fuera** del webview.
-      Las 4 esquinas (arriba y abajo) se curvan vía `window.background.csd`
-      + `decoration { border-radius:10px }` y el clip del contenido vía
-      `html.linux .app-shell { border-radius:10px; overflow:hidden }`.
-      Maximizado/tiled/fullscreen → sin sombra ni radio.
+      fuerza `.csd` (decorations:true + HeaderBar dummy) y registra `CssProvider`
+      directo al `StyleContext` de la ventana (`add_provider` Wayland-safe;
+      `add_provider_for_screen` fallaba con `screen==None` en Wayland).
+      `margin:12px` + `box-shadow` + `border-radius:10px` viven en `decoration`
+      y el compositor los compone **fuera** del webview. Las 4 esquinas se curvan
+      vía `window.background.csd` + `decoration { border-radius:10px }` y el clip
+      del contenido vía `html.linux .app-shell { border-radius:10px }` + `overflow-y:auto`
+      del shell base (sin `overflow:hidden` que mataba el scroll). Tiled mantiene
+      radio (solo maximizado/fullscreen lo quita) para que al arrastrar cerca del
+      borde no se pierdan las inferiores.
       `gtk4` (webkitgtk 6.0) usaría mismo CSS con `gtk4::CssProvider` +
       `add_provider_for_display`; con `gtk=0.18` es `add_provider` por ventana. */
-  html.linux .app-shell {
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  /* Maximizado/fullscreen/tiled: sin radio (ventana a borde) */
-  html.linux:is(.window-maximized, .window-fullscreen) .app-shell {
-    border-radius: 0;
-  }
+   html.linux .app-shell {
+     border-radius: 10px;
+     /* no overflow:hidden — el shell base ya es overflow-y:auto y border-radius
+        con overflow:auto sí clipa en WebKitGTK; hidden rompía el scroll */
+   }
+   /* Solo maximizado/fullscreen quita radio; tiled lo mantiene para no perder
+      las inferiores al arrastrar cerca del borde (GNOME pone .tiled al hacer snap) */
+   html.linux:is(.window-maximized, .window-fullscreen) .app-shell {
+     border-radius: 0;
+   }
   /* Linux WebKitGTK: backdrop-blur es carísimo y causa RAM desbocada en resize;
      lo desactivamos. Ver Tauri linux-graphics docs. */
   html.linux .app-header,

@@ -360,10 +360,12 @@ fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
         window.background.csd {
             border-radius: 10px;
         }
+        /* Solo maximizado/fullscreen quita sombra y radio; tiled mantiene radio
+           para que al arrastrar cerca del borde no se pierdan las inferiores */
         window.background.csd.maximized decoration,
-        window.background.csd.tiled decoration,
         window.background.csd.maximized,
-        window.background.csd.tiled {
+        window.background.csd.fullscreen decoration,
+        window.background.csd.fullscreen {
             box-shadow: none;
             margin: 0;
             border-radius: 0;
