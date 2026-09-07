@@ -336,8 +336,11 @@ fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
     //    Sin esto, `decorations:false` deja `GdkWindow` undecorated sin
     //    `use_client_shadow`, y el nodo `decoration` nunca se crea (Wayland).
     //    Con titlebar, GTK activa CSD y el compositor reserva sombras.
+    //    Opción A (yaru.dart / Nucleus#422): decorated:true + HeaderBar oculto.
+    gtk_window.set_decorated(true);
     let header = gtk::HeaderBar::new();
     header.set_visible(false);
+    header.set_no_show_all(true);
     header.set_show_close_button(false);
     header.set_title(None::<&str>);
     gtk_window.set_titlebar(Some(&header));

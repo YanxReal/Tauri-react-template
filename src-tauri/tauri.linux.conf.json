@@ -8,7 +8,7 @@
         "minWidth": 375,
         "minHeight": 600,
         "center": true,
-        "decorations": false,
+        "decorations": true,
         "transparent": true,
         "disableInputAccessoryView": true,
         "dragDropEnabled": false,
