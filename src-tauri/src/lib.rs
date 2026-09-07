@@ -349,23 +349,46 @@ fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
     gtk_window.style_context().add_class("csd");
 
     let css = r#"
-        window.background.csd decoration {
+        /* Todas las variantes que GTK puede generar según tema/compositor */
+        window.background.csd decoration,
+        window.background.solid-csd decoration,
+        window.csd decoration,
+        window.solid-csd decoration,
+        decoration {
             box-shadow: 0 16px 48px rgba(0, 0, 0, 0.38), 0 4px 16px rgba(0, 0, 0, 0.22);
             margin: 12px;
             border-radius: 10px;
         }
-        window.background.csd decoration:backdrop {
+        window.background.csd decoration:backdrop,
+        window.background.solid-csd decoration:backdrop,
+        window.csd decoration:backdrop,
+        window.solid-csd decoration:backdrop {
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
         }
-        window.background.csd {
+        window.background.csd,
+        window.background.solid-csd,
+        window.csd,
+        window.solid-csd {
             border-radius: 10px;
         }
         /* Solo maximizado/fullscreen quita sombra y radio; tiled mantiene radio
            para que al arrastrar cerca del borde no se pierdan las inferiores */
         window.background.csd.maximized decoration,
         window.background.csd.maximized,
+        window.background.solid-csd.maximized decoration,
+        window.background.solid-csd.maximized,
+        window.csd.maximized decoration,
+        window.csd.maximized,
+        window.solid-csd.maximized decoration,
+        window.solid-csd.maximized,
         window.background.csd.fullscreen decoration,
-        window.background.csd.fullscreen {
+        window.background.csd.fullscreen,
+        window.background.solid-csd.fullscreen decoration,
+        window.background.solid-csd.fullscreen,
+        window.csd.fullscreen decoration,
+        window.csd.fullscreen,
+        window.solid-csd.fullscreen decoration,
+        window.solid-csd.fullscreen {
             box-shadow: none;
             margin: 0;
             border-radius: 0;
