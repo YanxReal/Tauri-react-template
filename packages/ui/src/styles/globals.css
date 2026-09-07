@@ -247,9 +247,15 @@ html.light.vibrancy body {
       `add_provider_for_display`; con `gtk=0.18` es `add_provider` por ventana. */
    html.linux .app-shell {
      border-radius: 10px;
-     /* contain:paint clipa a border-radius sin matar scroll (overflow:hidden sí lo mataba);
-        overflow-y:auto viene de html.titlebar .app-shell */
+     overflow: hidden;
      contain: paint;
+   }
+   html.linux #main-content {
+     flex: 1;
+     min-height: 0;
+     overflow-y: auto;
+     overflow-x: hidden;
+     border-radius: inherit;
    }
    /* Solo maximizado/fullscreen quita radio y contain; tiled lo mantiene para no perder
       las inferiores al arrastrar cerca del borde (GNOME pone .tiled al hacer snap) */
