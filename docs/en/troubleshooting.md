@@ -18,7 +18,19 @@ By design the app does **not** draw its own frame: `tauri.linux.conf.json:11` us
 
 ## Windows: no caption buttons / no Snap Layouts
 
-Windows is frameless (`tauri.windows.conf.json:12` → `decorations: false`) and the titlebar is the app's own: `header.tsx:191` renders `window-controls.tsx` and `lib.rs:361` calls `create_overlay_titlebar()`. If the buttons don't appear, check that `platform === 'windows'` resolved (the Rust `platform_info` command) and that `capabilities/default.json:6` still lists `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:15`) plus `capabilities/windows.json:7` for `decorum:allow-show-snap-overlay` (Windows-only capability; keep it out of `default.json` or `cargo check` fails on macOS/Linux). Snap Layouts only open via the 620 ms hover on maximize (`window-controls.tsx:8` → `show_snap_overlay`), which is decorum's Win+Z equivalent — tao cannot answer `WM_NCHITTEST` with `HTMAXBUTTON`, so there is no true native hover flyout. If the plugin's injected 32px bar ever shows up over the header, the `[data-tauri-decorum-tb]` rule (`globals.css:230`) was removed.
+Windows is frameless (`tauri.windows.conf.json:12` → `decorations: false`) and the titlebar is the app's own: `header.tsx:191` renders `window-controls.tsx` and `lib.rs:361` calls `create_overlay_titlebar()`. If the buttons don't appear, check that `platform === 'windows'` resolved (the Rust `platform_info` command) and that `capabilities/default.json:6` still lists `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:15`) plus `capabilities/windows.json:7` for `decorum:allow-show-snap-overlay` (Windows-only capability; keep it out of `default.json` or `cargo check` fails on macOS/Linux). Snap Layouts only open via the 620 ms hover on maximize (`window-controls.tsx:8` → `show_snap_overlay`), which is decorum's Win+Z equivalent — tao cannot answer `WM_NCHITTEST` with `HTMAXBUTTON`, so there is no true native hover flyout. If the plugin's injected 32px bar ever shows up over the header, the `[data-tauri-decorum-tb]` rule (`globals.css:247`) was removed.
+
+## Scrollbar with arrows / header not reaching the right edge
+
+**Symptom:** the Windows build shows the classic scrollbar (grey gutter + up/down arrow buttons) at the window edge, and the header stops ~12px short of the right border, pushing the caption buttons inwards.
+
+**Cause:** `.app-shell` used to be the scroll container, so the scrollbar belonged to the *shell* (header + content) instead of the content, and WebView2 was drawing the default (non-overlay) bar.
+
+**Fix (two parts, both required):**
+1. `tauri.windows.conf.json:13` → `scrollBarStyle: "fluentOverlay"` so WebView2 draws the Fluent **overlay** scrollbar (thin, auto-hiding, floating over the content). Needs WebView2 Runtime >= 125.0.2535.41.
+2. `.app-scroll` (`globals.css:231`, `apps/web/src/App.tsx:52`) is the only scroller and wraps `main` + `Footer` only, so the header stays outside it.
+
+Do **not** "fix" it with CSS: `::-webkit-scrollbar` rules override the native overlay and bring back the classic bar with a reserved gutter and arrow buttons (and adding `scrollbar-width`/`scrollbar-color` makes Chromium ignore the webkit pseudo-elements entirely, which is how the arrows sneak back in). On Linux the overlay comes from the GTK setting `gtk-overlay-scrolling`; on macOS it is native and auto-hides.
 
 ## Glass yellow glitches / RAM blow-up on Linux
 
@@ -30,7 +42,7 @@ Windows is frameless (`tauri.windows.conf.json:12` → `decorations: false`) and
 
 **Fix:** launch the app the normal way, as the logged-in desktop user (shortcut / `pnpm tauri:dev`). To pin the folder explicitly, set `WEBVIEW2_USER_DATA_FOLDER=C:\some\writable\dir` before starting (note the cmd gotcha: `set VAR=value && app.exe` captures the trailing space, so quote it: `set "VAR=value" && app.exe`). Debug tip: `scripts/build-windows.sh` + `PsExec64 -i 1 -s` reproduces the failure, so it is useless for checking UI work — copy the exe to a real session and double-click it instead.
 
-Disable glass — Linux forces `glass OFF` by design (`glass-cards-provider.tsx` + `globals.css:246`). Keep `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` in `lib.rs:315`. See `native-feel.md` Plan A for a degraded-glass alternative.
+Disable glass — Linux forces `glass OFF` by design (`glass-cards-provider.tsx` + `globals.css:247`). Keep `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` in `lib.rs:315`. See `native-feel.md` Plan A for a degraded-glass alternative.
 
 ## `pnpm install` fails / Node version mismatch
 

@@ -37,6 +37,18 @@ Patrón de **Prestly**: toggle nativo de translucidez.
 - **Toggle**: `VibrancyToggle` / `GlassEffectToggle` (`apps/web/src/components/layout/glass-effect-toggle.tsx`) — `Switch` de shadcn, oculto si `!supported` (Linux/móvil/navegador). El toggle combinado controla `glass-cards` + `vibrancy` juntos, por defecto **OFF** (Linux fuerza OFF).
 - **CSS** (`globals.css:177`, `269`): `html.vibrancy .app-shell { background: color-mix(... 32%) }` (42% en claro), header macOS `backdrop-blur(16px)`; Windows aporta material Mica; Linux desactiva blur.
 
+## Scrollbars y contenedor de scroll (todas las plataformas de escritorio)
+
+Dos reglas, ambas load-bearing:
+
+1. **El header queda fuera del scroller.** `.app-shell` es `height:100dvh; overflow:hidden` (solo recorta) y un único hijo — `.app-scroll` (`globals.css:231`) — tiene `overflow-y:auto` y envuelve `main` + `Footer`. Si `.app-shell` fuera el scroller (header + contenido), la barra de scroll se comería ~12px del header y empujaría los caption buttons hacia dentro; con una barra *overlay* se pintaría encima del botón de cerrar. El header es la barra de título, así que siempre tiene que llegar al borde derecho. La build web no cambia (el div es inerte y scrollea el documento), por eso el header conserva `md:sticky`.
+2. **Las barras de scroll son nativas — nunca estilar `::-webkit-scrollbar`.** Esos pseudo-elementos fuerzan barras clásicas (carril reservado + botones de flecha) y matan el overlay de la plataforma. En su lugar cada OS usa su overlay nativo:
+   - **Windows:** `"scrollBarStyle": "fluentOverlay"` en `tauri.windows.conf.json:13` — la barra overlay Fluent de WebView2 (pastilla fina, se auto-oculta, flota sobre el contenido). Requiere WebView2 Runtime >= 125.0.2535.41; en runtimes más viejos no hace nada y fuera de Windows no está soportado. La propia doc de Tauri avisa de que "los estilos CSS que modifican la scrollbar se aplican encima de la apariencia nativa", así que añadir reglas webkit encima lo anula.
+   - **macOS:** las scrollbars overlay de WebKit, sin tocar — se auto-ocultan con trackpad y, si macOS está en "mostrar siempre", solo afectan al contenido, nunca al header.
+   - **Linux:** WebKitGTK sigue el ajuste GTK `gtk-overlay-scrolling` (activado por defecto en GNOME). Si está desactivado sale la barra clásica del tema — solo dentro del área de contenido, el header intacto.
+
+Ambas están cubiertas por invariantes junto a `window-controls`: mira la fila `Scrollbars` de `AGENTS.md` antes de tocar `.app-shell` / `.app-scroll` o de añadir CSS de scrollbar.
+
 ## Windows — titlebar overlay (`tauri-plugin-decorum`)
 
 Modelo Edge / VS Code: la ventana es **frameless** y la titlebar la dibuja la app (`decorations: false`). El plugin de la comunidad [decorum](https://github.com/clearlysid/tauri-plugin-decorum) aporta el overlay y el comando de Snap Layouts; el header pone la banda de arrastre y los caption buttons.
@@ -46,7 +58,7 @@ Modelo Edge / VS Code: la ventana es **frameless** y la titlebar la dibuja la ap
 - Caption buttons: `apps/web/src/components/layout/window-controls.tsx:61` (minimizar / maximizar-restaurar / cerrar, iconos lucide, zona de `46px`, hover rojo en cerrar), renderizados desde `header.tsx:191`. Llaman a `minimize()` / `toggleMaximize()` / `close()` y siguen `isMaximized()` + `onResized()`.
 - **Snap Layouts:** el hover sobre *maximizar* durante 620 ms (`window-controls.tsx:8`) enfoca la ventana e invoca `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`), que pulsa Win+Z y luego Alt para ocultar los números. Chromium consigue el flyout real de hover respondiendo `WM_NCHITTEST` con `HTMAXBUTTON`; tao no expone ese hook, así que Win+Z es el equivalente más cercano. Permisos: `capabilities/default.json:6` (`allow-minimize` / `allow-close` / `allow-is-maximized`) + `capabilities/default.json:15` (**`core:window:allow-set-focus`** — la cadena es `setFocus().then(invoke(...))`, así que sin él la promesa se rechaza y el flyout nunca abre; no viene en `core:window:default`) + `capabilities/windows.json:7` (`decorum:allow-show-snap-overlay`) — el plugin es dep `cfg(windows)`, así que su permiso vive en una capability con `platforms: ["windows"]` y las builds no-Windows nunca lo resuelven (registrarlo global rompe `cargo check` en macOS/Linux con `Permission decorum:allow-show-snap-overlay not found`).
 - Esquinas redondeadas: `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` (`lib.rs:365`) — una ventana frameless es cuadrada por defecto.
-- El arrastre sigue siendo propio: `data-tauri-drag-region` + `useWindowDragRegion` (`header.tsx:39`). Decorum además inyecta su propia titlebar fija de 32px con una capa de arrastre en `z-index:100`, que se pondría encima de nuestro header y se tragaría los clics de los botones — `globals.css:230` la oculta.
+- El arrastre sigue siendo propio: `data-tauri-drag-region` + `useWindowDragRegion` (`header.tsx:39`). Decorum además inyecta su propia titlebar fija de 32px con una capa de arrastre en `z-index:100`, que se pondría encima de nuestro header y se tragaría los clics de los botones — `globals.css:247` la oculta.
 - Los bordes de resize se conservan: tao responde `WM_NCHITTEST` para los cantos de ventanas undecorated redimensionables (`src-tauri/vendor/tao-0.35.3/src/platform_impl/windows/event_loop.rs:2182`).
 
 Así, en Windows el header de 56px **es** la titlebar (sin doble barra); en Linux el marco del OS queda encima del mismo header (ver §0) y macOS mantiene los traffic lights nativos.
@@ -63,14 +75,14 @@ Causa raíz (por qué esos hacks no podían arreglarlo): con `transparent:false`
 
 - `tauri.linux.conf.json:11` → `decorations: true` + `transparent: false`. GTK/compositor dibujan la titlebar con **minimizar / maximizar / cerrar nativos**, más su sombra y radio de esquinas nativos (CSD en GNOME/X11, SSD en compositores con `xdg-decoration`).
 - Rust ya no toca GTK: `apply_linux_window_shadow` (CssProvider + HeaderBar dummy + hacks de RGBA / opacity / opaque_region) y las deps linux `gtk = "0.18"` / `gdk = "0.18"` se **eliminaron**. `run()` solo conserva las env vars de WebKitGTK (`lib.rs:315`).
-- `globals.css:214` — **sin** `border-radius` / `margin` / `box-shadow` / `contain` de Linux en `.app-shell`. El shell es simplemente el área cliente dentro del marco nativo; recortarlo o meterle margen dejaría esquinas cortadas bajo la titlebar.
+- `globals.css:215` — **sin** `border-radius` / `margin` / `box-shadow` / `contain` de Linux en `.app-shell`. El shell es simplemente el área cliente dentro del marco nativo; recortarlo o meterle margen dejaría esquinas cortadas bajo la titlebar.
 - El área de arrastre personalizada sigue: el header mantiene `data-tauri-drag-region` + `useWindowDragRegion` (banda Prestly de 56px) en `apps/web/src/components/layout/header.tsx:39`, así la barra fusionada de la app se sigue arrastrando bajo la titlebar nativa.
 
 ### 1. Glass + WebKitGTK → glitches amarillos y RAM disparada
 
 `backdrop-blur` + `DMABUF` en WebKitGTK 4.1 (sobre todo NVIDIA/Wayland) dispara `AcceleratedSurfaceDMABuf was unable to construct a complete framebuffer` + `Error 71` + RAM al redimensionar (docs `linux-graphics` de Tauri, `wry#1747`).
 
-**Fix actual (veto):** en Linux se fuerza `glass OFF` — `glass-cards-provider.tsx` devuelve `false` si `platform==='linux'`, `GlassEffectToggle` deshabilitado con tooltip, y `globals.css:246` pone `html.linux .glass-card { backdrop-filter:none; background:var(--card) }`. `lib.rs:315` fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder`.
+**Fix actual (veto):** en Linux se fuerza `glass OFF` — `glass-cards-provider.tsx` devuelve `false` si `platform==='linux'`, `GlassEffectToggle` deshabilitado con tooltip, y `globals.css:247` pone `html.linux .glass-card { backdrop-filter:none; background:var(--card) }`. `lib.rs:315` fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder`.
 
 **Plan A (glass degradado sin blur — no implementado):** renderizar `GlassCard` sin `backdrop-blur` en Linux — solo `bg-white/[0.06] + border` translúcido + `box-shadow` sutil. Ver `README.md` para el sketch.
 

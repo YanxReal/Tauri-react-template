@@ -95,6 +95,15 @@ Why the hacks could not work: with `transparent:false` tao never installs an RGB
 
 Least privilege: `core:window:allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-is-fullscreen` were dropped from `capabilities/default.json:6` (they only existed for the caption buttons and `useWindowStateClasses`). `allow-start-dragging`, `allow-internal-toggle-maximize` (Tauri's injected `data-tauri-drag-region` script) and `allow-toggle-maximize` (double-click fallback in `useWindowDragRegion`) stay. `allow-is-fullscreen` is still unused; `allow-minimize` / `allow-close` / `allow-is-maximized` came back with the Windows caption buttons on 2026-09-19.
 
+## 2026-09-19 — Scroll: header out of the scroller + native overlay scrollbars
+
+The window used the OS default scrollbar on all three platforms — on Windows that is the classic bar: grey gutter, up/down arrow buttons, its own column at the window edge. Worse, it belonged to the *shell* (header + content), so it also stole ~12px from the header and pushed the caption buttons inwards.
+
+- **The scroller moved to the content.** `.app-shell` is now `height:100dvh; overflow:hidden` (clips only) and a new `.app-scroll` (`globals.css:231`) owns `overflow-y:auto` wrapping just `main` + `Footer` (`apps/web/src/App.tsx:52`). The header — which *is* the titlebar — lives outside it, so a scrollbar can neither narrow it nor paint over the close button. The browser build is unchanged (the div is inert, the document scrolls) and keeps `md:sticky`.
+- **Overlay scrollbars come from the platform, not from CSS.** Windows: `"scrollBarStyle": "fluentOverlay"` (`tauri.windows.conf.json:13`, WebView2 >= 125.0.2535.41) → Fluent overlay bar (thin pill, auto-hides, floats over the content). macOS keeps its native auto-hiding overlay; Linux follows `gtk-overlay-scrolling` in WebKitGTK.
+- **Discarded first attempt (do not repeat):** a custom `::-webkit-scrollbar` pill (12px gutter, 6px thumb, transparent track, no buttons) looked right but forces the *classic* non-overlay scrollbar in both WebKit and Chromium — on macOS it kills the native auto-hide, and it fights `scrollBarStyle`. Adding `scrollbar-width`/`scrollbar-color` made it worse: in Chromium those standard properties take precedence and **ignore** the webkit pseudo-elements, which is how the arrow buttons came back. No scrollbar CSS remains.
+- Verified on Windows 11 build 26200: header reaches the rounded corner with no gutter, no scrollbar when idle, a thin overlay pill while scrolling, wheel and PageDown scroll the new container.
+
 ## 2026-09-19 — Windows: overlay titlebar with decorum (Edge style)
 
 Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false`, `transparent: true` kept for Mica) and the app draws the titlebar: the [decorum](https://github.com/clearlysid/tauri-plugin-decorum) community plugin (`Cargo.toml`, Windows-only target deps; `lib.rs:339`) plus `create_overlay_titlebar()` in `setup()` (`lib.rs:361`). This is the Edge / VS Code model — one 56px band instead of the OS frame on top of the app header.

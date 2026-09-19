@@ -93,6 +93,8 @@ También fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1
 
 Los caption buttons son React (`apps/web/src/components/layout/window-controls.tsx:61`, renderizados por `header.tsx:191`); el hover de 620 ms sobre maximizar invoca `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`) para abrir el flyout de Snap Layouts de Windows 11. Permisos: `capabilities/default.json:6` (`allow-minimize` / `allow-close` / `allow-is-maximized`) + `capabilities/default.json:15` (`allow-set-focus`, lo exige la cadena `setFocus().then(invoke(...))`) + `capabilities/windows.json:7` (`decorum:allow-show-snap-overlay`, `platforms: ["windows"]` — el plugin es dep `cfg(windows)`, así que un `cargo check` en macOS/Linux rechazaría el permiso si viviera en `default.json`).
 
+`tauri.windows.conf.json:13` → `scrollBarStyle: "fluentOverlay"`: WebView2 dibuja la scrollbar **overlay** (pastilla fina, se auto-oculta, flota sobre el contenido) en vez de la barra clásica con carril y botones de flecha. Necesita WebView2 Runtime >= 125.0.2535.41 y fuera de Windows no hace nada. Cambio hermano obligatorio: el contenedor de scroll es `.app-scroll` (solo contenido), así la barra nunca le roba ancho al header — ver `native-feel.md`.
+
 `lib.rs:365` — `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` en Windows 11 (solo en deps `target_os = "windows"` — `Cargo.toml:57`): una ventana frameless es cuadrada por defecto, así que esta llamada es la que mantiene las esquinas redondeadas. Razonamiento completo en `docs/es/native-feel.md`.
 
 ## Entrada desktop vs móvil

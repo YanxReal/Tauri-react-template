@@ -206,15 +206,32 @@ html.light.vibrancy body {
     height: 100%;
   }
 
-  /* .app-shell: contenedor de scroll que recorta TODO (header incluido).
-     Solo macOS necesita border-radius CSS (ventana transparente Overlay);
-     Linux usa decoración nativa completa (`decorations:true`) y Windows va
-     frameless (`decorations:false`) con redondeo de DWM, así que en ambos
-     sin radius para no dejar esquinitas sin colorear en header/footer. */
+  /* .app-shell: recorta TODO (header incluido) y no scrollea — el scroll vive
+     en `.app-scroll` (ver abajo). Solo macOS necesita border-radius CSS
+     (ventana transparente Overlay); Linux usa decoración nativa completa
+     (`decorations:true`) y Windows va frameless (`decorations:false`) con
+     redondeo de DWM, así que en ambos sin radius para no dejar esquinitas sin
+     colorear en header/footer. */
   html.titlebar .app-shell {
     height: 100dvh;
-    overflow-y: auto;
+    /* El scroll NO vive aquí: el header es la barra de título y tiene que
+       llegar al borde derecho. Si `.app-shell` (header + contenido) fuera el
+       scroller, la barra nativa le robaría ancho al header y a los caption
+       buttons — y con scrollbars overlay (Windows Fluent / macOS / WebKitGTK)
+       se pintaría ENCIMA de ellos. Ver `html.titlebar .app-scroll`. */
+    overflow: hidden;
     background-color: var(--background);
+  }
+  /* Único scroller de desktop: solo contenido (main + footer). Hereda toda la
+     cadena de scroll nativa de la plataforma, así que los overlay scrollbars
+     (auto-ocultos, finos, por dentro) funcionan tal cual: `scrollBarStyle:
+     fluentOverlay` en Windows, overlay nativo en macOS y gtk-overlay-scrolling
+     en WebKitGTK. NO estilar `::-webkit-scrollbar` aquí: forzaría barras
+     clásicas (con carril y flechas) y perderíamos el overlay. */
+  html.titlebar .app-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
   }
   html.titlebar-mac .app-shell {
     border-radius: 10px;

@@ -18,7 +18,19 @@ Por diseño la app **no** dibuja su propio marco: `tauri.linux.conf.json:11` usa
 
 ## Windows: no aparecen los caption buttons / no hay Snap Layouts
 
-Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y la titlebar es de la app: `header.tsx:191` renderiza `window-controls.tsx` y `lib.rs:361` llama a `create_overlay_titlebar()`. Si los botones no salen, comprueba que `platform === 'windows'` resolvió (comando Rust `platform_info`) y que `capabilities/default.json:6` sigue listando `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:15`), más `capabilities/windows.json:7` para `decorum:allow-show-snap-overlay` (capability solo-Windows; déjala fuera de `default.json` o `cargo check` falla en macOS/Linux). Los Snap Layouts solo se abren con el hover de 620 ms sobre maximizar (`window-controls.tsx:8` → `show_snap_overlay`), que es el equivalente Win+Z de decorum — tao no puede responder `WM_NCHITTEST` con `HTMAXBUTTON`, así que no hay flyout nativo real de hover. Si alguna vez aparece la barra de 32px que inyecta el plugin encima del header, es que se quitó la regla `[data-tauri-decorum-tb]` (`globals.css:230`).
+Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y la titlebar es de la app: `header.tsx:191` renderiza `window-controls.tsx` y `lib.rs:361` llama a `create_overlay_titlebar()`. Si los botones no salen, comprueba que `platform === 'windows'` resolvió (comando Rust `platform_info`) y que `capabilities/default.json:6` sigue listando `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:15`), más `capabilities/windows.json:7` para `decorum:allow-show-snap-overlay` (capability solo-Windows; déjala fuera de `default.json` o `cargo check` falla en macOS/Linux). Los Snap Layouts solo se abren con el hover de 620 ms sobre maximizar (`window-controls.tsx:8` → `show_snap_overlay`), que es el equivalente Win+Z de decorum — tao no puede responder `WM_NCHITTEST` con `HTMAXBUTTON`, así que no hay flyout nativo real de hover. Si alguna vez aparece la barra de 32px que inyecta el plugin encima del header, es que se quitó la regla `[data-tauri-decorum-tb]` (`globals.css:247`).
+
+## Scrollbar con flechas / el header no llega al borde derecho
+
+**Síntoma:** la build de Windows muestra la barra de scroll clásica (carril gris + botones de flecha arriba/abajo) en el borde de la ventana, y el header se queda ~12px antes del borde derecho, empujando los caption buttons hacia dentro.
+
+**Causa:** `.app-shell` era el contenedor de scroll, así que la barra pertenecía al *shell* (header + contenido) en vez de al contenido, y WebView2 dibujaba la barra por defecto (no overlay).
+
+**Arreglo (dos partes, ambas necesarias):**
+1. `tauri.windows.conf.json:13` → `scrollBarStyle: "fluentOverlay"` para que WebView2 dibuje la scrollbar **overlay** Fluent (fina, se auto-oculta, flota sobre el contenido). Necesita WebView2 Runtime >= 125.0.2535.41.
+2. `.app-scroll` (`globals.css:231`, `apps/web/src/App.tsx:52`) es el único scroller y envuelve solo `main` + `Footer`, así el header queda fuera.
+
+**No** lo "arregles" con CSS: las reglas `::-webkit-scrollbar` anulan el overlay nativo y devuelven la barra clásica con carril reservado y flechas (y añadir `scrollbar-width`/`scrollbar-color` hace que Chromium ignore por completo los pseudo-elementos webkit, que es justo como se cuelan las flechas). En Linux el overlay viene del ajuste GTK `gtk-overlay-scrolling`; en macOS es nativo y se auto-oculta.
 
 ## Glitches amarillos glass / RAM disparada en Linux
 
@@ -30,7 +42,7 @@ Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y l
 
 **Solución:** lanza la app de la forma normal, como el usuario del escritorio que tiene sesión iniciada (acceso directo / `pnpm tauri:dev`). Para fijar la carpeta explícitamente, define `WEBVIEW2_USER_DATA_FOLDER=C:\alguna\carpeta\escribible` antes de arrancar (ojo con el gotcha de cmd: `set VAR=valor && app.exe` se queda con el espacio final, así que entrecomilla: `set "VAR=valor" && app.exe`). Truco de depuración: `scripts/build-windows.sh` + `PsExec64 -i 1 -s` reproduce el fallo, así que no sirve para revisar la UI — copia el exe a una sesión real y haz doble clic.
 
-Desactiva glass — Linux fuerza `glass OFF` por diseño (`glass-cards-provider.tsx` + `globals.css:246`). Mantén `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` en `lib.rs:315`. Ver Plan A degradado en `native-feel.md`.
+Desactiva glass — Linux fuerza `glass OFF` por diseño (`glass-cards-provider.tsx` + `globals.css:247`). Mantén `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` en `lib.rs:315`. Ver Plan A degradado en `native-feel.md`.
 
 ## `pnpm install` falla / mismatch Node
 

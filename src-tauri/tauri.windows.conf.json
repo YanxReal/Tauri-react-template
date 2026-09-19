@@ -10,6 +10,7 @@
         "center": true,
         "transparent": true,
         "decorations": false,
+        "scrollBarStyle": "fluentOverlay",
         "disableInputAccessoryView": true,
         "dragDropEnabled": false,
         "zoomHotkeysEnabled": false

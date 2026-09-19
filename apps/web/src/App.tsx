@@ -60,29 +60,71 @@ export function App() {
       <TitleBar />
       <Header />
 
-      <main id="main-content" className="flex-1">
-        <Hero />
-        <Features />
+      {/* Scroller del contenido (desktop). El header queda FUERA a propósito:
+          es la barra de título y debe llegar al borde derecho. Si el scroller
+          fuera `.app-shell` (header + contenido), la barra de scroll le robaría
+          ancho al header y a los caption buttons — y con scrollbars overlay se
+          pintaría encima de ellos. En web/móvil este div es inerte y scrollea
+          el documento. */}
+      <div className="app-scroll flex min-h-0 flex-1 flex-col">
+        <main id="main-content" className="flex-1">
+          <Hero />
+          <Features />
 
-        <section
-          aria-labelledby="status-heading"
-          className="mx-auto max-w-6xl px-4 py-8 sm:px-6"
-        >
-          {effectiveGlass ? (
-            <GlassCard>
-              <GlassCardContent className="p-6">
+          <section
+            aria-labelledby="status-heading"
+            className="mx-auto max-w-6xl px-4 py-8 sm:px-6"
+          >
+            {effectiveGlass ? (
+              <GlassCard>
+                <GlassCardContent className="p-6">
+                  <h2 id="status-heading" className="font-semibold">
+                    {t("status.title")}
+                  </h2>
+                  <p className="mt-1 text-sm text-white/60">
+                    {t("status.description")}
+                  </p>
+                  <p className="mt-1 text-sm text-white/60">
+                    {t("status.note")}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <GlassButton variant="outline" onClick={handleGreet}>
+                      {t("status.greetButton")}
+                    </GlassButton>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-3">
+                    <GlassEffectToggle />
+                  </div>
+
+                  {greet && (
+                    <p
+                      className="mt-3 text-sm text-white/80"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      {t("status.tauriNote", { message: greet })}
+                    </p>
+                  )}
+                </GlassCardContent>
+              </GlassCard>
+            ) : (
+              <div className="rounded-xl border bg-card p-6">
                 <h2 id="status-heading" className="font-semibold">
                   {t("status.title")}
                 </h2>
-                <p className="mt-1 text-sm text-white/60">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {t("status.description")}
                 </p>
-                <p className="mt-1 text-sm text-white/60">{t("status.note")}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t("status.note")}
+                </p>
 
                 <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <GlassButton variant="outline" onClick={handleGreet}>
+                  <Button variant="outline" onClick={handleGreet}>
                     {t("status.greetButton")}
-                  </GlassButton>
+                  </Button>
                 </div>
 
                 <div className="mt-4 flex items-center gap-3">
@@ -90,49 +132,17 @@ export function App() {
                 </div>
 
                 {greet && (
-                  <p
-                    className="mt-3 text-sm text-white/80"
-                    role="status"
-                    aria-live="polite"
-                  >
+                  <p className="mt-3 text-sm" role="status" aria-live="polite">
                     {t("status.tauriNote", { message: greet })}
                   </p>
                 )}
-              </GlassCardContent>
-            </GlassCard>
-          ) : (
-            <div className="rounded-xl border bg-card p-6">
-              <h2 id="status-heading" className="font-semibold">
-                {t("status.title")}
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {t("status.description")}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {t("status.note")}
-              </p>
-
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <Button variant="outline" onClick={handleGreet}>
-                  {t("status.greetButton")}
-                </Button>
               </div>
+            )}
+          </section>
+        </main>
 
-              <div className="mt-4 flex items-center gap-3">
-                <GlassEffectToggle />
-              </div>
-
-              {greet && (
-                <p className="mt-3 text-sm" role="status" aria-live="polite">
-                  {t("status.tauriNote", { message: greet })}
-                </p>
-              )}
-            </div>
-          )}
-        </section>
-      </main>
-
-      <Footer />
+        <Footer />
+      </div>
     </div>
   )
 }

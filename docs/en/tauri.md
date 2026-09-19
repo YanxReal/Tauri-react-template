@@ -93,6 +93,8 @@ Also sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` be
 
 The caption buttons are React (`apps/web/src/components/layout/window-controls.tsx:61`, rendered by `header.tsx:191`); hovering maximize for 620 ms invokes `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`) to open the Windows 11 Snap Layouts flyout. Permissions: `capabilities/default.json:6` (`allow-minimize` / `allow-close` / `allow-is-maximized`) + `capabilities/default.json:15` (`allow-set-focus`, required by the `setFocus().then(invoke(...))` chain) + `capabilities/windows.json:7` (`decorum:allow-show-snap-overlay`, `platforms: ["windows"]` — the plugin is a `cfg(windows)` dep, so a macOS/Linux `cargo check` would reject the permission if it lived in `default.json`).
 
+`tauri.windows.conf.json:13` → `scrollBarStyle: "fluentOverlay"`: WebView2 draws the **overlay** scrollbar (thin pill, auto-hides, floats over the content) instead of the classic bar with a gutter and arrow buttons. It needs WebView2 Runtime >= 125.0.2535.41 and is a no-op elsewhere. Required companion change: the scroll container is `.app-scroll` (content only) so the bar never steals width from the header — see `native-feel.md`.
+
 `lib.rs:365` — `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` on Windows 11 (only in `target_os = "windows"` deps — `Cargo.toml:57`): a frameless window is square by default, so this call is what keeps the rounded corners. Full rationale in `docs/en/native-feel.md`.
 
 ## Desktop vs mobile entry

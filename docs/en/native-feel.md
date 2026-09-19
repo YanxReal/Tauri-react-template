@@ -35,7 +35,19 @@ Pattern from **Prestly**: native translucency toggle.
 - **Rust** (`lib.rs:26`): `window-vibrancy = "0.8"` crate. Sync command `window_effects_set {enabled, dark?}` (`lib.rs:82`) — vibrancy (`NSVisualEffectView`) on macOS, Mica on Windows 11; Linux/mobile return `unsupported` (no-op). Must be **sync** (main thread).
 - **Frontend** (`apps/web/src/components/vibrancy-provider.tsx` + `glass-cards-provider.tsx`): `VibrancyProvider` + `useVibrancy()` persistence in `localStorage` (`vibrancy`), `GlassCardsProvider` (`glass-cards`). `html.vibrancy` toggles `globals.css:177` transparent body. `dark` follows the theme (Mica tint).
 - **Toggle**: `VibrancyToggle` / `GlassEffectToggle` (`apps/web/src/components/layout/glass-effect-toggle.tsx`) — shadcn `Switch`, hidden if `!supported` (Linux/mobile/browser). Combined toggle controls `glass-cards` + `vibrancy` together, default **OFF** (Linux forces OFF).
-- **CSS** (`globals.css:177`, `269`): `html.vibrancy .app-shell { background: color-mix(... 32%) }` (42% in light), macOS header `backdrop-blur(16px)`; Windows `Mica` provides material; Linux disables blur.
+- **CSS** (`globals.css:177`, `286`): `html.vibrancy .app-shell { background: color-mix(... 32%) }` (42% in light), macOS header `backdrop-blur(16px)`; Windows `Mica` provides material; Linux disables blur.
+
+## Scrollbars & scroll container (all desktop platforms)
+
+Two rules, both load-bearing:
+
+1. **The header is outside the scroller.** `.app-shell` is `height:100dvh; overflow:hidden` (it only clips) and a single child — `.app-scroll` (`globals.css:231`) — owns `overflow-y:auto` and wraps `main` + `Footer`. If `.app-shell` were the scroller (header + content), the scrollbar would eat ~12px of the header and push the caption buttons inwards; with an *overlay* scrollbar it would instead paint on top of the close button. The header is the titlebar, so it must always reach the right edge. The browser build is unaffected (the div is inert and the document scrolls), which is why the header keeps `md:sticky`.
+2. **Scrollbars are native — never style `::-webkit-scrollbar`.** Those pseudo-elements force classic scrollbars (reserved gutter + arrow buttons) and kill the platform overlay behaviour. Instead each OS uses its native overlay:
+   - **Windows:** `"scrollBarStyle": "fluentOverlay"` in `tauri.windows.conf.json:13` — the WebView2 Fluent overlay scrollbar (thin pill, auto-hides, floats over the content). Requires WebView2 Runtime ≥ 125.0.2535.41; it is a no-op on older runtimes and unsupported off-Windows. Tauri's own docs note that "CSS styles that modify the scrollbar are applied on top of the native appearance", so adding webkit rules on top would defeat it.
+   - **macOS:** the WebKit overlay scrollbars, unchanged — auto-hide on trackpad, and when macOS is set to "always show scrollbars" they only affect the content, never the header.
+   - **Linux:** WebKitGTK follows the GTK setting `gtk-overlay-scrolling` (on by default in GNOME). With it off you get the theme's classic scrollbar — inside the content area only, header untouched.
+
+Both are checked by `window-controls`-adjacent invariants: see the `Scrollbars` row in `AGENTS.md` before touching `.app-shell` / `.app-scroll` or adding scrollbar CSS.
 
 ## Windows — overlay titlebar (`tauri-plugin-decorum`)
 
@@ -46,7 +58,7 @@ Edge / VS Code model: the window is **frameless** and the app draws the titlebar
 - Caption buttons: `apps/web/src/components/layout/window-controls.tsx:61` (minimize / maximize-restore / close, lucide icons, `46px` hit area, red hover on close), rendered from `header.tsx:191`. They call `minimize()` / `toggleMaximize()` / `close()` and follow `isMaximized()` + `onResized()`.
 - **Snap Layouts:** hovering *maximize* for 620 ms (`window-controls.tsx:8`) focuses the window and invokes `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`), which presses Win+Z and then Alt to hide the numbered badges. Chromium gets the real hover flyout by answering `WM_NCHITTEST` with `HTMAXBUTTON`; tao does not expose that hook, so Win+Z is the closest equivalent. Permissions: `capabilities/default.json:6` (`allow-minimize` / `allow-close` / `allow-is-maximized`) + `capabilities/default.json:15` (**`core:window:allow-set-focus`** — the chain is `setFocus().then(invoke(...))`, so without it the promise rejects and the flyout never opens; it is not part of `core:window:default`) + `capabilities/windows.json:7` (`decorum:allow-show-snap-overlay`) — the plugin is a `cfg(windows)` dep, so its permission lives in a capability with `platforms: ["windows"]` and non-Windows builds never resolve it (registering it globally breaks `cargo check` on macOS/Linux with `Permission decorum:allow-show-snap-overlay not found`).
 - Rounded corners: `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` (`lib.rs:365`) — a frameless window is square by default.
-- Dragging stays custom: `data-tauri-drag-region` + `useWindowDragRegion` (`header.tsx:39`). Decorum also injects its own fixed 32px titlebar with a drag layer at `z-index:100`, which would sit on top of our header and swallow clicks on the buttons — `globals.css:230` hides it.
+- Dragging stays custom: `data-tauri-drag-region` + `useWindowDragRegion` (`header.tsx:39`). Decorum also injects its own fixed 32px titlebar with a drag layer at `z-index:100`, which would sit on top of our header and swallow clicks on the buttons — `globals.css:247` hides it.
 - Resize borders survive: tao answers `WM_NCHITTEST` for the frame edges of undecorated resizable windows (`src-tauri/vendor/tao-0.35.3/src/platform_impl/windows/event_loop.rs:2182`).
 
 So on Windows the 56px header **is** the titlebar (no double bar); on Linux the OS frame stays on top of the same header (see §0) and macOS keeps the native traffic lights.
@@ -63,14 +75,14 @@ Root cause (why those hacks could not fix it): with `transparent:false` tao neve
 
 - `tauri.linux.conf.json:11` → `decorations: true` + `transparent: false`. GTK/compositor draw the titlebar with **native minimize / maximize / close**, plus their native shadow and corner radius (CSD on GNOME/X11, SSD on compositors exposing `xdg-decoration`).
 - Rust no longer touches GTK: `apply_linux_window_shadow` (CssProvider + dummy HeaderBar + RGBA / opacity / opaque_region hacks) and the `gtk = "0.18"` / `gdk = "0.18"` linux-only deps were **removed**. `run()` only keeps the WebKitGTK env vars (`lib.rs:315`).
-- `globals.css:214` — **no** Linux `border-radius` / `margin` / `box-shadow` / `contain` on `.app-shell`. The shell is just the client area inside the native frame; clipping or insetting it would show cut corners under the titlebar.
+- `globals.css:215` — **no** Linux `border-radius` / `margin` / `box-shadow` / `contain` on `.app-shell`. The shell is just the client area inside the native frame; clipping or insetting it would show cut corners under the titlebar.
 - The custom drag area stays: the app header keeps `data-tauri-drag-region` + `useWindowDragRegion` (Prestly 56px band) in `apps/web/src/components/layout/header.tsx:39`, so the fused in-app bar is still draggable below the native titlebar.
 
 ### 1. Glass + WebKitGTK → yellow glitches & RAM blow-up
 
 `backdrop-blur` + `DMABUF` on WebKitGTK 4.1 (esp. NVIDIA/Wayland) triggers `AcceleratedSurfaceDMABuf was unable to construct a complete framebuffer` + `Error 71` + RAM spike on resize (Tauri `linux-graphics` docs, `wry#1747`).
 
-**Current fix (veto):** Linux forces `glass OFF` — `glass-cards-provider.tsx` returns `false` if `platform==='linux'`, `GlassEffectToggle` disabled with tooltip, and `globals.css:246` does `html.linux .glass-card { backdrop-filter:none; background:var(--card) }`. `lib.rs:315` sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder`.
+**Current fix (veto):** Linux forces `glass OFF` — `glass-cards-provider.tsx` returns `false` if `platform==='linux'`, `GlassEffectToggle` disabled with tooltip, and `globals.css:263` does `html.linux .glass-card { backdrop-filter:none; background:var(--card) }`. `lib.rs:315` sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder`.
 
 **Plan A (degraded glass without blur — not yet implemented):** render `GlassCard` without `backdrop-blur` on Linux — just `bg-white/[0.06] + border` translucent + subtle `box-shadow`. See `README.md` for the code sketch.
 

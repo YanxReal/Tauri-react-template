@@ -6,7 +6,7 @@ React 19 + Vite 8 + TypeScript 5.9 strict + shadcn/Base UI. Source in `apps/web/
 
 `apps/web/src/App.tsx:1` is the root UI:
 
-- `app-shell` (in `globals.css`) is the scroll container of the window — native OS frame on Linux, decorum overlay + app-drawn caption buttons on Windows, macOS Overlay titlebar with traffic lights (see `native-feel.md`).
+- `app-shell` (in `globals.css`) is the window shell (clips, no scroll); `.app-scroll` — the only child that scrolls — holds `main` + `Footer`, so the header stays outside the scrollbar. Frame per OS: native on Linux, decorum overlay + app-drawn caption buttons on Windows, macOS Overlay titlebar with traffic lights (see `native-feel.md`).
 - Semantic landmarks: `<header><nav><main><section><footer>` + skip-link + `aria-label` on nav + `role=status` greet output.
 - `Header` — nav, language toggle, theme toggle, `VibrancyToggle`/`GlassEffectToggle`, and on Windows the caption buttons (`window-controls.tsx`) because the window is frameless.
 - `Hero` / `Features` — marketing sections, i18n keys.
