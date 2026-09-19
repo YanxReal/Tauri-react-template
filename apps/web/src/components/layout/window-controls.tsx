@@ -114,7 +114,10 @@ export function WindowControls() {
   }
 
   return (
-    <div className="relative z-20 flex h-full shrink-0 items-stretch pr-2">
+    // Sin padding derecho: el botón de cerrar tiene que quedar pegado al borde
+    // de la ventana, como Edge/Chrome (al hacer hover el rojo llega hasta la
+    // esquina y DWM lo recorta con el radio).
+    <div className="relative z-20 flex h-full shrink-0 items-stretch">
       <CaptionButton
         label={t("header.minimize")}
         onClick={() => runWindowAction("minimize")}
