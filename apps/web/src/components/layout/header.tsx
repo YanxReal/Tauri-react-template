@@ -1,46 +1,11 @@
-import { getCurrentWindow } from "@tauri-apps/api/window"
 import { Button } from "@workspace/ui/components/button"
 import { GlassButton } from "@workspace/ui/components/glass-button"
-import { Copy, Languages, Minus, Moon, Square, Sun, X } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Languages, Moon, Sun } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useGlassCards } from "@/components/glass-cards-provider"
 import { useTheme } from "@/components/theme-provider"
 import { usePlatform, useWindowDragRegion } from "./native-chrome"
-
-function runWindowAction(action: "minimize" | "maximize" | "close"): void {
-  const w = getCurrentWindow()
-  if (action === "minimize") void w.minimize()
-  else if (action === "maximize") void w.toggleMaximize()
-  else void w.close()
-}
-
-function CaptionButton({
-  label,
-  danger,
-  onClick,
-  children,
-}: {
-  label: string
-  danger?: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      className={`flex h-full w-[46px] items-center justify-center transition-colors ${
-        danger
-          ? "text-foreground hover:bg-[#e81123] hover:text-white dark:text-white dark:hover:bg-[#e81123]"
-          : "text-foreground hover:bg-black/10 hover:text-foreground dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
-      }`}
-    >
-      {children}
-    </button>
-  )
-}
+import { WindowControls } from "./window-controls"
 
 /**
  * Unified header — Prestly fusioned-titlebar pattern.
@@ -53,10 +18,14 @@ function CaptionButton({
  * Dragging comes from the document-level mousedown listener
  * (`useMacDragRegion` in TitleBar).
  *
- * Windows/Linux (`decorations: false`): the header is a single 56px row
- * with caption buttons (minimize / maximize / close) at the right.
- * `data-tauri-drag-region` lets Tauri's injected script handle
- * dragging + double-click-to-maximize natively.
+ * Windows (`decorations: false` + decorum overlay): this header IS the
+ * titlebar — one 56px row that stays draggable through
+ * `data-tauri-drag-region` + `useWindowDragRegion` (Prestly band) and hosts
+ * the caption buttons (`WindowControls`).
+ *
+ * Linux (`decorations: true`): the OS draws the native titlebar with its own
+ * buttons, so the header is pure app chrome — still one 56px row, still
+ * draggable through the same Prestly band.
  */
 export function Header() {
   const { t, i18n } = useTranslation()
@@ -64,31 +33,10 @@ export function Header() {
   const platform = usePlatform()
   const { enabled: glassEnabled } = useGlassCards()
   const isMac = platform === "macos"
+  const isWindows = platform === "windows"
   const isWinLinux = platform === "windows" || platform === "linux"
-  const [maximized, setMaximized] = useState(false)
 
   useWindowDragRegion(isWinLinux)
-
-  useEffect(() => {
-    if (!isWinLinux) return
-    const appWindow = getCurrentWindow()
-    let active = true
-    let stop: (() => void) | null = null
-    const refresh = () => {
-      void appWindow.isMaximized().then(v => {
-        if (active) setMaximized(v)
-      })
-    }
-    refresh()
-    void appWindow.onResized(() => refresh()).then(u => {
-      if (active) stop = u
-      else u()
-    })
-    return () => {
-      active = false
-      stop?.()
-    }
-  }, [isWinLinux])
 
   const toggleLanguage = () => {
     const next = i18n.language === "es" ? "en" : "es"
@@ -110,11 +58,7 @@ export function Header() {
     >
       {/* Capa de arrastre detrás del contenido — solo Win/Linux */}
       {isWinLinux && (
-        <div
-          data-tauri-drag-region
-          className="absolute inset-0"
-          aria-hidden
-        />
+        <div data-tauri-drag-region className="absolute inset-0" aria-hidden />
       )}
       <div
         className={`relative z-10 flex min-w-0 flex-1 items-center justify-between gap-3 px-4 sm:px-6 ${
@@ -180,7 +124,6 @@ export function Header() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          {isWinLinux && <span className="hidden lg:block w-3" aria-hidden />}
           {glassEnabled ? (
             <GlassButton
               variant="ghost"
@@ -244,34 +187,8 @@ export function Header() {
           )}
         </div>
       </div>
-      {/* Caption buttons — Win/Linux: flex hermano, misma fila, nunca overlay, despegados 8px */}
-      {isWinLinux && (
-        <div className="relative z-20 flex h-full shrink-0 items-stretch pr-2">
-          <CaptionButton
-            label={t("header.minimize")}
-            onClick={() => runWindowAction("minimize")}
-          >
-            <Minus className="size-3.5" />
-          </CaptionButton>
-          <CaptionButton
-            label={maximized ? t("header.restore") : t("header.maximize")}
-            onClick={() => runWindowAction("maximize")}
-          >
-            {maximized ? (
-              <Copy className="size-3.5" />
-            ) : (
-              <Square className="size-3.5" />
-            )}
-          </CaptionButton>
-          <CaptionButton
-            label={t("header.close")}
-            danger
-            onClick={() => runWindowAction("close")}
-          >
-            <X className="size-3.5" />
-          </CaptionButton>
-        </div>
-      )}
+      {/* Windows: caption buttons propias (ventana frameless con decorum) */}
+      {isWindows && <WindowControls />}
     </header>
   )
 }

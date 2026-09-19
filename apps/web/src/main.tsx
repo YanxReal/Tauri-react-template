@@ -4,9 +4,7 @@ import { createRoot } from "react-dom/client"
 
 import "@workspace/ui/globals.css"
 import "./i18n/config.ts"
-import { GlassCardsProvider } from "@/components/glass-cards-provider.tsx"
-import { ThemeProvider } from "@/components/theme-provider.tsx"
-import { VibrancyProvider } from "@/components/vibrancy-provider.tsx"
+import { AppProviders } from "@/components/app-providers.tsx"
 import { App } from "./App.tsx"
 
 // --- Native-app feel (multi-OS) ---------------------------------------------
@@ -50,12 +48,8 @@ if (!root) throw new Error("Root element not found")
 
 createRoot(root).render(
   <StrictMode>
-    <ThemeProvider>
-      <VibrancyProvider>
-        <GlassCardsProvider>
-          <App />
-        </GlassCardsProvider>
-      </VibrancyProvider>
-    </ThemeProvider>
+    <AppProviders>
+      <App />
+    </AppProviders>
   </StrictMode>
 )

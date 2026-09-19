@@ -8,10 +8,10 @@
     },
     "language": "Idioma",
     "toggleTheme": "Cambiar tema (pulsa D)",
-    "minimize": "Minimizar",
-    "maximize": "Maximizar",
-    "restore": "Restaurar",
-    "close": "Cerrar"
+    "minimize": "Minimizar ventana",
+    "maximize": "Maximizar ventana",
+    "restore": "Restaurar ventana",
+    "close": "Cerrar ventana"
   },
   "hero": {
     "badge": "Tauri v2 · React 19 · Vite 8 · Tailwind 4",

@@ -55,7 +55,7 @@
 ## Frontera frontend → backend
 
 - El frontend llama a Rust vía `invoke` (`@tauri-apps/api`) — ver `apps/web/src/App.tsx:32`.
-- Comandos registrados en `src-tauri/src/lib.rs:395`:
+- Comandos registrados en `src-tauri/src/lib.rs:342`:
   `tauri::generate_handler![greet, platform_info, window_effects_set]`
 - Plugins: `tauri_plugin_opener`, `tauri_plugin_prevent_default` (con `Flags::debug()` — ver `native-feel.md`).
 
@@ -65,7 +65,8 @@ El base `src-tauri/tauri.conf.json:1` contiene `build`, `app.windows` comunes y 
 Los overlays por OS lo extienden (Tauri los mezcla en el build):
 
 - `tauri.macos.conf.json` — `titleBarStyle: Overlay`, `hiddenTitle`, `transparent`, `decorations`, `dragDropEnabled:false`.
-- `tauri.windows.conf.json` / `tauri.linux.conf.json` — mismos guards de drag/zoom.
+- `tauri.windows.conf.json` — mismos guards de drag/zoom + titlebar overlay frameless (`decorations: false`, plugin decorum, caption buttons dibujados por la app).
+- `tauri.linux.conf.json` — mismos guards de drag/zoom + decoración nativa completa (`decorations: true`, titlebar nativa con sus propios botones/sombra).
 - `tauri.ios.conf.json` / `tauri.android.conf.json` — bundling móvil.
 
 Los 4 configs de escritorio deben mantenerse sincronizados en `dragDropEnabled` / `zoomHotkeysEnabled` / guards de viewport.
@@ -81,7 +82,7 @@ Los 4 configs de escritorio deben mantenerse sincronizados en `dragDropEnabled` 
 ## Puertas de calidad
 
 - **JS/TS:** Biome (`biome.json:1`) — formatter (2 espacios, 80 cols, semis `asNeeded`) + linter (recommended, `useImportType:error`). Sin ESLint/Prettier.
-- **Rust:** `cargo fmt` + `clippy` con `await_holding_lock: deny` (`Cargo.toml:73`).
+- **Rust:** `cargo fmt` + `clippy` con `await_holding_lock: deny` (`Cargo.toml:66`).
 - **Tests:** Vitest `4` + jsdom + Testing Library — `apps/web/vite.config.ts:37` y `packages/ui`.
 - **Git:** Husky + lint-staged (`package.json:25` — `biome check --write` en `*.{ts,tsx,js,jsx,json,jsonc,css}`).
 - **CI:** `.github/workflows/frontend.yml` (typecheck+lint+test+build) + `rust.yml` (cargo check + fmt).

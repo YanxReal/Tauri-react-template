@@ -63,7 +63,7 @@ make dev              # alias — also centers the window and handles signing id
 }
 ```
 
-Why `pnpm --filter web dev` and not `turbo dev`? Turbo enables its TUI (`?1000h` mouse mode). When `tauri dev` kills it with `SIGTERM` the terminal is left in mouse mode and prints `35;22;36M`. Direct Vite avoids that — see `docs/en/native-feel.md` and `src-tauri/src/lib.rs:390`.
+Why `pnpm --filter web dev` and not `turbo dev`? Turbo enables its TUI (`?1000h` mouse mode). When `tauri dev` kills it with `SIGTERM` the terminal is left in mouse mode and prints `35;22;36M`. Direct Vite avoids that — see `docs/en/native-feel.md` and `src-tauri/src/lib.rs:330`.
 
 ### Environment variables
 
@@ -76,7 +76,7 @@ Provide them via:
 - `src-tauri/.env` (gitignored, file is read at build time), or
 - Process env (`cargo:rerun-if-env-changed`).
 
-In **release**, `SUPABASE_URL` must be `https://` and host `*.supabase.co` or the build panics (see `build.rs:126`).
+In **release**, `SUPABASE_URL` must be `https://` and host `*.supabase.co` or the build panics (see `build.rs:135`).
 
 ## Build
 
@@ -92,6 +92,8 @@ Per-OS shells are available:
 ./scripts/build-linux.sh
 ./scripts/build-windows.sh
 ```
+
+`scripts/build-windows.sh` cross-compiles the Windows x64 bundle from macOS/Linux with `cargo-xwin` (NSIS installer; MSI/WiX needs a Windows host). One-time setup: `brew install llvm lld makensis`, `cargo install cargo-xwin --locked`, `rustup target add x86_64-pc-windows-msvc` — full details in `docs/en/scripts.md`.
 
 ## Scripts reference (root)
 

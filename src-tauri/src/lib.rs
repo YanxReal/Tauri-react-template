@@ -2,6 +2,9 @@
 
 #[cfg(desktop)]
 use tauri::Manager;
+// Windows: overlay titlebar (frameless + Snap Layouts). Ver setup().
+#[cfg(target_os = "windows")]
+use tauri_plugin_decorum::WebviewWindowExt;
 
 pub mod platform;
 
@@ -111,7 +114,7 @@ pub extern "C" fn start_app() {
 /// espaciado horizontal entre los tres.
 #[cfg(all(target_os = "macos", desktop))]
 fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
-    use objc2_app_kit::{NSView, NSWindow, NSWindowButton, NSAutoresizingMaskOptions};
+    use objc2_app_kit::{NSAutoresizingMaskOptions, NSWindow, NSWindowButton};
     use objc2_foundation::NSRect;
 
     let grow = 3.0_f64; // agrandar cada dot ~3px
@@ -121,9 +124,9 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
     let Ok(ptr) = window.ns_window() else {
         return;
     };
-    let Some(ns_window) = (unsafe {
-        objc2::rc::Retained::<NSWindow>::retain(ptr as *mut NSWindow)
-    }) else {
+    let Some(ns_window) =
+        (unsafe { objc2::rc::Retained::<NSWindow>::retain(ptr as *mut NSWindow) })
+    else {
         return;
     };
 
@@ -225,9 +228,9 @@ fn needs_traffic_lights_update(window: &tauri::WebviewWindow) -> bool {
     let Ok(ptr) = window.ns_window() else {
         return false;
     };
-    let Some(ns_window) = (unsafe {
-        objc2::rc::Retained::<NSWindow>::retain(ptr as *mut NSWindow)
-    }) else {
+    let Some(ns_window) =
+        (unsafe { objc2::rc::Retained::<NSWindow>::retain(ptr as *mut NSWindow) })
+    else {
         return false;
     };
     let targets = [
@@ -274,8 +277,7 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
         let name_move = objc2_foundation::NSString::from_str("NSWindowDidMoveNotification");
         let name_resize_ref: &objc2_foundation::NSNotificationName =
             std::mem::transmute(&*name_resize);
-        let name_move_ref: &objc2_foundation::NSNotificationName =
-            std::mem::transmute(&*name_move);
+        let name_move_ref: &objc2_foundation::NSNotificationName = std::mem::transmute(&*name_move);
         let _obs1 = center.addObserverForName_object_queue_usingBlock(
             Some(name_resize_ref),
             None,
@@ -298,201 +300,13 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
     REGISTERED.with(|s| s.borrow_mut().insert(label));
 }
 
-/// Sombra de ventana + border-radius nativos en Linux (solo vía GTK, sin fallback CSS).
-///
-/// `tauri`/`tao` no exponen `WindowConfig.shadow` en Linux ("Linux: Unsupported").
-/// En GTK la sombra la dibuja el compositor+tema vía el nodo
-/// `window.background.csd decoration { box-shadow; margin; border-radius }`.
-/// Con `decorations:false + transparent:true` Tao crea `GdkWindow` undecorated
-/// sin frame y el nodo `decoration` nunca existe — por eso el CSS solo no
-/// genera sombra aunque se fuerce `.csd`.
-///
-/// Estrategia 100% nativa (sin workaround webview) — forzar CSD real:
-/// 1) `HeaderBar` dummy invisible como `titlebar` → `gtk_window_should_use_csd()`
-///    pasa a `true` → `use_client_shadow = true` y el compositor reserva sombras.
-/// 2) Forzamos `.csd` + `CssProvider` **directo al `StyleContext` de la ventana**
-///    (`add_provider` Wayland-safe; `add_provider_for_screen` falla con
-///    `screen==None` en Wayland puro).
-/// 3) `gdk_window.set_shadow_width(12,12,12,12)` informa `_GTK_FRAME_EXTENTS`
-///    para que snap/maximize no cuente el área invisible de la sombra.
-/// 4) `margin:12px` + `box-shadow` + `border-radius:10px` en `decoration` y
-///    `window.background.csd { border-radius:10px }` aseguran las 4 esquinas
-///    (arriba **y abajo**) — el clip inferior lo hace `html.linux .app-shell
-///    { border-radius:10px; overflow:hidden }` en `globals.css:241`.
-/// En maximizado/tiled/fullscreen la sombra se desactiva (margen 0).
-///
-/// Nota `gtk4`: con `webkitgtk 6.0` + `gtk4` sería `gtk4::CssProvider` +
-/// `add_provider_for_display(&display, ...)` + `gdk::Toplevel::set_shadow_width`.
-#[cfg(target_os = "linux")]
-fn apply_linux_window_shadow(window: &tauri::WebviewWindow) {
-    use gtk::prelude::*;
-    use gdk::prelude::*;
-
-    let Ok(gtk_window) = window.gtk_window() else {
-        log::warn!("linux shadow: gtk_window() unavailable");
-        return;
-    };
-
-    // 1) Forzar CSD real: HeaderBar dummy invisible como titlebar.
-    //    Sin esto, `decorations:false` deja `GdkWindow` undecorated sin
-    //    `use_client_shadow`, y el nodo `decoration` nunca se crea (Wayland).
-    //    Con titlebar, GTK activa CSD y el compositor reserva sombras.
-    //    Opción A (yaru.dart / Nucleus#422): decorated:true + HeaderBar oculto.
-    gtk_window.set_decorated(true);
-    let header = gtk::HeaderBar::new();
-    header.set_visible(false);
-    header.set_no_show_all(true);
-    header.set_show_close_button(false);
-    header.set_title(None::<&str>);
-    gtk_window.set_titlebar(Some(&header));
-
-    // Con transparent:false (pedido) el GdkWindow queda opaco RGB y el
-    // `border-radius:10px` solo pinta la capa CSS pero el buffer opaco
-    // asoma cuadrado por debajo (tu reporte “algo debajo sobresale” + captura
-    // con esquinas blancas 1px). Forzamos RGBA visual + app_paintable y
-    // limpiamos opaque_region para que las esquinas sean realmente
-    // transparentes aunque la ventana se considere opaca para el webview.
-    // En Wayland `WidgetExt::screen` es None, así que probamos Display/Screen default.
-    let mut rgba_set = false;
-    if let Some(screen) = gtk::prelude::WidgetExt::screen(&gtk_window) {
-        if let Some(rgba) = screen.rgba_visual() {
-            gtk_window.set_visual(Some(&rgba));
-            rgba_set = true;
-        }
-    }
-    if !rgba_set {
-        if let Some(screen) = gdk::Screen::default() {
-            if let Some(rgba) = screen.rgba_visual() {
-                gtk_window.set_visual(Some(&rgba));
-                rgba_set = true;
-            }
-        }
-    }
-    if !rgba_set {
-        if let Some(display) = gdk::Display::default() {
-            // gdk::Display no tiene rgba_visual directo, pero screen default ya probado
-            let _ = display;
-        }
-    }
-    gtk_window.set_app_paintable(true);
-    // Wayfire #2125: opacity 0.99 fuerza a GTK a reportar región opaca vacía
-    gtk_window.set_opacity(0.99);
-    if let Some(gdk_win) = gtk_window.window() {
-        gdk_win.set_opaque_region(None);
-    }
-    gtk_window.connect_realize(|win| {
-        if let Some(gdk_win) = win.window() {
-            gdk_win.set_opaque_region(None);
-        }
-        // Reafirmar opacity por si el tema la resetea en realize
-        win.set_opacity(0.99);
-    });
-
-    // CSD: genera el nodo decoration aunque la ventana sea frameless.
-    gtk_window.style_context().add_class("csd");
-
-    let css = r#"
-        /* Todas las variantes que GTK puede generar según tema/compositor.
-           Con transparent:false necesitamos window.background transparente
-           para que el GdkWindow con RGBA no pinte cuadrado opaco detrás. */
-        window,
-        window.background,
-        window.background.csd,
-        window.background.solid-csd,
-        window.csd,
-        window.solid-csd {
-            background-color: transparent;
-            border-radius: 10px;
-        }
-        window.background.csd decoration,
-        window.background.solid-csd decoration,
-        window.csd decoration,
-        window.solid-csd decoration,
-        decoration {
-            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.38), 0 4px 16px rgba(0, 0, 0, 0.22);
-            margin: 12px;
-            border-radius: 10px;
-        }
-        window.background.csd decoration:backdrop,
-        window.background.solid-csd decoration:backdrop,
-        window.csd decoration:backdrop,
-        window.solid-csd decoration:backdrop {
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
-        }
-        /* Solo maximizado/fullscreen quita sombra y radio; tiled mantiene radio
-           para que al arrastrar cerca del borde no se pierdan las inferiores */
-        window.background.csd.maximized decoration,
-        window.background.csd.maximized,
-        window.background.solid-csd.maximized decoration,
-        window.background.solid-csd.maximized,
-        window.csd.maximized decoration,
-        window.csd.maximized,
-        window.solid-csd.maximized decoration,
-        window.solid-csd.maximized,
-        window.background.csd.fullscreen decoration,
-        window.background.csd.fullscreen,
-        window.background.solid-csd.fullscreen decoration,
-        window.background.solid-csd.fullscreen,
-        window.csd.fullscreen decoration,
-        window.csd.fullscreen,
-        window.solid-csd.fullscreen decoration,
-        window.solid-csd.fullscreen {
-            box-shadow: none;
-            margin: 0;
-            border-radius: 0;
-        }
-    "#;
-
-    let provider = gtk::CssProvider::new();
-    if let Err(e) = provider.load_from_data(css.as_bytes()) {
-        log::warn!("linux shadow: css load failed: {e}");
-        return;
-    }
-
-    // Camino principal: provider atado a la ventana — funciona en X11 y Wayland.
-    gtk_window
-        .style_context()
-        .add_provider(&provider, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
-
-    // Compat X11: si hay screen, también registrarlo globalmente (no hace daño en Wayland).
-    if let Some(screen) = gtk::prelude::WidgetExt::screen(&gtk_window) {
-        gtk::StyleContext::add_provider_for_screen(
-            &screen,
-            &provider,
-            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-        );
-        log::info!("linux shadow: provider added via window + screen (X11) + CSD HeaderBar");
-    } else {
-        log::info!("linux shadow: provider added via window StyleContext (Wayland) + CSD HeaderBar");
-    }
-
-    // 3) Informar al WM el tamaño de la sombra para _GTK_FRAME_EXTENTS.
-    //    Sin esto, snap/maximize cuenta el área invisible y la ventana "salta".
-    //    Hacerlo en realize (cuando GdkWindow existe) y también ahora si ya está realizada.
-    if let Some(gdk_win) = gtk_window.window() {
-        gdk_win.set_shadow_width(12, 12, 12, 12);
-        log::info!("linux shadow: gdk_window shadow_width 12 set");
-    }
-    gtk_window.connect_realize(move |win| {
-        if let Some(gdk_win) = win.window() {
-            gdk_win.set_shadow_width(12, 12, 12, 12);
-            log::info!("linux shadow: gdk_window shadow_width 12 set on realize");
-        }
-    });
-
-    // Opción B — seguridad: si el compositor ignora CSD (Sway/Hyprland SSD-only,
-    // X11 sin compositor), la sombra nativa no se verá. Avisamos al frontend para
-    // que active el fallback CSS (html.linux:not(.gtk-shadow) .app-shell) como
-    // respaldo sin romper lo nativo (cuando existe, el fallback se desactiva).
-    // El fallback es webview (box-shadow en .app-shell) y compositor shader
-    // (mutter-rounded / niri geometry-corner-radius) documentado en docs.
-    let _ = window.eval("document.documentElement.classList.add('gtk-shadow')");
-
-    log::info!("linux window shadow applied — native GTK (CSD HeaderBar + shadow_width) + B fallback ready");
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Linux: la ventana usa la DECORACIÓN NATIVA COMPLETA del sistema
+    // (`decorations:true` en tauri.linux.conf.json) — GTK/compositor dibujan
+    // titlebar, botones, sombra y esquinas. No tocamos GTK desde Rust: nada de
+    // CssProvider, HeaderBar dummy, forzar visual RGBA ni window opacity.
+    //
     // Linux WebKitGTK: DMABUF renderer causa flicker, Error 71 Wayland y RAM desbocada en resize
     // (NVIDIA + Wayland). Ver https://v2.tauri.app/develop/debug/linux-graphics/ y tauri#9394
     #[cfg(target_os = "linux")]
@@ -504,7 +318,7 @@ pub fn run() {
         // Opcional: si sigue el colapso, descomentar la siguiente línea (desactiva compositing acelerado)
         // std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
     }
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         // Native-app feel (multi-OS): bloquea atajos/menús de "sitio web".
         // `Flags::debug()` deja activos en DEBUG context-menu (Recargar por
@@ -516,20 +330,35 @@ pub fn run() {
             tauri_plugin_prevent_default::Builder::new()
                 .with_flags(tauri_plugin_prevent_default::Flags::debug())
                 .build(),
-        )
-        .invoke_handler(tauri::generate_handler![greet, platform_info, window_effects_set])
+        );
+
+    // decorum (plugin de la comunidad) — solo Windows: titlebar overlay estilo
+    // Edge/VS Code. Linux usa la decoración nativa completa (`decorations:true`)
+    // y macOS el Overlay nativo con traffic lights, así que no se registra ahí.
+    #[cfg(target_os = "windows")]
+    let builder = builder.plugin(tauri_plugin_decorum::init());
+
+    builder
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            platform_info,
+            window_effects_set
+        ])
         .setup(|app| {
-            // Ventana frameless en Windows: DWM no redondea WS_POPUP por defecto.
-            // Prestly patrón: DwmSetWindowAttribute(DWMWCP_ROUND) restaura las
-            // esquinas curvas nativas de Windows 11.
+            // Windows: ventana FRAMELESS (`decorations:false`) con titlebar
+            // propia — `header.tsx` aporta la zona de arrastre + caption buttons
+            // y decorum expone `show_snap_overlay` (Win+Z) para el hover de
+            // maximizar. El resize lo mantiene tao vía WM_NCHITTEST y las
+            // esquinas redondeadas las pone DWM (una frameless es cuadrada).
             #[cfg(target_os = "windows")]
             {
                 use windows::Win32::Foundation::HWND;
                 use windows::Win32::Graphics::Dwm::{
-                    DwmSetWindowAttribute, DWM_WINDOW_CORNER_PREFERENCE,
-                    DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
+                    DwmSetWindowAttribute, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
+                    DWM_WINDOW_CORNER_PREFERENCE,
                 };
                 if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.create_overlay_titlebar();
                     if let Ok(hwnd) = window.hwnd() {
                         let preference = DWM_WINDOW_CORNER_PREFERENCE(DWMWCP_ROUND.0);
                         unsafe {
@@ -543,12 +372,6 @@ pub fn run() {
                         }
                     }
                 }
-            }
-
-            // Linux: sombra de ventana vía GTK CssProvider (see fn doc).
-            #[cfg(target_os = "linux")]
-            if let Some(window) = app.get_webview_window("main") {
-                apply_linux_window_shadow(&window);
             }
 
             // macOS: las esquinas redondeadas son nativas (decorations:true +
@@ -581,14 +404,13 @@ pub fn run() {
                         }
                     },
                 );
-                let block_ref: &block2::Block<dyn Fn(std::ptr::NonNull<objc2_foundation::NSTimer>)> =
-                    &block;
+                let block_ref: &block2::Block<
+                    dyn Fn(std::ptr::NonNull<objc2_foundation::NSTimer>),
+                > = &block;
                 unsafe {
                     use objc2_foundation::{NSRunLoop, NSRunLoopCommonModes, NSTimer};
                     let timer = NSTimer::scheduledTimerWithTimeInterval_repeats_block(
-                        0.016,
-                        true,
-                        block_ref,
+                        0.016, true, block_ref,
                     );
                     let runloop = NSRunLoop::currentRunLoop();
                     runloop.addTimer_forMode(&timer, NSRunLoopCommonModes);

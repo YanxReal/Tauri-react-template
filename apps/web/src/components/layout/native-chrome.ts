@@ -70,11 +70,12 @@ function useMacDragRegion(enabled: boolean): void {
 }
 
 /**
- * Win/Linux frameless (decorations:false) — WebKitGTK y WebView2 a veces
- * no respetan `data-tauri-drag-region` en hijos (solo en el elemento directo)
- * y en Linux el CSS `app-region:drag` no siempre funciona. Fallback JS
- * manual idéntico al de macOS pero con límite 56px (h-14) y misma guarda
- * `INTERACTIVE_SELECTOR`. Funciona en ambos: si el nativo falla, el JS lo rescata.
+ * Win/Linux: la ventana lleva decoración nativa (`decorations:true`), pero el
+ * header de la app sigue siendo la zona de arrastre personalizada (Prestly).
+ * WebKitGTK y WebView2 a veces no respetan `data-tauri-drag-region` en hijos
+ * (solo en el elemento directo) y en Linux el CSS `app-region:drag` no siempre
+ * funciona, así que el JS rescata el arrastre con límite 56px (h-14) y la
+ * misma guarda `INTERACTIVE_SELECTOR`.
  */
 function useWindowDragRegion(enabled: boolean): void {
   useEffect(() => {
@@ -97,47 +98,4 @@ function useWindowDragRegion(enabled: boolean): void {
   }, [enabled])
 }
 
-/**
- * Actualiza clases de estado de ventana (`window-maximized` /
- * `window-fullscreen`) en <html>. En Linux lo usa el CSS para quitar el
- * margen + sombra cuando la ventana está maximizada o a pantalla completa
- * (la sombra solo tiene sentido en ventana "flotante"). Reescucha en cada
- * resize por si maximiza/restaura con arrastre/toggle.
- */
-function useWindowStateClasses(platform: Platform): void {
-  useEffect(() => {
-    if (platform !== "linux" || !isTauriRuntime()) return
-    const win = getCurrentWindow()
-    let unlisten: (() => void) | undefined
-    let active = true
-
-    const sync = async () => {
-      if (!active) return
-      const el = document.documentElement
-      const [max, fs] = await Promise.all([win.isMaximized(), win.isFullscreen()])
-      if (!active) return
-      el.classList.toggle("window-maximized", max)
-      el.classList.toggle("window-fullscreen", fs)
-    }
-
-    void win
-      .onResized(() => void sync())
-      .then(fn => {
-        if (active) unlisten = fn
-      })
-    void sync()
-
-    return () => {
-      active = false
-      unlisten?.()
-    }
-  }, [platform])
-}
-
-export {
-  isTauriRuntime,
-  useMacDragRegion,
-  usePlatform,
-  useWindowDragRegion,
-  useWindowStateClasses,
-}
+export { isTauriRuntime, useMacDragRegion, usePlatform, useWindowDragRegion }

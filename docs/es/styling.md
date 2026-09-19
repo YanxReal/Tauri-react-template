@@ -22,20 +22,20 @@ Usa `bg-background`, `text-foreground`, `border-border`, etc. Nunca hardcodees h
 
 - Provider: `apps/web/src/components/theme-provider.tsx` (añade `html.dark` / `html.light`, sincroniza con `prefers-color-scheme`, persiste en localStorage).
 - `globals.css:89` overrides de `.dark`.
-- Overrides glass: `html.light.glass-cards` invierte `bg-white/10`, `text-white`, etc. a tinta oscura para glass en modo claro (`globals.css:371`).
+- Overrides glass: `html.light.glass-cards` invierte `bg-white/10`, `text-white`, etc. a tinta oscura para glass en modo claro (`globals.css:344`).
 
 ## Shell de layout
 
-Patrón de ventana frameless (`globals.css:184`):
+Patrón del shell de ventana (`globals.css:184`):
 
 - `html.titlebar` / `html.titlebar-mac` / `html.titlebar-win` / `html.linux` — montadas por el componente `TitleBar` (solo Tauri desktop).
 - `html.titlebar body { background: transparent }` — la forma de la ventana es nativa.
-- `.app-shell` — el **contenedor de scroll** (`height: 100dvh; overflow-y: auto; background: var(--background)`). Solo macOS añade `border-radius: 10px` vía CSS (Windows usa DWM, Linux vía GTK/sombra).
+- `.app-shell` — el **contenedor de scroll** (`height: 100dvh; overflow-y: auto; background: var(--background)`). Solo macOS añade `border-radius: 10px` vía CSS: Linux usa **decoración nativa completa** (`decorations: true`) y Windows va frameless con redondeo de DWM (`decorations: false` + decorum), así que el shell queda cuadrado y el OS recorta las esquinas — un radio aquí dejaría esquinas cortadas.
 - El header es `sticky top:0` dentro de `.app-shell`.
 
 ## Sistema glass / cristal
 
-Tres capas (`globals.css:171`, `307`):
+Tres capas (`globals.css:171`, `269`):
 
 1. **Vibrancy / Mica** (nativo): `html.vibrancy body` / `html.vibrancy .app-shell` — `color-mix(in oklab, var(--background) 32%, transparent)` (42% en claro) para que la translucidez se vea. El header lleva `blur(16px)` solo en macOS (`html.titlebar-mac.vibrancy .app-header`); Windows ya tiene material Mica. Linux desactiva blur.
 2. **Glass cards** (web): `GlassCard` en `@workspace/ui/components/glass-card.tsx` (`bg-white/10`, `backdrop-blur`, etc.). En modo claro `html.light.glass-cards` remapea a tinta oscura. En Linux `html.linux .glass-card` quita `backdrop-filter` y cae a `var(--card)`.
@@ -47,7 +47,7 @@ Cadena de providers: `VibrancyProvider` (`vibrancy-provider.tsx` — `localStora
 
 `globals.css:132` — `* { user-select:none; -webkit-user-drag:none }` salvo inputs; `html,body { touch-action: pan-x pan-y }` (scroll nativo, sin pinch-zoom).
 
-`globals.css:241` — sombra Linux: solo nativa `html.linux .app-shell { border-radius:10px; overflow:hidden }` + GTK `decoration { box-shadow; margin }` en `lib.rs:315` (Wayland-safe `StyleContext::add_provider`), 4 esquinas redondeadas.
+`globals.css:239` — veto Linux: `backdrop-filter: none !important` en `.app-header` / `.app-shell` (el blur de WebKitGTK es caro y da glitches). El marco en Linux es 100% nativo, así que no hay sombra ni radio CSS en `.app-shell`; `globals.css:230` oculta la titlebar que decorum inyecta en Windows.
 
 Ver `docs/es/native-feel.md` para el fundamento completo por OS.
 

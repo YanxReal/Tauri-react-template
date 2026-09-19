@@ -1,10 +1,10 @@
 # Backend Tauri (`src-tauri`)
 
-Rust + Tauri v2. Entradas: `src-tauri/src/lib.rs:369` (`run()`) y `src-tauri/src/main.rs`.
+Rust + Tauri v2. Entradas: `src-tauri/src/lib.rs:304` (`run()`) y `src-tauri/src/main.rs`.
 
 ## Comandos
 
-Registrados en `lib.rs:395`:
+Registrados en `lib.rs:342`:
 
 ```rust
 tauri::generate_handler![greet, platform_info, window_effects_set]
@@ -12,9 +12,9 @@ tauri::generate_handler![greet, platform_info, window_effects_set]
 
 | Comando | Firma | Descripción |
 |---------|-------|-------------|
-| `greet` | `fn greet(name: &str) -> String` | Devuelve saludo (demo) — `lib.rs:8` |
-| `platform_info` | `fn platform_info() -> String` | Devuelve `platform::current_platform()` — `lib.rs:13` |
-| `window_effects_set` | `fn window_effects_set(window, enabled: bool, dark: Option<bool>) -> Result<(), String>` | Aplica/limpia translucidez nativa — `lib.rs:78` |
+| `greet` | `fn greet(name: &str) -> String` | Devuelve saludo (demo) — `lib.rs:12` |
+| `platform_info` | `fn platform_info() -> String` | Devuelve `platform::current_platform()` — `lib.rs:17` |
+| `window_effects_set` | `fn window_effects_set(window, enabled: bool, dark: Option<bool>) -> Result<(), String>` | Aplica/limpia translucidez nativa — `lib.rs:82` |
 
 Uso en frontend (`apps/web/src/App.tsx:34`):
 
@@ -23,9 +23,9 @@ import { invoke } from "@tauri-apps/api/core"
 await invoke<string>("greet", { name: "Tauri" })
 ```
 
-`window_effects_set` es **sync** (corre en el hilo principal) — lo exige `window-vibrancy` que debe ejecutarse en el main thread (`lib.rs:18`). Nunca lo hagas `async`.
+`window_effects_set` es **sync** (corre en el hilo principal) — lo exige `window-vibrancy` que debe ejecutarse en el main thread (`lib.rs:26`). Nunca lo hagas `async`.
 
-Dispatch por plataforma para `set_window_effect` (`lib.rs:27`):
+Dispatch por plataforma para `set_window_effect` (`lib.rs:31`):
 
 - `macOS` → `window_vibrancy::apply_vibrancy` con `HudWindow` (dark) / `UnderWindowBackground` (light)
 - `Windows` → `window_vibrancy::apply_mica(window, dark)`
@@ -71,30 +71,34 @@ Overlays por OS (merged en build): `tauri.macos.conf.json`, `tauri.windows.conf.
 
 - `tauri_build::build()` — genera contexto + aliases cfg `mobile`/`desktop`.
 - **Assets macOS**: compila `Assets.xcassets/AppIcon` vía `actool` (Xcode) → `OUT_DIR/assets-car/Assets.car` + var `TAURI_ASSETS_CAR`. Salta con gracia sin Xcode.
-- **Env embedding**: lee `src-tauri/.env` (gitignored) + env del proceso para `EMBED_KEYS` (`VITE_API_URL`, `SUPABASE_*`) e inyecta como `cargo:rustc-env`. Valida URLs de Supabase en release (`build.rs:126`).
+- **Env embedding**: lee `src-tauri/.env` (gitignored) + env del proceso para `EMBED_KEYS` (`VITE_API_URL`, `SUPABASE_*`) e inyecta como `cargo:rustc-env`. Valida URLs de Supabase en release (`build.rs:135`).
 
 ## Traffic lights de macOS (fix HuLa)
 
-Contexto y fix en `docs/es/native-feel.md`. Implementación en `lib.rs:107`:
+Contexto y fix en `docs/es/native-feel.md`. Implementación en `lib.rs:116`:
 
 - `adjust_macos_traffic_lights` — mueve/agranda los 3 `NSWindowButton`s (targets `22.5/44.5/66.5`, histéresis `±0.6px`, `grow 3`, `lower 8`, `shift_right 16` + `extra_gap`).
 - `needs_traffic_lights_update` + `ensure_traffic_lights_observer` (`NSWindowDidResizeNotification`/`DidMove`) + **polling a 60 fps** (`NSTimer` en `NSRunLoopCommonModes`) durante `NSEventTrackingRunLoopMode` (live-resize).
 - `setAutoresizingMask(0)` evita que AppKit vuelva a resetear.
 
-## Sombra de ventana en Linux — solo nativa
+## Marco de ventana en Linux — decoración nativa
 
-`lib.rs:315` `apply_linux_window_shadow` — 100% nativa, sin fallback webview. Fuerza `.csd` y registra `GtkCssProvider` **directo al `StyleContext` de la ventana** vía `add_provider(..., APPLICATION)` (Wayland-safe; antes `add_provider_for_screen` era `None` en Wayland). CSS `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`) + `window.background.csd { border-radius:10px }`; maximizado/tiled/fullscreen la limpia. `globals.css:241` `html.linux .app-shell { border-radius:10px; overflow:hidden }` recorta las 4 esquinas. Path `gtk4` (`webkitgtk 6.0`) usaría mismo CSS con `gtk4::CssProvider` + `add_provider_for_display`; actual `gtk=0.18` (GTK3) usa provider por ventana.
+`tauri.linux.conf.json:11` → `decorations: true` + `transparent: false`: GTK / el compositor dibujan la titlebar (minimizar / maximizar / cerrar nativos), la sombra y el radio de esquinas. Rust ya **no** tiene código GTK — `apply_linux_window_shadow` (CssProvider + `HeaderBar` dummy + visual RGBA forzado + `opacity 0.99`) y las deps linux `gtk` / `gdk` se eliminaron, porque forzar el visual GDK después del realize no puede funcionar (tao lo instala antes del realize y solo con `transparent: true`). Razonamiento completo en `docs/es/native-feel.md`.
 
-También fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder` (`lib.rs:371`) para evitar crashes DMABUF de WebKitGTK.
+También fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder` (`lib.rs:315`) para evitar crashes DMABUF de WebKitGTK.
 
-## Redondeo en Windows
+## Windows — titlebar overlay frameless (`tauri-plugin-decorum`)
 
-`lib.rs:399` — `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` para ventanas `WS_POPUP` en Windows 11 (solo en deps `target_os = "windows"` — `Cargo.toml:54`).
+`tauri.windows.conf.json:12` → `decorations: false`: la ventana es frameless y la titlebar la dibuja la app (modelo Edge / VS Code). `setup()` llama a `create_overlay_titlebar()` (`lib.rs:361`) del plugin de la comunidad [decorum](https://github.com/clearlysid/tauri-plugin-decorum), registrado solo en Windows (`lib.rs:339`). `transparent: true` se mantiene para que Mica / `window_effects_set` siga viéndose.
+
+Los caption buttons son React (`apps/web/src/components/layout/window-controls.tsx:61`, renderizados por `header.tsx:191`); el hover de 620 ms sobre maximizar invoca `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`) para abrir el flyout de Snap Layouts de Windows 11. Permisos: `capabilities/default.json:6` (`allow-minimize` / `allow-close` / `allow-is-maximized`) + `capabilities/default.json:15` (`allow-set-focus`, lo exige la cadena `setFocus().then(invoke(...))`) + `capabilities/windows.json:7` (`decorum:allow-show-snap-overlay`, `platforms: ["windows"]` — el plugin es dep `cfg(windows)`, así que un `cargo check` en macOS/Linux rechazaría el permiso si viviera en `default.json`).
+
+`lib.rs:365` — `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` en Windows 11 (solo en deps `target_os = "windows"` — `Cargo.toml:57`): una ventana frameless es cuadrada por defecto, así que esta llamada es la que mantiene las esquinas redondeadas. Razonamiento completo en `docs/es/native-feel.md`.
 
 ## Entrada desktop vs móvil
 
-- Desktop: `run()` vía `main.rs` → `lib.rs:369`.
-- Target unificado iOS/macOS Xcode: `start_app()` (`lib.rs:101`, `#[no_mangle] extern "C"`) llamado desde `main.mm` del proyecto Xcode generado. Requerido para `cargo check --target aarch64-apple-ios`.
+- Desktop: `run()` vía `main.rs` → `lib.rs:304`.
+- Target unificado iOS/macOS Xcode: `start_app()` (`lib.rs:106`, `#[no_mangle] extern "C"`) llamado desde `main.mm` del proyecto Xcode generado. Requerido para `cargo check --target aarch64-apple-ios`.
 - Entrada móvil `#[cfg_attr(mobile, tauri::mobile_entry_point)]` envuelve `run()`.
 
 ## Añadir un plugin

@@ -6,9 +6,9 @@ React 19 + Vite 8 + TypeScript 5.9 strict + shadcn/Base UI. Source in `apps/web/
 
 `apps/web/src/App.tsx:1` is the root UI:
 
-- `app-shell` (in `globals.css`) is the scroll container inside the frameless window (see `native-feel.md`).
+- `app-shell` (in `globals.css`) is the scroll container of the window — native OS frame on Linux, decorum overlay + app-drawn caption buttons on Windows, macOS Overlay titlebar with traffic lights (see `native-feel.md`).
 - Semantic landmarks: `<header><nav><main><section><footer>` + skip-link + `aria-label` on nav + `role=status` greet output.
-- `Header` — nav, language toggle, theme toggle, `VibrancyToggle`/`GlassEffectToggle`.
+- `Header` — nav, language toggle, theme toggle, `VibrancyToggle`/`GlassEffectToggle`, and on Windows the caption buttons (`window-controls.tsx`) because the window is frameless.
 - `Hero` / `Features` — marketing sections, i18n keys.
 - `status` section — demo `invoke("greet")` call with ES translation (`App.tsx:32`) and glass vs solid fallback (`effectiveGlass`).
 
@@ -22,9 +22,9 @@ import { VibrancyProvider } from "@/components/vibrancy-provider.tsx"
 import { GlassCardsProvider } from "@/components/glass-cards-provider.tsx"
 ```
 
-Providers are nested `Theme → Vibrancy → GlassCards → App`. TitleBar (`components/layout/title-bar.tsx`) mounts `html.titlebar*` classes (see `styling.md`).
+Providers are nested `Theme → Vibrancy → GlassCards → App`, composed once in `apps/web/src/components/app-providers.tsx:14` (`AppProviders`) — used by `main.tsx:51` and `App.test.tsx`. TitleBar (`components/layout/title-bar.tsx`) mounts `html.titlebar*` classes (see `styling.md`).
 
-Native guards in `main.tsx:17`:
+Native guards in `main.tsx:21`:
 
 - `dragstart` → `preventDefault`
 - `wheel` with `ctrl/meta` → `preventDefault` (zoom lock, extra to `tauri-plugin-prevent-default` + viewport)
@@ -72,6 +72,7 @@ pnpm test                       # turbo (all workspaces)
 
 - Config at `vite.config.ts:37`
 - Example `apps/web/src/App.test.tsx`, setup `src/test/setup.ts` (jest-dom)
+- Tests render `App` inside `AppProviders` (`apps/web/src/components/app-providers.tsx:14`) — same stack as the webview boot (`main.tsx:51`): Theme → Vibrancy → GlassCards. Rendering `App` bare throws.
 - Coverage output `coverage/**` (turbo.json `test.outputs`)
 
 ## TypeScript & lint
@@ -82,7 +83,7 @@ pnpm --filter web lint          # biome check .
 pnpm lint                       # root turbo lint
 ```
 
-`biome.json` disables lints/formatting inside `src-tauri/**` and shadcn internals (`overrides:66`).
+`biome.json` excludes `src-tauri/vendor/**` (vendored Handlebars templates Biome cannot parse) and disables lints/formatting inside `src-tauri/**` and shadcn internals (`overrides:68`). Two CSS rules (`noImportantStyles`, `noDescendingSpecificity`) are off only for `packages/ui/src/styles/globals.css`, where the platform `!important` overrides are load-bearing.
 
 ## Conventions
 

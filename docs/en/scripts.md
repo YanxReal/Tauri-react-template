@@ -30,6 +30,14 @@
 
 Per-OS build shells: `scripts/build-linux.sh`, `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`.
 
+## Windows cross-compile (`cargo-xwin`)
+
+`scripts/build-windows.sh [--bundles nsis] [tauri build args]` builds the Windows x64 bundle from macOS/Linux — it resolves the keg-only LLVM/lld paths itself and calls `pnpm tauri build --target x86_64-pc-windows-msvc --runner cargo-xwin --bundles nsis`.
+
+One-time setup: `brew install llvm lld makensis` (macOS; `makensis` is only needed for the NSIS bundle), `cargo install cargo-xwin --locked` and `rustup target add x86_64-pc-windows-msvc`. Outputs: `src-tauri/target/x86_64-pc-windows-msvc/release/tauri-react-template.exe` (app) and `.../bundle/nsis/tauri-react-template_0.1.0_x64-setup.exe` (installer; ~200 MB because `webviewInstallMode: offlineInstaller` embeds WebView2).
+
+Notes: the MSI/WiX bundler only runs on a Windows host (`--bundles nsis` is the macOS/Linux default); installer signing also needs Windows unless you set `bundle > windows > signCommand`. `cargo xwin check --target x86_64-pc-windows-msvc` is the fast way to type-check the Windows-only code paths.
+
 ## Xcode helper
 
 `scripts/Xcode/apple-xcode.sh` (`scripts/README.md:8`):

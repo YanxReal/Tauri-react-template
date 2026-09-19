@@ -13,7 +13,7 @@ Bilingual template: **Tauri v2 + React 19 + Vite 8 + Tailwind v4** — private s
 | 5 | [Styling & Theming](./styling.md) | Tailwind v4, globals.css, OKLCH, dark mode, glass |
 | 6 | [i18n](./i18n.md) | i18next EN/ES, adding locales, translation workflow |
 | 7 | [Mobile](./mobile.md) | iOS (Xcode unified target) & Android, hot-reload |
-| 8 | [Native Feel](./native-feel.md) | Traffic lights, drag, zoom lock, vibrancy/Mica, Linux shadows |
+| 8 | [Native Feel](./native-feel.md) | Traffic lights, drag, zoom lock, vibrancy/Mica, Linux native frame, Windows overlay titlebar |
 | 9 | [Scripts & Tooling](./scripts.md) | Makefile, Xcode helpers, Biome, Husky, CI |
 | 10 | [Troubleshooting](./troubleshooting.md) | Common pitfalls and fixes per OS |
 | 11 | [Contributing](./contributing.md) | Conventions, parity rule, quality checks |

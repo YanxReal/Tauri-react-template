@@ -10,15 +10,27 @@ Resetea una terminal rota: `reset` o `tput rmcup`.
 
 ## Traffic lights de macOS saltan al redimensionar
 
-Asegúrate de que `lib.rs:107` `adjust_macos_traffic_lights` + `ensure_traffic_lights_observer` + polling 60 fps existan. Contrarrestan que AppKit los resetee a `12px` en cada layout. Verifica `titleBarStyle: Overlay` + `hiddenTitle` en `tauri.macos.conf.json`. Comprueba targets `22.5/44.5/66.5`.
+Asegúrate de que `lib.rs:116` `adjust_macos_traffic_lights` + `ensure_traffic_lights_observer` + polling 60 fps existan. Contrarrestan que AppKit los resetee a `12px` en cada layout. Verifica `titleBarStyle: Overlay` + `hiddenTitle` en `tauri.macos.conf.json`. Comprueba targets `22.5/44.5/66.5`.
 
-## No hay sombra en Linux / ventana plana
+## Ventana plana en Linux / sin sombra / esquinas cuadradas
 
-Ahora **solo nativa** (`lib.rs:315` `StyleContext::add_provider` Wayland-safe, sin fallback webview). Si sigue plana, revisa `journalctl` / `RUST_LOG=info` para `linux shadow: provider added via window StyleContext (Wayland/X11 without screen)` vs `via window + screen (X11)` y verifica `html.linux .app-shell { border-radius:10px; overflow:hidden }` recorta las 4 esquinas. En Sway/Hyprland o X11 sin `picom/compton`, el compositor puede ignorar sombras `decoration` — solo nativa quedará invisible por diseño a petición.
+Por diseño la app **no** dibuja su propio marco: `tauri.linux.conf.json:11` usa `decorations: true`, así que GTK (CSD) o el compositor (SSD) dibujan la titlebar, la sombra y el radio de esquinas. Si no ves nada de eso, el problema es la sesión/tema, no la app — revisa `echo $XDG_SESSION_TYPE` y que haya un tema GTK. Nunca vuelvas a añadir `box-shadow` / `border-radius` / `margin` sobre `.app-shell` en Linux: el shell es el área cliente dentro del marco nativo y esas reglas se ven como esquinas cortadas bajo la titlebar.
+
+## Windows: no aparecen los caption buttons / no hay Snap Layouts
+
+Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y la titlebar es de la app: `header.tsx:191` renderiza `window-controls.tsx` y `lib.rs:361` llama a `create_overlay_titlebar()`. Si los botones no salen, comprueba que `platform === 'windows'` resolvió (comando Rust `platform_info`) y que `capabilities/default.json:6` sigue listando `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:15`), más `capabilities/windows.json:7` para `decorum:allow-show-snap-overlay` (capability solo-Windows; déjala fuera de `default.json` o `cargo check` falla en macOS/Linux). Los Snap Layouts solo se abren con el hover de 620 ms sobre maximizar (`window-controls.tsx:8` → `show_snap_overlay`), que es el equivalente Win+Z de decorum — tao no puede responder `WM_NCHITTEST` con `HTMAXBUTTON`, así que no hay flyout nativo real de hover. Si alguna vez aparece la barra de 32px que inyecta el plugin encima del header, es que se quitó la regla `[data-tauri-decorum-tb]` (`globals.css:230`).
 
 ## Glitches amarillos glass / RAM disparada en Linux
 
-Desactiva glass — Linux fuerza `glass OFF` por diseño (`glass-cards-provider.tsx` + `globals.css:283`). Mantén `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` en `lib.rs:371`. Ver Plan A degradado en `native-feel.md`.
+## Windows: ventana negra / "no se pudo crear el directorio de datos" (WebView2)
+
+**Síntoma:** la app abre y el área de cliente se queda negra/oscura, o un diálogo de WebView2 dice que Microsoft Edge no puede leer ni escribir `…\EBWebView`.
+
+**Causa:** WebView2 nunca creó su carpeta de datos — esto **no** es un problema de render, GPU ni Mica, así que no persigas `transparent` / `window_effects_set`. Aparece cuando el proceso se lanza desde un **contexto de servicio**: una sesión SSH, `PsExec -i 1`, una tarea programada como SYSTEM o WinRM. Esos tokens corren sin el perfil interactivo cargado, así que `%LOCALAPPDATA%\com.tauri-react-template.app\EBWebView` no es escribible para esa identidad.
+
+**Solución:** lanza la app de la forma normal, como el usuario del escritorio que tiene sesión iniciada (acceso directo / `pnpm tauri:dev`). Para fijar la carpeta explícitamente, define `WEBVIEW2_USER_DATA_FOLDER=C:\alguna\carpeta\escribible` antes de arrancar (ojo con el gotcha de cmd: `set VAR=valor && app.exe` se queda con el espacio final, así que entrecomilla: `set "VAR=valor" && app.exe`). Truco de depuración: `scripts/build-windows.sh` + `PsExec64 -i 1 -s` reproduce el fallo, así que no sirve para revisar la UI — copia el exe a una sesión real y haz doble clic.
+
+Desactiva glass — Linux fuerza `glass OFF` por diseño (`glass-cards-provider.tsx` + `globals.css:246`). Mantén `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` en `lib.rs:315`. Ver Plan A degradado en `native-feel.md`.
 
 ## `pnpm install` falla / mismatch Node
 

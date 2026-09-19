@@ -8,9 +8,9 @@ Derivados del commit `c9ae1a4`:
 
 - `tauri*.conf.json` (los 4 configs): `dragDropEnabled: false` + `zoomHotkeysEnabled: false` en cada entrada `windows[]` — no solo macOS.
 - `apps/web/index.html:5` — viewport `user-scalable=no, maximum-scale=1.0, viewport-fit=cover`
-- `packages/ui/src/styles/globals.css:136` — `* { user-select:none; -webkit-user-drag:none; touch-action: pan-x pan-y }` (inputs/textarea/contenteditable reactivan selección). Sin `overscroll-behavior:none`.
-- `apps/web/src/main.tsx:17` — bloqueo `dragstart`, bloqueo de zoom por rueda (`ctrl/meta + wheel`), links externos → `openUrl` vía `plugin-opener`.
-- `src-tauri/src/lib.rs:390` — `tauri-plugin-prevent-default` con `Flags::debug()`: en **release** bloquea defaults del webview (menú contextual, devtools, reload); en **debug** los conserva. Nunca toca el scroll del documento.
+- `packages/ui/src/styles/globals.css:137` — `* { user-select:none; -webkit-user-drag:none; touch-action: pan-x pan-y }` (inputs/textarea/contenteditable reactivan selección). Sin `overscroll-behavior:none`.
+- `apps/web/src/main.tsx:21` — bloqueo `dragstart`, bloqueo de zoom por rueda (`ctrl/meta + wheel`), links externos → `openUrl` vía `plugin-opener`.
+- `src-tauri/src/lib.rs:330` — `tauri-plugin-prevent-default` con `Flags::debug()`: en **release** bloquea defaults del webview (menú contextual, devtools, reload); en **debug** los conserva. Nunca toca el scroll del documento.
 
 Móvil (menú long-press iOS, Android) usa las mismas reglas CSS/JS (`touch-action: manipulation` mata el double-tap zoom en iOS).
 
@@ -18,11 +18,11 @@ Móvil (menú long-press iOS, Android) usa las mismas reglas CSS/JS (`touch-acti
 
 Referencia: `wry#1747`, `tauri#13044`. `titleBarStyle: Overlay` + `hiddenTitle` deja el webview **debajo** de los traffic lights. AppKit los resetea a `12px` nativos en cada pase de layout (`setContentView:`, carga del webview, `NSWindowDidResize`, `NSViewFrameDidChange`), y `drawRect:` en `WryWebViewParent` no basta. En macOS 26 el race es peor.
 
-**Fix HuLa (3 mecanismos en `src-tauri/src/lib.rs:107`)**
+**Fix HuLa (3 mecanismos en `src-tauri/src/lib.rs:116`)**
 
-1. Hook `WindowEvent::Focused/Resized/ScaleFactorChanged` (`lib.rs:437`) — fallback general.
-2. `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (`lib.rs:250`) — más fiable que `WindowEvent` en macOS 26.
-3. **Polling live-resize a 60 fps** (`NSTimer` en `NSRunLoopCommonModes` + `needs_update` `±0.6px`) mientras `inLiveResize` — dispara durante `NSEventTrackingRunLoopMode`, no solo al soltar (`lib.rs:449`).
+1. Hook `WindowEvent::Focused/Resized/ScaleFactorChanged` (`lib.rs:390`) — fallback general.
+2. `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (`lib.rs:253`) — más fiable que `WindowEvent` en macOS 26.
+3. **Polling live-resize a 60 fps** (`NSTimer` en `NSRunLoopCommonModes` + `needs_update` `±0.6px`) mientras `inLiveResize` — dispara durante `NSEventTrackingRunLoopMode`, no solo al soltar (`lib.rs:412`).
 
 Posiciones finales: `Close 22.5 / Mini 44.5 / Zoom 66.5` (centros de 22px, `15px` con `grow 3`, `lower 8`, `shift_right 16` + `extra_gap 0/2/4`, `pl-[96px] sm:pl-[108px]` en header). `setAutoresizingMask(0)` evita que AppKit vuelva a auto-resize entre frames. Ver `lib.rs:adjust_macos_traffic_lights` + `ensure_traffic_lights_observer`.
 
@@ -32,40 +32,45 @@ Verifica: `pnpm typecheck && pnpm lint && pnpm build` + testear scroll / click /
 
 Patrón de **Prestly**: toggle nativo de translucidez.
 
-- **Rust** (`lib.rs:18`): crate `window-vibrancy = "0.8"`. Comando sync `window_effects_set {enabled, dark?}` (`lib.rs:78`) — vibrancy (`NSVisualEffectView`) en macOS, Mica en Windows 11; Linux/móvil devuelven `unsupported` (no-op). Debe ser **sync** (main thread).
+- **Rust** (`lib.rs:26`): crate `window-vibrancy = "0.8"`. Comando sync `window_effects_set {enabled, dark?}` (`lib.rs:82`) — vibrancy (`NSVisualEffectView`) en macOS, Mica en Windows 11; Linux/móvil devuelven `unsupported` (no-op). Debe ser **sync** (main thread).
 - **Frontend** (`apps/web/src/components/vibrancy-provider.tsx` + `glass-cards-provider.tsx`): `VibrancyProvider` + `useVibrancy()` persistido en `localStorage` (`vibrancy`), `GlassCardsProvider` (`glass-cards`). `html.vibrancy` activa `globals.css:177` body transparente. `dark` sigue al tema (tint de Mica).
 - **Toggle**: `VibrancyToggle` / `GlassEffectToggle` (`apps/web/src/components/layout/glass-effect-toggle.tsx`) — `Switch` de shadcn, oculto si `!supported` (Linux/móvil/navegador). El toggle combinado controla `glass-cards` + `vibrancy` juntos, por defecto **OFF** (Linux fuerza OFF).
-- **CSS** (`globals.css:177`, `307`): `html.vibrancy .app-shell { background: color-mix(... 32%) }` (42% en claro), header macOS `backdrop-blur(16px)`; Windows aporta material Mica; Linux desactiva blur.
+- **CSS** (`globals.css:177`, `269`): `html.vibrancy .app-shell { background: color-mix(... 32%) }` (42% en claro), header macOS `backdrop-blur(16px)`; Windows aporta material Mica; Linux desactiva blur.
+
+## Windows — titlebar overlay (`tauri-plugin-decorum`)
+
+Modelo Edge / VS Code: la ventana es **frameless** y la titlebar la dibuja la app (`decorations: false`). El plugin de la comunidad [decorum](https://github.com/clearlysid/tauri-plugin-decorum) aporta el overlay y el comando de Snap Layouts; el header pone la banda de arrastre y los caption buttons.
+
+- `tauri.windows.conf.json:12` → `decorations: false` (`transparent: true` se mantiene para que Mica / `window_effects_set` siga viéndose).
+- `setup()` llama a `create_overlay_titlebar()` (`lib.rs:361`); el plugin solo se registra en Windows (`lib.rs:339`).
+- Caption buttons: `apps/web/src/components/layout/window-controls.tsx:61` (minimizar / maximizar-restaurar / cerrar, iconos lucide, zona de `46px`, hover rojo en cerrar), renderizados desde `header.tsx:191`. Llaman a `minimize()` / `toggleMaximize()` / `close()` y siguen `isMaximized()` + `onResized()`.
+- **Snap Layouts:** el hover sobre *maximizar* durante 620 ms (`window-controls.tsx:8`) enfoca la ventana e invoca `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`), que pulsa Win+Z y luego Alt para ocultar los números. Chromium consigue el flyout real de hover respondiendo `WM_NCHITTEST` con `HTMAXBUTTON`; tao no expone ese hook, así que Win+Z es el equivalente más cercano. Permisos: `capabilities/default.json:6` (`allow-minimize` / `allow-close` / `allow-is-maximized`) + `capabilities/default.json:15` (**`core:window:allow-set-focus`** — la cadena es `setFocus().then(invoke(...))`, así que sin él la promesa se rechaza y el flyout nunca abre; no viene en `core:window:default`) + `capabilities/windows.json:7` (`decorum:allow-show-snap-overlay`) — el plugin es dep `cfg(windows)`, así que su permiso vive en una capability con `platforms: ["windows"]` y las builds no-Windows nunca lo resuelven (registrarlo global rompe `cargo check` en macOS/Linux con `Permission decorum:allow-show-snap-overlay not found`).
+- Esquinas redondeadas: `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` (`lib.rs:365`) — una ventana frameless es cuadrada por defecto.
+- El arrastre sigue siendo propio: `data-tauri-drag-region` + `useWindowDragRegion` (`header.tsx:39`). Decorum además inyecta su propia titlebar fija de 32px con una capa de arrastre en `z-index:100`, que se pondría encima de nuestro header y se tragaría los clics de los botones — `globals.css:230` la oculta.
+- Los bordes de resize se conservan: tao responde `WM_NCHITTEST` para los cantos de ventanas undecorated redimensionables (`src-tauri/vendor/tao-0.35.3/src/platform_impl/windows/event_loop.rs:2182`).
+
+Así, en Windows el header de 56px **es** la titlebar (sin doble barra); en Linux el marco del OS queda encima del mismo header (ver §0) y macOS mantiene los traffic lights nativos.
 
 ## Linux — issues conocidos
 
-### 0. Sombra de ventana (`shadow` no soportado) — solo nativa
+### 0. Marco de ventana — decoración nativa completa
 
-`tauri`/`tao` no soportan `WindowConfig.shadow` en Linux (*"Linux: Unsupported"*). Con `decorations:false transparent:true` el nodo GTK `window.background.csd decoration { box-shadow; margin; border-radius }` no se genera → ventana plana.
+`tauri`/`tao` no soportan `WindowConfig.shadow` en Linux (*"Linux: Unsupported"*), y falsear la sombra desde Rust no funcionó: un `HeaderBar` dummy para forzar CSD + `GtkCssProvider` reescribiendo `window.background` / `decoration` + forzar el visual RGBA después del realize + `set_opacity(0.99)` seguía dejando artefactos (esquinas opacas de 1px, buffer cuadrado bajo el `decoration` redondeado, todo ligeramente translúcido).
 
-**Fix — 100% nativo (A, patrón `yaru.dart`) en `lib.rs:315` + `tauri.linux.conf.json:11` + `globals.css:241`:**
+Causa raíz (por qué esos hacks no podían arreglarlo): con `transparent:false` tao nunca instala un visual RGBA (tao lo instala **antes del realize** y solo para ventanas transparentes) y `gtk_widget_set_visual()` después del realize no tiene efecto, así que las esquinas nunca pueden mezclarse — ningún CSS lo cambia.
 
-- `tauri.linux.conf.json:11` ahora `decorations:true` (`transparent:true` se mantiene) para latch `client_decorated=true`. `lib.rs:315` `apply_linux_window_shadow` hace `gtk_window.set_decorated(true)` + dummy `HeaderBar` (`set_visible(false); set_no_show_all(true); set_show_close_button(false)`) como `set_titlebar` → `gtk_window_should_use_csd() → true` → `use_client_shadow = true` para que el compositor cree el nodo `decoration` en X11 y Wayland. Sin esto, `GdkWindow` queda undecorated sin frame y el `box-shadow` nunca renderiza.
-- `GtkCssProvider` anclado **directo al `StyleContext` de la ventana** vía `add_provider(..., APPLICATION)` — Wayland-safe (antes `add_provider_for_screen` era `None` en Wayland). CSS `window.background.csd decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` (+ `:backdrop`) + `window.background.csd { border-radius:10px }`. Maximizado/tiled/fullscreen → `none`.
-- `gdk_window.set_shadow_width(12,12,12,12)` (`_GTK_FRAME_EXTENTS`, también en `realize`) informa al WM sobre los extents invisibles para que snap/maximize no los cuente.
-- `globals.css:241` `html.linux .app-shell { border-radius:10px; overflow:hidden }` recorta el contenido al mismo radio de 10px en las 4 esquinas (arriba **y abajo**). Maximizado/fullscreen → `border-radius:0`. El `margin` + sombra de `decoration` lo compone el compositor **fuera** del webview; el `overflow:hidden` asegura que las inferiores no queden cuadradas.
+**Diseño actual — el sistema dibuja todo el marco:**
 
-Requisito build: `gtk = "0.18"` + `gdk = "0.18"` (`Cargo.toml:67`, solo linux, GTK3 `webkit2gtk 4.1`). Path `gtk4` (`webkitgtk 6.0`, `gtk4::CssProvider` + `add_provider_for_display` + `gdk::Toplevel::set_shadow_width`) usa mismo CSS.
+- `tauri.linux.conf.json:11` → `decorations: true` + `transparent: false`. GTK/compositor dibujan la titlebar con **minimizar / maximizar / cerrar nativos**, más su sombra y radio de esquinas nativos (CSD en GNOME/X11, SSD en compositores con `xdg-decoration`).
+- Rust ya no toca GTK: `apply_linux_window_shadow` (CssProvider + HeaderBar dummy + hacks de RGBA / opacity / opaque_region) y las deps linux `gtk = "0.18"` / `gdk = "0.18"` se **eliminaron**. `run()` solo conserva las env vars de WebKitGTK (`lib.rs:315`).
+- `globals.css:214` — **sin** `border-radius` / `margin` / `box-shadow` / `contain` de Linux en `.app-shell`. El shell es simplemente el área cliente dentro del marco nativo; recortarlo o meterle margen dejaría esquinas cortadas bajo la titlebar.
+- El área de arrastre personalizada sigue: el header mantiene `data-tauri-drag-region` + `useWindowDragRegion` (banda Prestly de 56px) en `apps/web/src/components/layout/header.tsx:39`, así la barra fusionada de la app se sigue arrastrando bajo la titlebar nativa.
 
-**Opción B — fallback + shader del compositor (seguridad, sin código extra en Rust):**
-
-- **Fallback webview** (en `globals.css:260`): `html.linux:not(.gtk-shadow) .app-shell { margin:12px; height:calc(100dvh - 24px); box-shadow: 0 16px 48px rgba(0,0,0,.35) }` dibuja la sombra **dentro** del webview cuando `lib.rs` no logra añadir `gtk-shadow` (Sway/Hyprland SSD-only, X11 sin `picom`). Maximizado/fullscreen lo limpia. `lib.rs:435` añade `gtk-shadow` vía `window.eval` cuando lo nativo tiene éxito, así nativo y fallback nunca se duplican.
-- **Shader del compositor** (puro sistema, sin código app): `mutter-rounded` (`gsettings set org.gnome.mutter round-corners-radius 10`), `Niri` `geometry-corner-radius 12; clip-to-geometry true` + `shadow { softness 30; draw-behind-window false }`, `Hyprland` `decoration { rounding 10; shadow { enabled true } }`, `swayfx` `corner_radius 10`. Estos dan 4 esquinas nativas reales en cualquier ventana Tauri aunque sea `decorations:false`, sin tocar Rust — ver `docs/native-feel.md` Opción B.
-
-### 1. Esquinas sin glass
-
-`decorations:false transparent:true` deja la ventana cuadrada. Fix: `html.linux .app-shell {border-radius:10px}` + header/footer `rounded-none` — el `app-shell` recorta a 10px. Ver `globals.css:224`.
-
-### 2. Glass + WebKitGTK → glitches amarillos y RAM disparada
+### 1. Glass + WebKitGTK → glitches amarillos y RAM disparada
 
 `backdrop-blur` + `DMABUF` en WebKitGTK 4.1 (sobre todo NVIDIA/Wayland) dispara `AcceleratedSurfaceDMABuf was unable to construct a complete framebuffer` + `Error 71` + RAM al redimensionar (docs `linux-graphics` de Tauri, `wry#1747`).
 
-**Fix actual (veto):** en Linux se fuerza `glass OFF` — `glass-cards-provider.tsx` devuelve `false` si `platform==='linux'`, `GlassEffectToggle` deshabilitado con tooltip, y `globals.css:283` pone `html.linux .glass-card { backdrop-filter:none; background:var(--card) }` + `contain:paint`. `lib.rs:371` fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder`.
+**Fix actual (veto):** en Linux se fuerza `glass OFF` — `glass-cards-provider.tsx` devuelve `false` si `platform==='linux'`, `GlassEffectToggle` deshabilitado con tooltip, y `globals.css:246` pone `html.linux .glass-card { backdrop-filter:none; background:var(--card) }`. `lib.rs:315` fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder`.
 
 **Plan A (glass degradado sin blur — no implementado):** renderizar `GlassCard` sin `backdrop-blur` en Linux — solo `bg-white/[0.06] + border` translúcido + `box-shadow` sutil. Ver `README.md` para el sketch.
 

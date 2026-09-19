@@ -1,13 +1,13 @@
 import { useEffect } from "react"
 
-import { useMacDragRegion, usePlatform, useWindowStateClasses } from "./native-chrome"
+import { useMacDragRegion, usePlatform } from "./native-chrome"
 
 const DESKTOP_PLATFORMS = new Set(["macos", "windows", "linux"])
 
 /**
  * Titlebar side-effects only — Prestly pattern para macOS Overlay.
- * En Win/Linux el Header maneja los caption buttons alineados
- * horizontalmente, aquí solo se monta la clase .titlebar.
+ * En Win/Linux la titlebar es nativa (`decorations:true`), así que aquí solo
+ * se monta la clase `.titlebar` (alto de banda + estilos del shell).
  */
 export function TitleBar() {
   const platform = usePlatform()
@@ -15,7 +15,6 @@ export function TitleBar() {
   const isMac = platform === "macos"
 
   useMacDragRegion(visible && isMac)
-  useWindowStateClasses(platform)
 
   useEffect(() => {
     if (!visible || !platform) return

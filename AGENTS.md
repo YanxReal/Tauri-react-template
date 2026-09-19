@@ -52,7 +52,7 @@ Key milestones you must know (chronological):
 | `9177b88` | `fix: ventana arrastrable y esquinas redondeadas en las 3 plataformas` | Permissions `core:window:allow-start-dragging`, `app-shell` as scroll container with `border-radius`. |
 | `938f89a` | `fix: traffic lights live-resize sin flicker + header alineado + windows NSIS/Wix` | **HuLa 3-mecanismo** for macOS traffic lights (WindowEvent + NSNotificationCenter + 60fps NSTimer), positions `22.5/44.5/66.5`. |
 | `93657d3` | `fix: linux glass veto + curvas ventana + toggle combinado` | Linux glass OFF (yellow DMABUF glitches + RAM), `WEBKIT_DISABLE_DMABUF_RENDERER`, combined toggle, `build-linux.sh`. |
-| `9da8602` | `fix: sombra de ventana nativa en Linux via GTK CssProvider + fallback webview` | GTK `CssProvider` restores `decoration { box-shadow }`, fallback `app-shell` shadow, `gtk-shadow` class. → superseded by Wayland-safe `StyleContext::add_provider` (native only, no fallback). |
+| `9da8602` | `fix: sombra de ventana nativa en Linux via GTK CssProvider + fallback webview` | GTK `CssProvider` restores `decoration { box-shadow }`, fallback `app-shell` shadow, `gtk-shadow` class. → superseded by Wayland-safe `StyleContext::add_provider`, and finally **removed**: Linux uses full native decorations (no GTK code, no CSS frame). Windows later moved to a **frameless overlay titlebar** (`tauri-plugin-decorum`, 2026-09-19). |
 
 > **Rule of thumb:** if you see `// Prestly pattern` or `// HuLa fix` in comments, that line is load-bearing. Don't remove it without re-reading the commit that added it. See `docs/en/native-feel.md` and `docs/en/mobile.md` for the long-form explanations.
 
@@ -62,11 +62,11 @@ Key milestones you must know (chronological):
 
 ```
 apps/web/src/App.tsx            App shell (semantic landmarks, i18n, greet) — see App.tsx:19
-apps/web/src/main.tsx           Providers + native guards (drag, zoom, opener) — see main.tsx:17
+apps/web/src/main.tsx           Providers + native guards (drag, zoom, opener) — see main.tsx:21
 apps/web/src/i18n/config.ts     i18next init (en/es, localStorage cache) — see config.ts:14
 apps/web/vite.config.ts         Vite + Tailwind + alias + host:true + vitest — see vite.config.ts:8
 packages/ui/src/styles/globals.css  Single source of truth for theme/tokens/shell — see globals.css:11
-src-tauri/src/lib.rs            Commands + vibrancy + macOS traffic lights + Linux shadow — see lib.rs:78, lib.rs:107, lib.rs:315
+src-tauri/src/lib.rs            Commands + vibrancy + macOS traffic lights + Windows overlay (decorum) — see lib.rs:82, lib.rs:116, lib.rs:339
 src-tauri/tauri.conf.json       Base Tauri config (merged with tauri.{os}.conf.json)
 src-tauri/Info.plist            Template source for macOS+iOS Info.plist (gen/ is autogen)
 scripts/Xcode/apple-xcode.sh    Regeneration of src-tauri/gen/apple (xcodegen) — never edit gen/
@@ -82,8 +82,9 @@ AGENTS.md                       This file — agent contract (you are here)
 | Xcode project | `src-tauri/vendor/tauri-cli-*/templates/mobile/ios/` + `apple.xcconfig` | `src-tauri/gen/` (regenerated) |
 | App icons | `src-tauri/icons/` + `Assets.xcassets` | `src-tauri/gen/apple/Assets.*` |
 | iOS Info.plist | `src-tauri/Info.plist` (template, feeds both macOS+iOS) | `src-tauri/gen/apple/**/Info.plist` |
-| macOS traffic lights | `src-tauri/src/lib.rs:107` | AppKit internals elsewhere |
-| Linux shadow | `src-tauri/src/lib.rs:315` + `globals.css:241` | `src-tauri/gen/` |
+| macOS traffic lights | `src-tauri/src/lib.rs:116` | AppKit internals elsewhere |
+| Linux native frame | `src-tauri/tauri.linux.conf.json:11` (`decorations: true`) | `src-tauri/gen/` |
+| Windows overlay titlebar (decorum) | `src-tauri/tauri.windows.conf.json:12` (`decorations: false`) + `src-tauri/src/lib.rs:339`/`lib.rs:361` + `apps/web/src/components/layout/window-controls.tsx` | `src-tauri/gen/` |
 
 ---
 
@@ -166,7 +167,7 @@ Do not guess URLs or APIs. The repo has no `tailwind.config.*` — config is in 
 ### 4.2 Keep changes minimal and consistent
 
 - **JS/TS:** Biome style — 2 spaces, line width 80, `asNeeded` semicolons, `double` quotes, `es5` trailing commas, `useImportType: error`. Run `pnpm lint:fix` before committing.
-- **Rust:** `cargo fmt` + `clippy`. The crate enforces `await_holding_lock: deny` (`Cargo.toml:73`). Do not `.await` while holding a `MutexGuard`.
+- **Rust:** `cargo fmt` + `clippy`. The crate enforces `await_holding_lock: deny` (`Cargo.toml:66`). Do not `.await` while holding a `MutexGuard`.
 - **No drive-by reformats.** Touch only the lines your task requires.
 
 ### 4.3 Never break cross-platform invariants (the subtle bugs live here)
@@ -175,13 +176,13 @@ These invariants were earned through painful commits (see §1 table). Removing a
 
 | Invariant | Where | Why (commit) | What breaks if you remove it |
 |-----------|-------|--------------|------------------------------|
-| `dragDropEnabled:false` + `zoomHotkeysEnabled:false` in **all** `tauri.*.conf.json` windows (desktop **and** mobile layers) | `src-tauri/tauri.conf.json:20`, `tauri.macos/windows/linux/ios.conf.json` | `c9ae1a4` | Drag-and-drop of files into the webview, pinch/keyboard zoom re-enabled. |
-| `viewport user-scalable=no, maximum-scale=1.0` + `touch-action: pan-x pan-y` + `user-select:none` | `apps/web/index.html:5`, `globals.css:136`, `globals.css:144` | `c9ae1a4`, `ae5be97` | Zoom on double-tap, text selection everywhere, scroll jank. Mobile breaks first. |
-| `window_effects_set` stays **sync** (main thread) | `src-tauri/src/lib.rs:78` | `f997723` | `window-vibrancy` panics/off-thread failure. The command MUST NOT become `async`. |
-| `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` | `src-tauri/src/lib.rs:371` | `93657d3`, `9da8602` | Yellow `backdrop-blur` glitches + RAM blow-up on Linux/NVIDIA/Wayland. |
-| `titleBarStyle: Overlay` + `hiddenTitle` + live-resize fix (3 mechanisms) | `tauri.macos.conf.json`, `lib.rs:107` | `938f89a` | macOS traffic lights flicker/jump during resize (wry#1747, tauri#13044). |
-| GTK `CssProvider` (native A: `StyleContext::add_provider` Wayland-safe + `app-shell` `border-radius:10px; contain:paint` + `#main-content` scroll for 4 native corners; B: fallback `html.linux:not(.gtk-shadow)` + compositor shader `mutter-rounded`/`niri` as safety) | `lib.rs:315`, `globals.css:241` | `9da8602` (+ fix `screen==None`, bottom via `contain:paint` + `HeaderBar` dummy) | Linux frameless window has no shadow / bottom corners squared (header/footer fake vs system). |
-| `prevent-default` with `Flags::debug()` (blocks in release, keeps in debug) | `lib.rs:390` | `c9ae1a4`, `f23a894` | Context menu / Reload leaks into release builds, or devtools lost in debug. |
+| `dragDropEnabled:false` + `zoomHotkeysEnabled:false` in **every** desktop `windows[]` entry (base + macOS/Windows/Linux overlays; the iOS/Android configs define no window) | `src-tauri/tauri.conf.json:21`, `tauri.macos.conf.json:16`, `tauri.windows.conf.json:14`, `tauri.linux.conf.json:14` | `c9ae1a4` | Drag-and-drop of files into the webview, pinch/keyboard zoom re-enabled. |
+| `viewport user-scalable=no, maximum-scale=1.0` + `touch-action: pan-x pan-y` + `user-select:none` | `apps/web/index.html:5`, `globals.css:137`, `globals.css:148` | `c9ae1a4`, `ae5be97` | Zoom on double-tap, text selection everywhere, scroll jank. Mobile breaks first. |
+| `window_effects_set` stays **sync** (main thread) | `src-tauri/src/lib.rs:82` | `f997723` | `window-vibrancy` panics/off-thread failure. The command MUST NOT become `async`. |
+| `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` | `src-tauri/src/lib.rs:315` | `93657d3`, `9da8602` | Yellow `backdrop-blur` glitches + RAM blow-up on Linux/NVIDIA/Wayland. |
+| `titleBarStyle: Overlay` + `hiddenTitle` + live-resize fix (3 mechanisms) | `tauri.macos.conf.json`, `lib.rs:116` | `938f89a` | macOS traffic lights flicker/jump during resize (wry#1747, tauri#13044). |
+| Linux = **full native decorations** (`decorations: true`: OS draws titlebar + buttons + shadow + radius); Windows = **frameless** (`decorations: false`) + `tauri-plugin-decorum` overlay + React caption buttons (`window-controls.tsx`) + `DWMWCP_ROUND`. Both keep the custom drag area in the app header (`data-tauri-drag-region` + `useWindowDragRegion`) | `tauri.linux.conf.json:11`, `tauri.windows.conf.json:12`, `lib.rs:339`, `lib.rs:361`, `apps/web/src/components/layout/header.tsx:39` | `98966ab` (Linux: deleted the CSD/CssProvider/RGBA/opacity hacks); decorum overlay for Windows | On Linux, re-adding `border-radius`/`margin`/`box-shadow` on `.app-shell` shows cut corners under the native titlebar. On Windows, dropping the plugin / caption buttons / the `decorum:allow-show-snap-overlay` or `core:window:allow-set-focus` permissions (`capabilities/default.json:15`, the silent one — `setFocus()` rejects and the flyout never opens) / the `[data-tauri-decorum-tb]` hide rule leaves a frameless window with no controls or the plugin's 32px bar over the header. Either way, dropping the drag region kills the custom draggable header. |
+| `prevent-default` with `Flags::debug()` (blocks in release, keeps in debug) | `lib.rs:330` | `c9ae1a4`, `f23a894` | Context menu / Reload leaks into release builds, or devtools lost in debug. |
 | `host: true` in `vite.config.ts` | `apps/web/vite.config.ts:25` | `10a74e4` | `tauri ios dev` health-check on LAN IP fails, hot-reload never connects. |
 
 **Checklist before pushing any UI/Rust change:**
@@ -191,6 +192,7 @@ These invariants were earned through painful commits (see §1 table). Removing a
 - [ ] Viewport / `touch-action` / `user-select` still intact?
 - [ ] `window_effects_set` still `sync`?
 - [ ] Linux env vars still set before `Builder`?
+- [ ] Windows still frameless + `decorum` registered (caption buttons rendered, `[data-tauri-decorum-tb]` hidden, `DWMWCP_ROUND` applied)?
 
 ### 4.4 Never edit `src-tauri/gen/`
 
@@ -218,9 +220,11 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --check
 # If Tauri/Rust logic changed:
 cargo check --target aarch64-apple-ios --manifest-path src-tauri/Cargo.toml
 cargo check --target aarch64-unknown-linux-gnu --manifest-path src-tauri/Cargo.toml
+cargo xwin check --target x86_64-pc-windows-msvc --manifest-path src-tauri/Cargo.toml
 # And when feasible, test scroll/click/no-zoom in a REAL bundle per OS:
 pnpm tauri:build
 scripts/build-linux.sh
+scripts/build-windows.sh
 ```
 
 If any check fails, fix it before marking the task done. Do not batch completions.

@@ -55,7 +55,7 @@
 ## Frontend → Backend boundary
 
 - Frontend calls Rust via `invoke` (`@tauri-apps/api`) — see `apps/web/src/App.tsx:32`.
-- Commands are registered in `src-tauri/src/lib.rs:395`:
+- Commands are registered in `src-tauri/src/lib.rs:342`:
   `tauri::generate_handler![greet, platform_info, window_effects_set]`
 - Plugins: `tauri_plugin_opener`, `tauri_plugin_prevent_default` (with `Flags::debug()` — see `native-feel.md`).
 
@@ -65,7 +65,8 @@ Base `src-tauri/tauri.conf.json:1` holds `build`, common `app.windows`, `bundle`
 Per-OS overlays extend it (Tauri merges at build):
 
 - `tauri.macos.conf.json` — `titleBarStyle: Overlay`, `hiddenTitle`, `transparent`, `decorations`, `dragDropEnabled:false`.
-- `tauri.windows.conf.json` / `tauri.linux.conf.json` — same drag/zoom guards.
+- `tauri.windows.conf.json` — same drag/zoom guards + frameless overlay titlebar (`decorations: false`, decorum plugin, app-drawn caption buttons).
+- `tauri.linux.conf.json` — same drag/zoom guards + full native decorations (`decorations: true`, native titlebar with its own buttons/shadow).
 - `tauri.ios.conf.json` / `tauri.android.conf.json` — mobile bundling.
 
 All four desktop configs must stay in sync for `dragDropEnabled` / `zoomHotkeysEnabled` / viewport guards.
@@ -81,7 +82,7 @@ All four desktop configs must stay in sync for `dragDropEnabled` / `zoomHotkeysE
 ## Quality gates
 
 - **JS/TS:** Biome (`biome.json:1`) — formatter (2 spaces, 80 cols, `asNeeded` semis) + linter (recommended, `useImportType:error`). No ESLint/Prettier.
-- **Rust:** `cargo fmt` + `clippy` with `await_holding_lock: deny` (`Cargo.toml:73`).
+- **Rust:** `cargo fmt` + `clippy` with `await_holding_lock: deny` (`Cargo.toml:66`).
 - **Tests:** Vitest `4` + jsdom + Testing Library — `apps/web/vite.config.ts:37` and `packages/ui`.
 - **Git:** Husky + lint-staged (`package.json:25` — `biome check --write` on `*.{ts,tsx,js,jsx,json,jsonc,css}`).
 - **CI:** `.github/workflows/frontend.yml` (typecheck+lint+test+build) + `rust.yml` (cargo check + fmt).

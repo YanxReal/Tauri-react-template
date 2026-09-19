@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 
 import { App } from "./App"
-import { ThemeProvider } from "./components/theme-provider"
+import { AppProviders } from "./components/app-providers"
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn().mockResolvedValue("Hello, Tauri!"),
@@ -10,9 +10,9 @@ vi.mock("@tauri-apps/api/core", () => ({
 
 function renderApp() {
   return render(
-    <ThemeProvider>
+    <AppProviders>
       <App />
-    </ThemeProvider>
+    </AppProviders>
   )
 }
 

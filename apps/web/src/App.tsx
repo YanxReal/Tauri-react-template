@@ -13,8 +13,8 @@ import { Footer } from "@/components/layout/footer"
 import { GlassEffectToggle } from "@/components/layout/glass-effect-toggle"
 import { Header } from "@/components/layout/header"
 import { Hero } from "@/components/layout/hero"
-import { TitleBar } from "@/components/layout/title-bar"
 import { usePlatform } from "@/components/layout/native-chrome"
+import { TitleBar } from "@/components/layout/title-bar"
 
 export function App() {
   const { t, i18n } = useTranslation()

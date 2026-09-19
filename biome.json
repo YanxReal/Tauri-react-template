@@ -14,6 +14,7 @@
       "!**/.turbo",
       "!**/coverage",
       "!src-tauri/target",
+      "!src-tauri/vendor",
       "!src-tauri/Cargo.lock"
     ]
   },
@@ -76,6 +77,15 @@
         "apps/web/src/components/*.tsx"
       ],
       "linter": { "enabled": false }
+    },
+    {
+      "includes": ["packages/ui/src/styles/globals.css"],
+      "linter": {
+        "rules": {
+          "complexity": { "noImportantStyles": "off" },
+          "style": { "noDescendingSpecificity": "off" }
+        }
+      }
     }
   ]
 }

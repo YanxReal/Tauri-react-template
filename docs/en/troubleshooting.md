@@ -10,15 +10,27 @@ Reset a garbled terminal: `reset` or `tput rmcup`.
 
 ## macOS traffic lights jump on resize
 
-Ensure `lib.rs:107` `adjust_macos_traffic_lights` + `ensure_traffic_lights_observer` + 60 fps polling are present. They counter AppKit resetting buttons to `12px` on each layout pass. Verify `titleBarStyle: Overlay` + `hiddenTitle` in `tauri.macos.conf.json`. Check they target `22.5/44.5/66.5`.
+Ensure `lib.rs:116` `adjust_macos_traffic_lights` + `ensure_traffic_lights_observer` + 60 fps polling are present. They counter AppKit resetting buttons to `12px` on each layout pass. Verify `titleBarStyle: Overlay` + `hiddenTitle` in `tauri.macos.conf.json`. Check they target `22.5/44.5/66.5`.
 
-## No window shadow on Linux / flat window
+## Linux window flat / no shadow / square corners
 
-Native only now (`lib.rs:315` `StyleContext::add_provider` Wayland-safe, no webview fallback). If still flat, check `journalctl` / `RUST_LOG=info` for `linux shadow: provider added via window StyleContext (Wayland/X11 without screen)` vs `via window + screen (X11)` and verify `html.linux .app-shell { border-radius:10px; overflow:hidden }` clips all 4 corners. On Sway/Hyprland or X11 without `picom/compton`, the compositor may ignore `decoration` shadows — native only will be invisible by design per user request.
+By design the app does **not** draw its own frame: `tauri.linux.conf.json:11` uses `decorations: true`, so GTK (CSD) or the compositor (SSD) draws the titlebar, the shadow and the corner radius. If you see none of that, the problem is the session/theme, not the app — check `echo $XDG_SESSION_TYPE` and that a GTK theme is set. Never re-add `box-shadow` / `border-radius` / `margin` on `.app-shell` for Linux: the shell is the client area inside the native frame and those rules show up as cut corners under the titlebar.
+
+## Windows: no caption buttons / no Snap Layouts
+
+Windows is frameless (`tauri.windows.conf.json:12` → `decorations: false`) and the titlebar is the app's own: `header.tsx:191` renders `window-controls.tsx` and `lib.rs:361` calls `create_overlay_titlebar()`. If the buttons don't appear, check that `platform === 'windows'` resolved (the Rust `platform_info` command) and that `capabilities/default.json:6` still lists `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:15`) plus `capabilities/windows.json:7` for `decorum:allow-show-snap-overlay` (Windows-only capability; keep it out of `default.json` or `cargo check` fails on macOS/Linux). Snap Layouts only open via the 620 ms hover on maximize (`window-controls.tsx:8` → `show_snap_overlay`), which is decorum's Win+Z equivalent — tao cannot answer `WM_NCHITTEST` with `HTMAXBUTTON`, so there is no true native hover flyout. If the plugin's injected 32px bar ever shows up over the header, the `[data-tauri-decorum-tb]` rule (`globals.css:230`) was removed.
 
 ## Glass yellow glitches / RAM blow-up on Linux
 
-Disable glass — Linux forces `glass OFF` by design (`glass-cards-provider.tsx` + `globals.css:283`). Keep `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` in `lib.rs:371`. See `native-feel.md` Plan A for a degraded-glass alternative.
+## Windows: black window / "could not create the data directory" (WebView2)
+
+**Symptom:** the app opens and the client area stays black/dark, or a WebView2 dialog says Microsoft Edge cannot read or write `…\EBWebView`.
+
+**Cause:** WebView2 never created its user-data folder — this is **not** a rendering, GPU or Mica problem, so don't chase `transparent` / `window_effects_set`. It shows up when the process is started from a **service context**: an SSH session, `PsExec -i 1`, a SYSTEM scheduled task or WinRM. Those tokens run without the interactive profile loaded, so `%LOCALAPPDATA%\com.tauri-react-template.app\EBWebView` is not writable for that identity.
+
+**Fix:** launch the app the normal way, as the logged-in desktop user (shortcut / `pnpm tauri:dev`). To pin the folder explicitly, set `WEBVIEW2_USER_DATA_FOLDER=C:\some\writable\dir` before starting (note the cmd gotcha: `set VAR=value && app.exe` captures the trailing space, so quote it: `set "VAR=value" && app.exe`). Debug tip: `scripts/build-windows.sh` + `PsExec64 -i 1 -s` reproduces the failure, so it is useless for checking UI work — copy the exe to a real session and double-click it instead.
+
+Disable glass — Linux forces `glass OFF` by design (`glass-cards-provider.tsx` + `globals.css:246`). Keep `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` in `lib.rs:315`. See `native-feel.md` Plan A for a degraded-glass alternative.
 
 ## `pnpm install` fails / Node version mismatch
 

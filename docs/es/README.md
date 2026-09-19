@@ -13,7 +13,7 @@ Plantilla bilingüe: **Tauri v2 + React 19 + Vite 8 + Tailwind v4** — starter 
 | 5 | [Estilos y theming](./styling.md) | Tailwind v4, globals.css, OKLCH, dark mode, glass |
 | 6 | [i18n](./i18n.md) | i18next EN/ES, añadir locales, flujo de traducción |
 | 7 | [Móvil](./mobile.md) | iOS (target unificado Xcode) y Android, hot-reload |
-| 8 | [Sensación nativa](./native-feel.md) | Traffic lights, drag, bloqueo de zoom, vibrancy/Mica, sombras en Linux |
+| 8 | [Sensación nativa](./native-feel.md) | Traffic lights, drag, bloqueo de zoom, vibrancy/Mica, marco nativo en Linux, titlebar overlay en Windows |
 | 9 | [Scripts y tooling](./scripts.md) | Makefile, helpers Xcode, Biome, Husky, CI |
 | 10 | [Solución de problemas](./troubleshooting.md) | Errores comunes y soluciones por OS |
 | 11 | [Contribuir](./contributing.md) | Convenciones, regla de paridad, checks de calidad |

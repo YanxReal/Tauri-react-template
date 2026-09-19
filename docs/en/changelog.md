@@ -29,8 +29,8 @@
 ### `c9ae1a4` `feat: native-app feel — prevent-default plugin, dragDrop/zoomHotkeys off, CSS+JS multi-OS`
 - **The big native-feel commit:**
   - `dragDropEnabled:false` + `zoomHotkeysEnabled:false` in **all 4** `tauri.*.conf.json` windows.
-  - Viewport `user-scalable=no, maximum-scale=1.0` (`index.html:5`), CSS `user-select:none` + `-webkit-user-drag:none` + `touch-action: pan-x pan-y` (`globals.css:136`), JS `dragstart` + `wheel` guards (`main.tsx:17`).
-  - `tauri-plugin-prevent-default` with `Flags::debug()` (`lib.rs:390`) — blocks context menu / reload / devtools in release, keeps them in debug.
+  - Viewport `user-scalable=no, maximum-scale=1.0` (`index.html:5`), CSS `user-select:none` + `-webkit-user-drag:none` + `touch-action: pan-x pan-y` (`globals.css:137`), JS `dragstart` + `wheel` guards (`main.tsx:21`).
+  - `tauri-plugin-prevent-default` with `Flags::debug()` (`lib.rs:330`) — blocks context menu / reload / devtools in release, keeps them in debug.
 - Why `touch-action: pan-x pan-y` not `manipulation`/`none`: keeps native scroll alive; `pan-x pan-y` disables pinch-zoom without killing gesture. See `ae5be97`.
 
 ### `ae5be97` `fix: restore normal scrolling in WebKit — touch-action manipulation instead of pan-x pan-y` (superseded)
@@ -42,13 +42,13 @@
 ## 2026-08-30 — Crystal / glass
 
 ### `f997723` `feat: efecto cristal — toggle de translucidez nativa (window-vibrancy)`
-- `window-vibrancy 0.8` crate, **sync** command `window_effects_set {enabled, dark?}` (`lib.rs:18`, `lib.rs:78`) — `NSVisualEffectView` on macOS (`HudWindow`/`UnderWindowBackground`), Mica on Windows 11; `unsupported` elsewhere. `VibrancyProvider` (`vibrancy-provider.tsx`) + `localStorage: vibrancy` + `html.vibrancy` → `globals.css:177` transparent body.
+- `window-vibrancy 0.8` crate, **sync** command `window_effects_set {enabled, dark?}` (`lib.rs:26`, `lib.rs:82`) — `NSVisualEffectView` on macOS (`HudWindow`/`UnderWindowBackground`), Mica on Windows 11; `unsupported` elsewhere. `VibrancyProvider` (`vibrancy-provider.tsx`) + `localStorage: vibrancy` + `html.vibrancy` → `globals.css:177` transparent body.
 
 ### `efc552c` `feat: el efecto cristal sigue el tema de la app`
 - `VibrancyProvider` watches `html.dark` via `MutationObserver` and re-applies material on theme change. macOS picks material per `dark` (so crystal follows app theme, not system).
 
 ### `5fb6077` `feat: ventana nativa - esquinas redondeadas, arrastre y cristal por tema`
-- Fixes `window-vibrancy` being under `[target.'cfg(windows)']` — moves to main `[dependencies]` so macOS links it. Adds `windows = "0.61"` DWM crate (`Cargo.toml:54`). `DwmSetWindowAttribute(DWMWCP_ROUND)` for Windows 11 frameless (`lib.rs:399`). New `native-chrome.ts` (`usePlatform`, `useMacDragRegion`), header with native caption buttons (`header.tsx`).
+- Fixes `window-vibrancy` being under `[target.'cfg(windows)']` — moves to main `[dependencies]` so macOS links it. Adds `windows = "0.61"` DWM crate (`Cargo.toml:57`). `DwmSetWindowAttribute(DWMWCP_ROUND)` for Windows 11 frameless (`lib.rs:365`). New `native-chrome.ts` (`usePlatform`, `useMacDragRegion`), header with native caption buttons (`header.tsx`).
 
 ### `73d445a` `fix: ventana nativa — arrastre con banda reservada y cristal de fondo`
 - Reserves a **36px band** (`--native-titlebar-height`) for drag, `app-shell` padding, sticky header at `top:36px`. Full-window crystal: `color-mix(var(--background) 62%, transparent)` so background translucency follows theme.
@@ -62,10 +62,10 @@
 - Adds `core:window:allow-start-dragging` to `capabilities/default.json` (without it `startDragging` silently fails). `app-shell` becomes the **scroll container** (`overflow-y: auto`) with `border-radius:10px` on macOS; header gets `data-tauri-drag-region` on Windows/Linux. `html/body` transparent in desktop — `app-shell` owns the background.
 
 ### `938f89a` `fix: traffic lights live-resize sin flicker + header alineado + windows NSIS/Wix`
-- **HuLa 3-mechanism fix for macOS traffic lights** (`lib.rs:107`):
-  1. `WindowEvent::Focused/Resized/ScaleFactorChanged` (`lib.rs:437`)
-  2. `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (`lib.rs:250`)
-  3. **60 fps polling** (`NSTimer` in `NSRunLoopCommonModes` + `needs_update` `±0.6px`, `lib.rs:449`) — fires during `NSEventTrackingRunLoopMode`
+- **HuLa 3-mechanism fix for macOS traffic lights** (`lib.rs:116`):
+  1. `WindowEvent::Focused/Resized/ScaleFactorChanged` (`lib.rs:390`)
+  2. `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (`lib.rs:253`)
+  3. **60 fps polling** (`NSTimer` in `NSRunLoopCommonModes` + `needs_update` `±0.6px`, `lib.rs:412`) — fires during `NSEventTrackingRunLoopMode`
   - Targets `Close 22.5 / Mini 44.5 / Zoom 66.5`, `grow 3`, `lower 8`, `shift 16` + `extra_gap`, `setAutoresizingMask(0)`, header `pl-[96px] sm:pl-[108px]`.
 - Also: Windows NSIS/Wix installer assets (`nsis-header.bmp`, `wix-banner.bmp`), `LICENSE.rtf`, multi-size `src-tauri/icons/`.
 - Verification: `pnpm build` + `cargo check` on macOS + Linux (docker `webkit2gtk-4.1`).
@@ -73,15 +73,40 @@
 ## 2026-09-02 — Linux glass & curves
 
 ### `93657d3` `fix: linux glass veto + curvas ventana + toggle combinado`
-- **Linux yellow glitches** (`a2.png`) — WebKitGTK 4.1 + DMABUF + NVIDIA/Wayland + `backdrop-blur` → `AcceleratedSurfaceDMABuf was unable to…` + `Error 71` + RAM spike. Fix: `GlassCardsProvider` returns `false` if `platform==='linux'`, `GlassEffectToggle` disabled, `globals.css:283` strips `backdrop-filter` → `var(--card)`, `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` (`lib.rs:371`). `html.linux .app-shell {border-radius:10px}` fixes flat window (`a1.png`). New `scripts/build-linux.sh`.
+- **Linux yellow glitches** (`a2.png`) — WebKitGTK 4.1 + DMABUF + NVIDIA/Wayland + `backdrop-blur` → `AcceleratedSurfaceDMABuf was unable to…` + `Error 71` + RAM spike. Fix: `GlassCardsProvider` returns `false` if `platform==='linux'`, `GlassEffectToggle` disabled, `globals.css:237` strips `backdrop-filter` → `var(--card)`, `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` (`lib.rs:315`). `html.linux .app-shell {border-radius:10px}` fixes flat window (`a1.png`). New `scripts/build-linux.sh`.
 
 ## 2026-09-05 — Linux shadow
 
 ### `9da8602` `fix: sombra de ventana nativa en Linux via GTK CssProvider + fallback webview`
+> **Historical — replaced.** Everything below was deleted; see the 2026-09-07 → 2026-09-18 section.
+
 - `tauri`/`tao` do NOT support `WindowConfig.shadow` on Linux (`"Linux: Unsupported"`). With `decorations:false transparent:true` the `window.background.csd decoration { box-shadow }` node never generates → flat window.
-  - **Primary:** `apply_linux_window_shadow` (`lib.rs:315`) — `gtk_window()` + `CssProvider` (APPLICATION priority) forces `.csd`, restores `decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` + `:backdrop`, adds `html.gtk-shadow` via `window.eval`.
-  - **Fallback:** `globals.css:244` `html.linux:not(.gtk-shadow) .app-shell` → `margin:12px + box-shadow` — for Sway/Hyprland/X11 where CSD is ignored. Maximized/fullscreen → `0`.
-- Adds `gtk = "0.18"` (`Cargo.toml:67`, linux target only) + `useWindowStateClasses` for `window-maximized`/`window-fullscreen` via capability `allow-is-fullscreen`.
+  - **Primary:** `apply_linux_window_shadow` — `gtk_window()` + `CssProvider` (APPLICATION priority) forces `.csd`, restores `decoration { box-shadow: 0 16px 48px rgba(0,0,0,.38); margin:12px; border-radius:10px }` + `:backdrop`, adds `html.gtk-shadow` via `window.eval`.
+  - **Fallback:** `html.linux:not(.gtk-shadow) .app-shell` → `margin:12px + box-shadow` — for Sway/Hyprland/X11 where CSD is ignored. Maximized/fullscreen → `0`.
+- Adds `gtk = "0.18"` (linux target only) + `useWindowStateClasses` for `window-maximized`/`window-fullscreen` via capability `allow-is-fullscreen`.
+
+## 2026-09-07 → 2026-09-18 — Linux shadow saga, reverted
+
+12 commits (`83042a6` … `98966ab`) chased the Linux frame: hybrid shadow → native-only `StyleContext::add_provider` → CSD latched with a hidden `HeaderBar` → `transparent:false` → forced RGBA visual + `opaque_region` → `set_opacity(0.99)`.
+
+**Outcome — Linux stops drawing its own frame.** `tauri.linux.conf.json:11` uses `decorations: true` + `transparent: false`, so GTK / the compositor draw the titlebar with native minimize / maximize / close, shadow and corner radius. `apply_linux_window_shadow`, the linux-only `gtk` / `gdk` deps and every `.app-shell` frame rule (`border-radius` / `margin` / `box-shadow` / `contain` / inner-scroll) were deleted. Windows also went `decorations: true` here, but that was reverted one day later — see the 2026-09-19 entry. The custom **drag** area stays (`data-tauri-drag-region` + `useWindowDragRegion`, Prestly 56px band).
+
+Why the hacks could not work: with `transparent:false` tao never installs an RGBA visual (it does it **before realize**, only for transparent windows) and `gtk_widget_set_visual()` after realize is a no-op, so the corners could never blend — the white/opaque 1px corners and the square buffer under the rounded `decoration` were that, not a CSS bug.
+
+Least privilege: `core:window:allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-is-fullscreen` were dropped from `capabilities/default.json:6` (they only existed for the caption buttons and `useWindowStateClasses`). `allow-start-dragging`, `allow-internal-toggle-maximize` (Tauri's injected `data-tauri-drag-region` script) and `allow-toggle-maximize` (double-click fallback in `useWindowDragRegion`) stay. `allow-is-fullscreen` is still unused; `allow-minimize` / `allow-close` / `allow-is-maximized` came back with the Windows caption buttons on 2026-09-19.
+
+## 2026-09-19 — Windows: overlay titlebar with decorum (Edge style)
+
+Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false`, `transparent: true` kept for Mica) and the app draws the titlebar: the [decorum](https://github.com/clearlysid/tauri-plugin-decorum) community plugin (`Cargo.toml`, Windows-only target deps; `lib.rs:339`) plus `create_overlay_titlebar()` in `setup()` (`lib.rs:361`). This is the Edge / VS Code model — one 56px band instead of the OS frame on top of the app header.
+
+- `apps/web/src/components/layout/window-controls.tsx:61` renders minimize / maximize-restore / close (lucide icons, 46px hit area, red hover on close), mounted by `header.tsx:191` only when `platform === 'windows'`.
+- Snap Layouts: hovering maximize for 620 ms (`window-controls.tsx:8`) focuses the window and invokes `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`) — decorum presses Win+Z and then Alt to hide the numbered badges. Chromium answers `WM_NCHITTEST` with `HTMAXBUTTON` for the true hover flyout; tao does not expose that hook, so this is the closest equivalent. Verified on a Windows 11 build 26200 VM: minimizar / maximizar / restaurar / cerrar work, dragging by the header moves the window, `DwmGetWindowAttribute` reports `corner = 2` (`DWMWCP_ROUND`), `WS_THICKFRAME` stays set (resizable) and the flyout opens after the hover — see `troubleshooting.md` for the black-window gotcha when the app is launched from a service context.
+- `globals.css:230` hides the 32px titlebar decorum injects (`[data-tauri-decorum-tb]`), which would cover the header and swallow the button clicks; the drag band stays ours (`data-tauri-drag-region` + `useWindowDragRegion`, `header.tsx:39`). Resize borders still work (tao hit-tests the frame edges of undecorated resizable windows) and `DWMWCP_ROUND` (`lib.rs:365`) keeps the corners round.
+- Permissions: `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` back in `capabilities/default.json:6` (the last one is `capabilities/default.json:15`; without it `setFocus()` rejects and the `catch` in `window-controls.tsx` swallows it, so the Snap Layouts flyout silently never opens), and `decorum:allow-show-snap-overlay` in its own `capabilities/windows.json:7` with `platforms: ["windows"]` — the plugin is a `cfg(windows)` dependency, so keeping the permission in `default.json` made every macOS/Linux `cargo check` fail with `Permission decorum:allow-show-snap-overlay not found`. Linux keeps full native decorations; macOS untouched.
+
+## 2026-09-18 — Windows cross-compile working
+
+`scripts/build-windows.sh` now cross-compiles the Windows x64 bundle from macOS/Linux with `cargo-xwin` (previously it shelled out to the Prestly-branded `cargo-tauri` and defaulted to `--bundles msi`, which cannot run off-Windows). It resolves the keg-only LLVM/lld paths, checks `cargo-xwin` / the MSVC target / `makensis`, and runs the stock CLI: `pnpm tauri build --target x86_64-pc-windows-msvc --runner cargo-xwin --bundles nsis`. Outputs `tauri-react-template.exe` + the NSIS setup `.exe`. Docs: `docs/en/scripts.md` § Windows cross-compile.
 
 ---
 

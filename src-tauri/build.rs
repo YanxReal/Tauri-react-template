@@ -93,13 +93,18 @@ fn main() {
                 continue;
             }
             if let Some((k, v)) = line.split_once('=') {
-                file_values.insert(k.trim().to_string(), v.trim().trim_matches('"').trim_matches('\'').to_string());
+                file_values.insert(
+                    k.trim().to_string(),
+                    v.trim().trim_matches('"').trim_matches('\'').to_string(),
+                );
             }
         }
     }
 
     for key in EMBED_KEYS {
-        let value = env::var(key).ok().or_else(|| file_values.get(*key).cloned());
+        let value = env::var(key)
+            .ok()
+            .or_else(|| file_values.get(*key).cloned());
         if let Some(value) = value {
             // Validate Supabase URLs in release (like Prestly audit F6)
             if *key == "SUPABASE_URL" || *key == "VITE_SUPABASE_URL" {
@@ -112,7 +117,11 @@ fn main() {
 
 #[cfg(target_os = "macos")]
 fn which_actool() -> Result<String, ()> {
-    if let Ok(output) = std::process::Command::new("xcrun").arg("--find").arg("actool").output() {
+    if let Ok(output) = std::process::Command::new("xcrun")
+        .arg("--find")
+        .arg("actool")
+        .output()
+    {
         if output.status.success() {
             return Ok(String::from_utf8_lossy(&output.stdout).trim().to_string());
         }
