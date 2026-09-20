@@ -24,7 +24,9 @@ Referencia: `wry#1747`, `tauri#13044`. `titleBarStyle: Overlay` + `hiddenTitle` 
 2. `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (`lib.rs:253`) — más fiable que `WindowEvent` en macOS 26.
 3. **Polling live-resize a 60 fps** (`NSTimer` en `NSRunLoopCommonModes` + `needs_update` `±0.6px`) mientras `inLiveResize` — dispara durante `NSEventTrackingRunLoopMode`, no solo al soltar (`lib.rs:412`).
 
-Posiciones finales: `Close 19.5 / Mini 41.5 / Zoom 63.5` (centros de 22px, `15px` con `grow 3`, `lower 8`, `shift_right 16` + `extra_gap 0/2/4`, `pl-[96px] sm:pl-[108px]` en header). `setAutoresizingMask(0)` evita que AppKit vuelva a auto-resize entre frames. Ver `lib.rs:adjust_macos_traffic_lights` + `ensure_traffic_lights_observer`.
+Posiciones finales: `Close 19.5 / Mini 41.5 / Zoom 63.5` (dots de 14px en macOS 26, `grow 3` cuando AppKit todavía los sirve a 12px, `shift_right 16` + `extra_gap 0/2/4`, `pl-[96px] sm:pl-[108px]` en header). `setAutoresizingMask(0)` evita que AppKit vuelva a auto-resize entre frames. Ver `lib.rs:161` `adjust_macos_traffic_lights` + `lib.rs:287` `ensure_traffic_lights_observer`.
+
+**Centrado vertical (`traffic_lights_target_y`, `lib.rs:141`)** — el `frame` de un `standardWindowButton` vive en el sistema de coordenadas de su **superview** (el contenedor de la titlebar), no en el de la ventana. En macOS 26 ese contenedor **no está flipped**, así que escribir el `y` absoluto `26 - size/2` (la "distancia desde arriba" que asumía el código anterior) mandaba los dots *hacia arriba*: medidos desde el borde superior pasaban de `9–23px` (nativos) a `0–13px`. Ahora `traffic_lights_target_y` pregunta al superview por `isFlipped()` + su altura y devuelve la `y` que deja el centro del dot en `MACOS_HEADER_BAND / 2` (`lib.rs:122`) = **26px**, la mitad del header de 52px de macOS (`header.tsx:29`). Como el objetivo es absoluto es idempotente, así que el detector de drift de 60 fps deja de re-aplicar el frame en cada tick.
 
 Verifica: `pnpm typecheck && pnpm lint && pnpm build` + testear scroll / click / no-zoom en un build real por plataforma.
 

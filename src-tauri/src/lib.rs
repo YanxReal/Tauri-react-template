@@ -115,18 +115,54 @@ pub extern "C" fn start_app() {
 #[cfg(all(target_os = "macos", desktop))]
 const TRAFFIC_LIGHTS_X: [f64; 3] = [19.5, 41.5, 63.5];
 
+/// Alto de la banda del header en macOS: tiene que coincidir con
+/// `HEADER_HEIGHT.macos` de `apps/web/src/components/layout/header.tsx`
+/// (`h-[52px]`). Los dots se centran dentro de esta banda.
+#[cfg(all(target_os = "macos", desktop))]
+const MACOS_HEADER_BAND: f64 = 52.0;
+
+/// Centro vertical objetivo de los dots (la mitad de la banda del header).
+#[cfg(all(target_os = "macos", desktop))]
+const TRAFFIC_LIGHTS_CENTER_Y: f64 = MACOS_HEADER_BAND / 2.0;
+
+/// Tamaño nativo de un dot antes del `grow` (12px de serie; macOS reciente los
+/// sirve a 14px, que ya cae dentro del rango "agrandado"). Compartido con el
+/// detector de drift para no tener dos copias del número.
+#[cfg(all(target_os = "macos", desktop))]
+const NATIVE_DOT_SIZE: f64 = 12.0;
+
+/// Y objetivo de un dot de `size` px para que quede centrado en la banda del
+/// header. El `frame` de los botones vive en el sistema de coordenadas de su
+/// **superview** (el contenedor de la titlebar), que puede estar flipped o no:
+/// medido en macOS 26 ese contenedor NO está flipped, así que escribir
+/// `y = 26 - size/2` movía los dots ~9px HACIA ARRIBA en vez de bajarlos.
+/// Con `isFlipped()` cubrimos los dos casos.
+#[cfg(all(target_os = "macos", desktop))]
+fn traffic_lights_target_y(btn: &objc2_app_kit::NSButton, size: f64) -> f64 {
+    let desired_top = TRAFFIC_LIGHTS_CENTER_Y - size / 2.0;
+    // SAFETY: `btn` es un NSButton vivo de la ventana; `superview` es AppKit puro.
+    let Some(parent) = (unsafe { btn.superview() }) else {
+        return desired_top;
+    };
+    if parent.isFlipped() {
+        desired_top
+    } else {
+        parent.frame().size.height - desired_top - size
+    }
+}
+
 /// Ajusta los traffic lights nativos de macOS (patrón "bajarlos y
 /// agrandarlos"). Accede a los botones de ventana estándar vía `NSWindow`
 /// (AppKit tipado) y modifica su `frame` en bloque: `grow` agranda cada dot
-/// alrededor de su centro y `lower` lo desplaza hacia abajo, conservando el
-/// espaciado horizontal entre los tres.
+/// alrededor de su centro y la `y` se fija de forma absoluta para centrarlos
+/// verticalmente en la banda del header (`TRAFFIC_LIGHTS_CENTER_Y`),
+/// conservando el espaciado horizontal entre los tres.
 #[cfg(all(target_os = "macos", desktop))]
 fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
     use objc2_app_kit::{NSAutoresizingMaskOptions, NSWindow, NSWindowButton};
     use objc2_foundation::NSRect;
 
     let grow = 3.0_f64; // agrandar cada dot ~3px
-    let lower = 8.0_f64; // bajarlos un poco más (~8px)
     let shift_right = 16.0_f64; // moverlos un poco a la izquierda (19->16)
 
     let Ok(ptr) = window.ns_window() else {
@@ -141,8 +177,9 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
     // Evita drift acumulativo en live-resize: AppKit resetea a ~12px,
     // nosotros agrandamos a ~15px. Si ya está agrandado, no volver a
     // sumar (evita que se vayan caminando a la derecha y desaparezcan).
-    const NATIVE_SIZE: f64 = 12.0;
+    const NATIVE_SIZE: f64 = NATIVE_DOT_SIZE;
     const GROWN_SIZE: f64 = NATIVE_SIZE + 3.0;
+    let window_height = ns_window.frame().size.height;
 
     for button in [
         NSWindowButton::CloseButton,
@@ -156,8 +193,10 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
         if frame.size.width <= 0.0 || frame.size.height <= 0.0 {
             continue;
         }
-        // Si ya está agrandado, asegura equidistancia y baja un poco más (5->8).
-        // Targets con lower 8: y -3 vs anterior. Aplica x y y juntos.
+        // Ya agrandado: snap absoluto de x e y. La `y` se recalcula desde el
+        // superview del botón (ver `traffic_lights_target_y`), así que es
+        // idempotente y no depende del historial de resizes (antes se bajaba 3px
+        // a ciegas en cada tick y el dot acababa donde AppKit quisiera).
         if frame.size.width > NATIVE_SIZE + 1.5 && frame.size.width < GROWN_SIZE + 2.0 {
             let target_x = match button {
                 NSWindowButton::CloseButton => TRAFFIC_LIGHTS_X[0],
@@ -165,35 +204,16 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
                 NSWindowButton::ZoomButton => TRAFFIC_LIGHTS_X[2],
                 _ => frame.origin.x,
             };
-            let target_y_delta = -3.0; // lower 5->8
-            let need_x = (frame.origin.x - target_x).abs() >= 0.6;
-            // Detecta si aún está en y anterior (con lower 5) -> necesita bajar 3
-            // No tenemos referencia exacta de y, pero si target_x no coincide, también y está alto
-            if !need_x {
-                // Si x ya está bien, verifica y: si viene de lower 5, y está 3px más alto
-                // Lo bajamos. Como no tenemos target_y absoluto, bajamos 3px directo
-                // solo si no hemos bajado ya (evita acumular). Usamos un flag: si x está bien
-                // asumimos que puede faltar el y, así que bajamos una vez.
-                let new_rect = NSRect {
-                    origin: objc2_foundation::NSPoint {
-                        x: frame.origin.x,
-                        y: frame.origin.y - 3.0,
-                    },
-                    size: frame.size,
-                };
-                // Solo baja si aún está pegado arriba (y > que target esperado ~?)
-                // Evita bajar en cada resize: solo una vez por ventana
-                // Heurística: si y > 5 (muy alto), baja
-                if frame.origin.y > 8.0 {
-                    btn.setFrame(new_rect);
-                    btn.setAutoresizingMask(NSAutoresizingMaskOptions(0));
-                }
+            let target_y = traffic_lights_target_y(&btn, frame.size.height);
+            let off_x = (frame.origin.x - target_x).abs() >= 0.6;
+            let off_y = (frame.origin.y - target_y).abs() >= 0.6;
+            if !off_x && !off_y {
                 continue;
             }
             let new_rect = NSRect {
                 origin: objc2_foundation::NSPoint {
                     x: target_x,
-                    y: frame.origin.y + target_y_delta,
+                    y: target_y,
                 },
                 size: frame.size,
             };
@@ -201,8 +221,10 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
             btn.setAutoresizingMask(NSAutoresizingMaskOptions(0));
             continue;
         }
-        // No tocar si está en fullscreen (origen fuera de rango visible)
-        if frame.origin.y < -100.0 || frame.origin.y > 1000.0 {
+        // No tocar si está en fullscreen / fuera de la ventana: AppKit manda los
+        // botones fuera de rango visible. (Antes era un `y > 1000` fijo, que en
+        // ventanas altas también descartaba una posición normal.)
+        if frame.origin.y < -100.0 || frame.origin.y > window_height - 4.0 {
             continue;
         }
         let extra_gap = match button {
@@ -214,7 +236,7 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
         let new_rect = NSRect {
             origin: objc2_foundation::NSPoint {
                 x: frame.origin.x - grow / 2.0 + shift_right + extra_gap,
-                y: frame.origin.y - grow / 2.0 - lower,
+                y: traffic_lights_target_y(&btn, frame.size.height + grow),
             },
             size: objc2_foundation::NSSize {
                 width: frame.size.width + grow,
@@ -249,7 +271,11 @@ fn needs_traffic_lights_update(window: &tauri::WebviewWindow) -> bool {
     for (button, target_x) in targets {
         if let Some(btn) = ns_window.standardWindowButton(button) {
             let frame = btn.frame();
-            if (frame.origin.x - target_x).abs() > 0.6 || (frame.size.width - 15.0).abs() > 0.6 {
+            let target_y = traffic_lights_target_y(&btn, frame.size.height);
+            if (frame.origin.x - target_x).abs() > 0.6
+                || (frame.origin.y - target_y).abs() > 0.6
+                || frame.size.width < NATIVE_DOT_SIZE + 1.5
+            {
                 return true;
             }
         }

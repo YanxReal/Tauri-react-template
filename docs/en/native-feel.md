@@ -24,7 +24,9 @@ Reference: `wry#1747`, `tauri#13044`. `titleBarStyle: Overlay` + `hiddenTitle` l
 2. `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (`lib.rs:253`) — more reliable than `WindowEvent` on macOS 26.
 3. **Live-resize polling @ 60 fps** (`NSTimer` in `NSRunLoopCommonModes` + `needs_update` `±0.6px`) while `inLiveResize` — fires during `NSEventTrackingRunLoopMode`, not just on release (`lib.rs:412`).
 
-Final positions: `Close 19.5 / Mini 41.5 / Zoom 63.5` (22px centers, `15px` with `grow 3`, `lower 8`, `shift_right 16` + `extra_gap 0/2/4`, `pl-[96px] sm:pl-[108px]` in header). `setAutoresizingMask(0)` prevents AppKit from auto-resizing between frames. See `lib.rs:adjust_macos_traffic_lights` + `ensure_traffic_lights_observer`.
+Final positions: `Close 19.5 / Mini 41.5 / Zoom 63.5` (14px dots on macOS 26, `grow 3` when AppKit still serves 12px, `shift_right 16` + `extra_gap 0/2/4`, `pl-[96px] sm:pl-[108px]` in header). `setAutoresizingMask(0)` prevents AppKit from auto-resizing between frames. See `lib.rs:161` `adjust_macos_traffic_lights` + `lib.rs:287` `ensure_traffic_lights_observer`.
+
+**Vertical centering (`traffic_lights_target_y`, `lib.rs:141`)** — a `standardWindowButton` frame lives in the coordinate system of its **superview** (the titlebar container), not of the window. On macOS 26 that container is **not flipped**, so writing the absolute `y = 26 - size/2` (the "distance from the top" the buggy code assumed) pushed the dots *up*: measured from the window top they went from `9–23px` (native) to `0–13px`. `traffic_lights_target_y` now asks the superview for `isFlipped()` + its height and returns the `y` that puts the dot centre at `MACOS_HEADER_BAND / 2` (`lib.rs:122`) = **26px**, the middle of the 52px macOS header (`header.tsx:29`). Because the target is absolute it is idempotent, so the 60 fps drift detector stops and no longer re-applies a frame on every tick.
 
 Verify: `pnpm typecheck && pnpm lint && pnpm build` + test scroll / click / no-zoom in a real build per platform.
 

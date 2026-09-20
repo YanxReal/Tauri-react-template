@@ -77,7 +77,8 @@ Per-OS overlays (merged at build): `tauri.macos.conf.json`, `tauri.windows.conf.
 
 Background and fix documented in `docs/en/native-feel.md`. Implementation in `lib.rs:124`:
 
-- `adjust_macos_traffic_lights` — moves/grows the 3 `NSWindowButton`s (targets `19.5/41.5/63.5`, `±0.6px` hysteresis, `grow 3`, `lower 8`, `shift_right 16` + `extra_gap`).
+- `adjust_macos_traffic_lights` (`lib.rs:161`) — moves/grows the 3 `NSWindowButton`s (targets `19.5/41.5/63.5`, `±0.6px` hysteresis, `grow 3`, `shift_right 16` + `extra_gap`).
+- `traffic_lights_target_y` (`lib.rs:141`) — absolute `y` so the dot centre lands at `MACOS_HEADER_BAND / 2` (`lib.rs:122` = 26px, middle of the 52px macOS header). The frame lives in the button's superview, which on macOS 26 is **not flipped**: read `isFlipped()` + the container height instead of assuming "distance from the top".
 - `needs_traffic_lights_update` + `ensure_traffic_lights_observer` (`NSWindowDidResizeNotification`/`DidMove`) + **60 fps polling** (`NSTimer` in `NSRunLoopCommonModes`) during `NSEventTrackingRunLoopMode` (live-resize).
 - `setAutoresizingMask(0)` prevents AppKit from re-resetting.
 
