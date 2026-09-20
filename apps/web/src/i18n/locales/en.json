@@ -53,12 +53,12 @@
     "terms": "Terms"
   },
   "vibrancy": {
-    "label": "Crystal / glass effect",
-    "hint": "Native window translucency (macOS vibrancy, Windows 11 Mica).",
+    "label": "Crystal effect",
+    "hint": "Native window translucency (macOS vibrancy, Windows 11 Mica). Independent from the glass cards.",
     "unavailable": "Not supported on this platform."
   },
   "glassCards": {
     "label": "Glass cards",
-    "hint": "Toggles the template between the standard components and the reusable glass components from @workspace/ui."
+    "hint": "Toggles the template between the standard components and the reusable glass components from @workspace/ui. Independent from the native window material."
   }
 }

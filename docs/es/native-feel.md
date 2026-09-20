@@ -36,7 +36,7 @@ Patrón de **Prestly**: toggle nativo de translucidez.
 
 - **Rust** (`lib.rs:26`): crate `window-vibrancy = "0.8"`. Comando sync `window_effects_set {enabled, dark?}` (`lib.rs:82`) — vibrancy (`NSVisualEffectView`) en macOS, Mica en Windows 11; Linux/móvil devuelven `unsupported` (no-op). Debe ser **sync** (main thread).
 - **Frontend** (`apps/web/src/components/vibrancy-provider.tsx` + `glass-cards-provider.tsx`): `VibrancyProvider` + `useVibrancy()` persistido en `localStorage` (`vibrancy`), `GlassCardsProvider` (`glass-cards`). `html.vibrancy` activa `globals.css:177` body transparente. `dark` sigue al tema (tint de Mica).
-- **Toggle**: `VibrancyToggle` / `GlassEffectToggle` (`apps/web/src/components/layout/glass-effect-toggle.tsx`) — `Switch` de shadcn, oculto si `!supported` (Linux/móvil/navegador). El toggle combinado controla `glass-cards` + `vibrancy` juntos, por defecto **OFF** (Linux fuerza OFF).
+- **Toggles**: dos switches INDEPENDIENTES en `GlassControls` (`apps/web/src/components/layout/glass-controls.tsx`) — `VibrancyToggle` (`vibrancy-toggle.tsx`, material nativo, oculto si `!supported`: Linux/móvil/navegador) y `GlassCardsToggle` (`glass-cards-toggle.tsx`, los componentes `glass-*` web, deshabilitado en Linux). Antes eran un único toggle combinado; ahora cualquier mezcla es válida (vibrancy + tarjetas sólidas, tarjetas glass en ventana opaca, ambos). Por defecto **OFF** cada uno.
 - **CSS** (`globals.css:177`, `269`): `html.vibrancy .app-shell { background: color-mix(... 32%) }` (42% en claro), header macOS `backdrop-blur(16px)`; Windows aporta material Mica; Linux desactiva blur.
 
 ## Scrollbars y contenedor de scroll (todas las plataformas de escritorio)
@@ -86,7 +86,7 @@ Causa raíz (por qué esos hacks no podían arreglarlo): con `transparent:false`
 
 `backdrop-blur` + `DMABUF` en WebKitGTK 4.1 (sobre todo NVIDIA/Wayland) dispara `AcceleratedSurfaceDMABuf was unable to construct a complete framebuffer` + `Error 71` + RAM al redimensionar (docs `linux-graphics` de Tauri, `wry#1747`).
 
-**Fix actual (veto):** en Linux se fuerza `glass OFF` — `glass-cards-provider.tsx` devuelve `false` si `platform==='linux'`, `GlassEffectToggle` deshabilitado con tooltip, y `globals.css:247` pone `html.linux .glass-card { backdrop-filter:none; background:var(--card) }`. `lib.rs:315` fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder`.
+**Fix actual (veto):** en Linux se fuerza `glass OFF` — `glass-cards-provider.tsx` expone `supported: false` (`platform==='linux'`) y colapsa `enabled` a `false`, `GlassCardsToggle` deshabilitado con tooltip, y `globals.css:247` pone `html.linux .glass-card { backdrop-filter:none; background:var(--card) }`. `lib.rs:315` fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder`.
 
 **Plan A (glass degradado sin blur — no implementado):** renderizar `GlassCard` sin `backdrop-blur` en Linux — solo `bg-white/[0.06] + border` translúcido + `box-shadow` sutil. Ver `README.md` para el sketch.
 

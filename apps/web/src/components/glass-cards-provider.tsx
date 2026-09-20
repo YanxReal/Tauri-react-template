@@ -8,6 +8,8 @@ const GLASS_CARDS_OFF = "0"
 
 type GlassCardsContextValue = {
   enabled: boolean
+  /** `false` on platforms where the glass look is vetoed (Linux/WebKitGTK). */
+  supported: boolean
   setEnabled: (enabled: boolean) => void
 }
 
@@ -24,6 +26,14 @@ const GlassCardsContext = React.createContext<
  * Rust invoke), so it works identically in the Tauri shell and in the
  * browser dev server. The preference is persisted in localStorage and
  * defaults to OFF (i.e. the standard, non-glass look).
+ *
+ * It is INDEPENDENT from the native window material (`VibrancyProvider`):
+ * you can run native vibrancy with solid cards, or glass cards on a plain
+ * window. Each has its own switch (`GlassControls`).
+ *
+ * Linux (WebKitGTK) vetoes the glass look: `backdrop-blur` + DMABUF causes
+ * yellow glitches and runaway RAM, so `supported` is `false` there and the
+ * effective `enabled` collapses to `false` (the switch renders disabled).
  */
 export function GlassCardsProvider({
   children,
@@ -31,6 +41,9 @@ export function GlassCardsProvider({
   children: React.ReactNode
 }) {
   const [enabled, setEnabledState] = React.useState(false)
+  const platform = usePlatform()
+  const supported = platform !== "linux"
+  const effectiveEnabled = enabled && supported
 
   // Boot: restore the persisted preference (default OFF).
   React.useEffect(() => {
@@ -39,12 +52,13 @@ export function GlassCardsProvider({
   }, [])
 
   React.useEffect(() => {
-    document.documentElement.classList.toggle("glass-cards", enabled)
-  }, [enabled])
+    document.documentElement.classList.toggle("glass-cards", effectiveEnabled)
+  }, [effectiveEnabled])
 
   const value = React.useMemo<GlassCardsContextValue>(
     () => ({
-      enabled,
+      enabled: effectiveEnabled,
+      supported,
       setEnabled: (next: boolean) => {
         setEnabledState(next)
         localStorage.setItem(
@@ -53,7 +67,7 @@ export function GlassCardsProvider({
         )
       },
     }),
-    [enabled]
+    [effectiveEnabled, supported]
   )
 
   return (
@@ -67,12 +81,6 @@ export function useGlassCards() {
   const ctx = React.useContext(GlassCardsContext)
   if (ctx === undefined) {
     throw new Error("useGlassCards must be used within a GlassCardsProvider")
-  }
-  const platform = usePlatform()
-  // Linux WebKitGTK: glass con backdrop-blur causa glitches amarillos y RAM desbocada
-  // (segunda captura). Forzamos OFF en Linux aunque el toggle esté ON.
-  if (platform === "linux") {
-    return { enabled: false, setEnabled: ctx.setEnabled }
   }
   return ctx
 }

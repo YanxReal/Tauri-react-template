@@ -121,6 +121,14 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 - `header.tsx:18` — language / theme buttons share one hover token, `hover:bg-black/10 dark:hover:bg-white/15`, applied to **both** the shadcn and the glass branch. The old defaults were unreadable on the band: `bg-muted` / `dark:bg-muted/50` vanish on the dark translucent bar, and the glass `hover:bg-white/10` inverts to 6 % black in the light theme (`globals.css:403`). The glass buttons keep `hover:scale-100`, so the pill no longer grows out of the titlebar.
 - Verified on the Windows 11 build 26200 VM (VNC + pixel probe): the titlebar band is 44px (48 captured px at the VM's ~1.09 scale, caption hover rect + 1px border), the theme / language hover goes `(11,11,11)` → `(49,49,49)` in dark and `(254,254,254)` → `(228,228,228)` in light, the red close hover still spans the last 46px (x=1350..1399, client edge 1400) and dragging the band moves the window exactly as far as the pointer.
 
+## 2026-09-20 — Two independent glass switches
+
+- The combined `GlassEffectToggle` is gone. `GlassControls` (`apps/web/src/components/layout/glass-controls.tsx`) renders two switches side by side: `VibrancyToggle` (`vibrancy-toggle.tsx`, the native window material) and `GlassCardsToggle` (`glass-cards-toggle.tsx`, the web `glass-*` components).
+- Any combination is now valid: vibrancy + solid cards, glass cards on an opaque window, or both. The two providers were already independent (`localStorage: vibrancy` vs `glass-cards`) — only the single switch tied them together.
+- `GlassCardsProvider` now exposes `supported` (`platform !== 'linux'`) and collapses `enabled` to `false` there, so on Linux the switch renders **disabled** with the "unavailable on this platform" tooltip instead of flipping a switch that does nothing. `useGlassCards()` no longer re-implements the Linux veto; the `html.glass-cards` class follows the effective value.
+- i18n: `vibrancy.label` is now "Crystal effect" / "Efecto cristal" (it no longer drives the cards) and both switches expose their `hint` as a tooltip.
+- `glass-effect-toggle.tsx` deleted. Checks green: `pnpm typecheck`, `pnpm lint`, `pnpm test`.
+
 ## 2026-09-19 — macOS traffic lights: 2px further left
 
 - `TRAFFIC_LIGHTS_X` (`lib.rs:117`) is now `17.5 / 39.5 / 61.5` (was `19.5 / 41.5 / 63.5`): 2px closer to the window's left edge, vertical centring and `grow 3` / `shift_right 16` + `extra_gap` untouched.

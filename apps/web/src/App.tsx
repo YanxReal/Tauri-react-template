@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next"
 import { useGlassCards } from "@/components/glass-cards-provider"
 import { Features } from "@/components/layout/features"
 import { Footer } from "@/components/layout/footer"
-import { GlassEffectToggle } from "@/components/layout/glass-effect-toggle"
+import { GlassControls } from "@/components/layout/glass-controls"
 import { Header } from "@/components/layout/header"
 import { Hero } from "@/components/layout/hero"
 import { usePlatform } from "@/components/layout/native-chrome"
@@ -21,7 +21,8 @@ export function App() {
   const { enabled: glassEnabled } = useGlassCards()
   const platform = usePlatform()
   const isLinux = platform === "linux"
-  // Linux WebKitGTK no soporta blur de forma estable (glitches amarillos + RAM) -> fallback a sólido
+  // Linux WebKitGTK no soporta blur de forma estable (glitches amarillos + RAM);
+  // el veto vive en GlassCardsProvider (`supported`), así que acá basta el flag.
   const effectiveGlass = glassEnabled && !isLinux
   const [greet, setGreet] = useState<string | null>(null)
 
@@ -94,8 +95,8 @@ export function App() {
                     </GlassButton>
                   </div>
 
-                  <div className="mt-4 flex items-center gap-3">
-                    <GlassEffectToggle />
+                  <div className="mt-4">
+                    <GlassControls />
                   </div>
 
                   {greet && (
@@ -127,8 +128,8 @@ export function App() {
                   </Button>
                 </div>
 
-                <div className="mt-4 flex items-center gap-3">
-                  <GlassEffectToggle />
+                <div className="mt-4">
+                  <GlassControls />
                 </div>
 
                 {greet && (

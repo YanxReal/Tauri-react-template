@@ -40,7 +40,7 @@ Three layers (`globals.css:171`, `269`):
 
 1. **Vibrancy / Mica** (native): `html.vibrancy body` / `html.vibrancy .app-shell` — `color-mix(in oklab, var(--background) 32%, transparent)` (42% in light) so translucency is visible. Header gets `blur(16px)` on macOS only (`html.titlebar-mac.vibrancy .app-header`); Windows Mica already has material. Linux disables blur.
 2. **Glass cards** (web): `GlassCard` in `@workspace/ui/components/glass-card.tsx` (`bg-white/10`, `backdrop-blur`, etc.). In light mode `html.light.glass-cards` remaps to dark ink. In Linux `html.linux .glass-card` strips `backdrop-filter` and falls back to `var(--card)`.
-3. **Combined toggle**: `GlassEffectToggle` (`apps/web/src/components/layout/glass-effect-toggle.tsx`) controls `glass-cards` + `vibrancy` together. Linux forces OFF.
+3. **Two independent switches**: `GlassControls` (`apps/web/src/components/layout/glass-controls.tsx`) renders `VibrancyToggle` (native material, hidden if `!supported`) and `GlassCardsToggle` (web `glass-*` components, disabled on Linux) side by side. Either works alone — vibrancy with solid cards, glass cards on an opaque window, or both.
 
 Provider chain: `VibrancyProvider` (`vibrancy-provider.tsx` — `localStorage: vibrancy`, default ON where supported, calls `invoke("window_effects_set")`) → `GlassCardsProvider` (`glass-cards-provider.tsx` — `localStorage: glass-cards`, default OFF).
 

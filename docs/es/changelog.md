@@ -121,6 +121,14 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 - `header.tsx:18` — los botones de idioma / tema comparten un único token de hover, `hover:bg-black/10 dark:hover:bg-white/15`, aplicado a **las dos** ramas, shadcn y glass. Los valores viejos no se leían sobre la banda: `bg-muted` / `dark:bg-muted/50` desaparecen sobre la barra oscura translúcida, y el `hover:bg-white/10` de glass se invierte a 6 % de negro en tema claro (`globals.css:403`). Los botones glass mantienen `hover:scale-100`, así la pastilla no crece fuera de la titlebar.
 - Verificado en la VM Windows 11 build 26200 (VNC + sonda de píxeles): la banda de la titlebar mide 44px (48 px capturados con el escala ~1,09 de la VM = rect de hover de los caption buttons + borde de 1px), el hover de tema / idioma pasa de `(11,11,11)` a `(49,49,49)` en oscuro y de `(254,254,254)` a `(228,228,228)` en claro, el hover rojo de cerrar sigue ocupando los últimos 46px (x=1350..1399, borde del cliente 1400) y arrastrar la banda mueve la ventana exactamente lo mismo que el puntero.
 
+## 2026-09-20 — Dos switches de cristal independientes
+
+- El `GlassEffectToggle` combinado desaparece. `GlassControls` (`apps/web/src/components/layout/glass-controls.tsx`) monta dos switches en paralelo: `VibrancyToggle` (`vibrancy-toggle.tsx`, el material nativo de la ventana) y `GlassCardsToggle` (`glass-cards-toggle.tsx`, los componentes `glass-*` web).
+- Cualquier combinación es válida: vibrancy + tarjetas sólidas, tarjetas glass en ventana opaca, o ambos. Los dos providers ya eran independientes (`localStorage: vibrancy` vs `glass-cards`) — solo el switch único los ataba.
+- `GlassCardsProvider` ahora expone `supported` (`platform !== 'linux'`) y colapsa `enabled` a `false` ahí, así en Linux el switch se renderiza **deshabilitado** con el tooltip de "no compatible en esta plataforma" en vez de mover un switch que no hace nada. `useGlassCards()` ya no reimplementa el veto de Linux; la clase `html.glass-cards` sigue el valor efectivo.
+- i18n: `vibrancy.label` pasa a "Efecto cristal" / "Crystal effect" (ya no controla las tarjetas) y ambos switches exponen su `hint` como tooltip.
+- Se borra `glass-effect-toggle.tsx`. Checks en verde: `pnpm typecheck`, `pnpm lint`, `pnpm test`.
+
 ## 2026-09-19 — Traffic lights de macOS: 2px más a la izquierda
 
 - `TRAFFIC_LIGHTS_X` (`lib.rs:117`) pasa a `17.5 / 39.5 / 61.5` (antes `19.5 / 41.5 / 63.5`): 2px más cerca del borde izquierdo, con el centrado vertical y `grow 3` / `shift_right 16` + `extra_gap` intactos.
