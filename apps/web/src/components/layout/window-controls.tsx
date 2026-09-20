@@ -48,8 +48,8 @@ function CaptionButton({
  *
  * On Windows the window is **frameless** (`decorations:false`) and the app
  * draws its own titlebar — same model as Edge / VS Code: `tauri-plugin-decorum`
- * creates the overlay and this component provides the controls, so the 56px
- * header stays the fusioned draggable band (`data-tauri-drag-region` +
+ * creates the overlay and this component provides the controls, so the fixed
+ * 44px header stays the fusioned draggable band (`data-tauri-drag-region` +
  * `useWindowDragRegion`). Linux keeps the full native decorations and macOS the
  * native traffic lights, hence `Header` renders this only for Windows.
  *

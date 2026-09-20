@@ -2,9 +2,20 @@ import { invoke } from "@tauri-apps/api/core"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { useEffect, useState } from "react"
 
-/** Fusioned header height for macOS drag zone (h-[52px]) */
-const DRAG_LIMIT_Y = 52
-const DRAG_LIMIT_Y_WIN_LINUX = 56 // h-14
+/**
+ * Alto de la banda de arrastre. Se mide del propio header (`.app-header`) en vez
+ * de duplicar su clase de Tailwind: si la banda cambia (52px macOS, 44px
+ * Win/Linux, 56px móvil) el arrastre la sigue sin tocar dos sitios. Los
+ * fallbacks aplican si el header todavía no está montado.
+ */
+const FALLBACK_BAND_MAC = 52
+const FALLBACK_BAND_DESKTOP = 44
+
+function headerBandHeight(fallback: number): number {
+  const header = document.querySelector(".app-header")
+  const height = header?.getBoundingClientRect().height
+  return height && height > 0 ? height : fallback
+}
 
 /** Targets that keep their click even inside the drag region (Prestly). */
 const INTERACTIVE_SELECTOR =
@@ -55,7 +66,7 @@ function useMacDragRegion(enabled: boolean): void {
     if (!enabled || !isTauriRuntime()) return
     const onMouseDown = (event: MouseEvent) => {
       if (event.button !== 0) return
-      if (event.clientY > DRAG_LIMIT_Y) return
+      if (event.clientY > headerBandHeight(FALLBACK_BAND_MAC)) return
       const target = event.target instanceof Element ? event.target : null
       if (target?.closest(INTERACTIVE_SELECTOR)) return
       if (event.detail === 2) {
@@ -74,13 +85,13 @@ function useMacDragRegion(enabled: boolean): void {
  * header de la app sigue siendo la zona de arrastre personalizada (Prestly).
  * WebKitGTK y WebView2 a veces no respetan `data-tauri-drag-region` en hijos
  * (solo en el elemento directo) y en Linux el CSS `app-region:drag` no siempre
- * funciona, así que el JS rescata el arrastre con límite 56px (h-14) y la
- * misma guarda `INTERACTIVE_SELECTOR`.
+ * funciona, así que el JS rescata el arrastre limitándolo a la altura real del
+ * header (`h-11` = 44px) y con la misma guarda `INTERACTIVE_SELECTOR`.
  */
 function useWindowDragRegion(enabled: boolean): void {
   useEffect(() => {
     if (!enabled || !isTauriRuntime()) return
-    const limit = DRAG_LIMIT_Y_WIN_LINUX
+    const limit = headerBandHeight(FALLBACK_BAND_DESKTOP)
     const onMouseDown = (event: MouseEvent) => {
       if (event.button !== 0) return
       if (event.clientY > limit) return

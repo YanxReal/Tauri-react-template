@@ -8,23 +8,47 @@ import { usePlatform, useWindowDragRegion } from "./native-chrome"
 import { WindowControls } from "./window-controls"
 
 /**
+ * Hover de los controles del header (idioma / tema). Ni el `ghost` de shadcn
+ * (`bg-muted` / `dark:bg-muted/50`) ni el de glass (`white/10` → apenas 6 %
+ * negro tras la inversión en claro) se leen sobre la banda de la titlebar: el
+ * primero desaparece en oscuro y el segundo en claro. Usamos el mismo lenguaje
+ * que los caption buttons (negro/10 en claro) y subimos el oscuro a blanco/15
+ * para que el efecto se vea igual de claro en los dos temas.
+ */
+const HEADER_CONTROL_HOVER = "hover:bg-black/10 dark:hover:bg-white/15"
+
+/**
+ * La titlebar de Win/Linux es frameless: el header ES la banda, así que su alto
+ * tiene que ser fijo. Antes sólo estaba `h-14` y el flex-column del shell la
+ * comprimía hasta su min-content, o sea que el alto lo decidía el contenido de
+ * cada página (44px — lo que medía de facto). Con `shrink-0` + `h-11` la banda
+ * queda clavada en esos 44px, con aire suficiente para los botones de 32px sin
+ * que el pill crezca fuera de la barra. macOS conserva sus 52px (traffic
+ * lights) y móvil/web sus 56px.
+ */
+const HEADER_HEIGHT = {
+  macos: "h-[52px]",
+  desktop: "h-11",
+  mobile: "h-14",
+} as const
+
+/**
  * Unified header — Prestly fusioned-titlebar pattern.
  *
  * The header occupies the FULL top of the window on every platform:
  *
- * macOS (`titleBarStyle: Overlay`): the header is tall enough to sit
- * BELOW the native traffic lights (`h-[76px]` = 20px traffic-light zone +
- * 56px content).  `pl-20 sm:pl-24` keeps the logo clear of the dots.
- * Dragging comes from the document-level mousedown listener
- * (`useMacDragRegion` in TitleBar).
+ * macOS (`titleBarStyle: Overlay`): a 52px band that hosts the overlay
+ * traffic lights on the left — `pl-[96px] sm:pl-[108px]` keeps the logo
+ * clear of the dots. Dragging comes from the document-level mousedown
+ * listener (`useMacDragRegion` in native-chrome.ts).
  *
  * Windows (`decorations: false` + decorum overlay): this header IS the
- * titlebar — one 56px row that stays draggable through
+ * titlebar — one fixed 44px row (Edge-like) that stays draggable through
  * `data-tauri-drag-region` + `useWindowDragRegion` (Prestly band) and hosts
  * the caption buttons (`WindowControls`).
  *
  * Linux (`decorations: true`): the OS draws the native titlebar with its own
- * buttons, so the header is pure app chrome — still one 56px row, still
+ * buttons, so the header is pure app chrome — the same fixed 44px row, still
  * draggable through the same Prestly band.
  */
 export function Header() {
@@ -35,6 +59,11 @@ export function Header() {
   const isMac = platform === "macos"
   const isWindows = platform === "windows"
   const isWinLinux = platform === "windows" || platform === "linux"
+  const headerHeight = isMac
+    ? HEADER_HEIGHT.macos
+    : isWinLinux
+      ? HEADER_HEIGHT.desktop
+      : HEADER_HEIGHT.mobile
 
   useWindowDragRegion(isWinLinux)
 
@@ -51,9 +80,9 @@ export function Header() {
 
   return (
     <header
-      className={`app-header relative flex items-center rounded-none border-b backdrop-blur pt-[env(safe-area-inset-top)] md:sticky md:top-0 md:z-40 ${
+      className={`app-header relative flex shrink-0 items-center rounded-none border-b backdrop-blur pt-[env(safe-area-inset-top)] md:sticky md:top-0 md:z-40 ${
         glassEnabled ? "border-white/20 bg-white/10" : "bg-background"
-      } ${isMac ? "h-[52px]" : "h-14"}`}
+      } ${headerHeight}`}
       {...(isWinLinux ? { "data-tauri-drag-region": true } : {})}
     >
       {/* Capa de arrastre detrás del contenido — solo Win/Linux */}
@@ -127,7 +156,8 @@ export function Header() {
           {glassEnabled ? (
             <GlassButton
               variant="ghost"
-              size="icon"
+              size="sm"
+              className={`hover:scale-100 active:scale-100 ${HEADER_CONTROL_HOVER}`}
               aria-label={t("header.language")}
               onClick={toggleLanguage}
               title={t("header.language")}
@@ -146,7 +176,8 @@ export function Header() {
           ) : (
             <Button
               variant="ghost"
-              size="icon-sm"
+              size="sm"
+              className={HEADER_CONTROL_HOVER}
               aria-label={t("header.language")}
               onClick={toggleLanguage}
               title={t("header.language")}
@@ -168,6 +199,7 @@ export function Header() {
             <GlassButton
               variant="ghost"
               size="icon"
+              className={`h-8 w-8 hover:scale-100 active:scale-100 ${HEADER_CONTROL_HOVER}`}
               aria-label={t("header.toggleTheme")}
               onClick={toggleTheme}
             >
@@ -178,6 +210,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="icon-sm"
+              className={HEADER_CONTROL_HOVER}
               aria-label={t("header.toggleTheme")}
               onClick={toggleTheme}
             >
