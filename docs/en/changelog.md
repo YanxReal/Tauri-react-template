@@ -121,6 +121,11 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 - `header.tsx:18` — language / theme buttons share one hover token, `hover:bg-black/10 dark:hover:bg-white/15`, applied to **both** the shadcn and the glass branch. The old defaults were unreadable on the band: `bg-muted` / `dark:bg-muted/50` vanish on the dark translucent bar, and the glass `hover:bg-white/10` inverts to 6 % black in the light theme (`globals.css:403`). The glass buttons keep `hover:scale-100`, so the pill no longer grows out of the titlebar.
 - Verified on the Windows 11 build 26200 VM (VNC + pixel probe): the titlebar band is 44px (48 captured px at the VM's ~1.09 scale, caption hover rect + 1px border), the theme / language hover goes `(11,11,11)` → `(49,49,49)` in dark and `(254,254,254)` → `(228,228,228)` in light, the red close hover still spans the last 46px (x=1350..1399, client edge 1400) and dragging the band moves the window exactly as far as the pointer.
 
+## 2026-09-19 — macOS traffic lights: 3px to the left
+
+- `lib.rs:116` — the three dots snap to `19.5 / 41.5 / 63.5` (were `22.5 / 44.5 / 66.5`): 3px closer to the window's left edge, with `grow 3` / `lower 8` / `shift 16` + `extra_gap` untouched.
+- The target X now lives in `TRAFFIC_LIGHTS_X` (`lib.rs:116`), shared by `adjust_macos_traffic_lights` (`lib.rs:124`) and the drift detector `needs_traffic_lights_update` (`lib.rs:234`). Two hand-kept copies are what made the 60 fps observer re-apply the frame on every tick; the docs' `lib.rs:116` pointers were updated with it.
+
 ## 2026-09-18 — Windows cross-compile working
 
 `scripts/build-windows.sh` now cross-compiles the Windows x64 bundle from macOS/Linux with `cargo-xwin` (previously it shelled out to the Prestly-branded `cargo-tauri` and defaulted to `--bundles msi`, which cannot run off-Windows). It resolves the keg-only LLVM/lld paths, checks `cargo-xwin` / the MSVC target / `makensis`, and runs the stock CLI: `pnpm tauri build --target x86_64-pc-windows-msvc --runner cargo-xwin --bundles nsis`. Outputs `tauri-react-template.exe` + the NSIS setup `.exe`. Docs: `docs/en/scripts.md` § Windows cross-compile.

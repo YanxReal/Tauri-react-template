@@ -75,9 +75,9 @@ Overlays por OS (merged en build): `tauri.macos.conf.json`, `tauri.windows.conf.
 
 ## Traffic lights de macOS (fix HuLa)
 
-Contexto y fix en `docs/es/native-feel.md`. Implementación en `lib.rs:116`:
+Contexto y fix en `docs/es/native-feel.md`. Implementación en `lib.rs:124`:
 
-- `adjust_macos_traffic_lights` — mueve/agranda los 3 `NSWindowButton`s (targets `22.5/44.5/66.5`, histéresis `±0.6px`, `grow 3`, `lower 8`, `shift_right 16` + `extra_gap`).
+- `adjust_macos_traffic_lights` — mueve/agranda los 3 `NSWindowButton`s (targets `19.5/41.5/63.5`, histéresis `±0.6px`, `grow 3`, `lower 8`, `shift_right 16` + `extra_gap`).
 - `needs_traffic_lights_update` + `ensure_traffic_lights_observer` (`NSWindowDidResizeNotification`/`DidMove`) + **polling a 60 fps** (`NSTimer` en `NSRunLoopCommonModes`) durante `NSEventTrackingRunLoopMode` (live-resize).
 - `setAutoresizingMask(0)` evita que AppKit vuelva a resetear.
 

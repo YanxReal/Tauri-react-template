@@ -10,7 +10,7 @@ Reset a garbled terminal: `reset` or `tput rmcup`.
 
 ## macOS traffic lights jump on resize
 
-Ensure `lib.rs:116` `adjust_macos_traffic_lights` + `ensure_traffic_lights_observer` + 60 fps polling are present. They counter AppKit resetting buttons to `12px` on each layout pass. Verify `titleBarStyle: Overlay` + `hiddenTitle` in `tauri.macos.conf.json`. Check they target `22.5/44.5/66.5`.
+Ensure `lib.rs:124` `adjust_macos_traffic_lights` + `ensure_traffic_lights_observer` + 60 fps polling are present. They counter AppKit resetting buttons to `12px` on each layout pass. Verify `titleBarStyle: Overlay` + `hiddenTitle` in `tauri.macos.conf.json`. Check they target `19.5/41.5/63.5`.
 
 ## Linux window flat / no shadow / square corners
 

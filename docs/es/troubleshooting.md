@@ -10,7 +10,7 @@ Resetea una terminal rota: `reset` o `tput rmcup`.
 
 ## Traffic lights de macOS saltan al redimensionar
 
-Asegúrate de que `lib.rs:116` `adjust_macos_traffic_lights` + `ensure_traffic_lights_observer` + polling 60 fps existan. Contrarrestan que AppKit los resetee a `12px` en cada layout. Verifica `titleBarStyle: Overlay` + `hiddenTitle` en `tauri.macos.conf.json`. Comprueba targets `22.5/44.5/66.5`.
+Asegúrate de que `lib.rs:124` `adjust_macos_traffic_lights` + `ensure_traffic_lights_observer` + polling 60 fps existan. Contrarrestan que AppKit los resetee a `12px` en cada layout. Verifica `titleBarStyle: Overlay` + `hiddenTitle` en `tauri.macos.conf.json`. Comprueba targets `19.5/41.5/63.5`.
 
 ## Ventana plana en Linux / sin sombra / esquinas cuadradas
 

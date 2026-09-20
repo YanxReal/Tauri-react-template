@@ -18,13 +18,13 @@ Móvil (menú long-press iOS, Android) usa las mismas reglas CSS/JS (`touch-acti
 
 Referencia: `wry#1747`, `tauri#13044`. `titleBarStyle: Overlay` + `hiddenTitle` deja el webview **debajo** de los traffic lights. AppKit los resetea a `12px` nativos en cada pase de layout (`setContentView:`, carga del webview, `NSWindowDidResize`, `NSViewFrameDidChange`), y `drawRect:` en `WryWebViewParent` no basta. En macOS 26 el race es peor.
 
-**Fix HuLa (3 mecanismos en `src-tauri/src/lib.rs:116`)**
+**Fix HuLa (3 mecanismos en `src-tauri/src/lib.rs:124`)**
 
 1. Hook `WindowEvent::Focused/Resized/ScaleFactorChanged` (`lib.rs:390`) — fallback general.
 2. `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (`lib.rs:253`) — más fiable que `WindowEvent` en macOS 26.
 3. **Polling live-resize a 60 fps** (`NSTimer` en `NSRunLoopCommonModes` + `needs_update` `±0.6px`) mientras `inLiveResize` — dispara durante `NSEventTrackingRunLoopMode`, no solo al soltar (`lib.rs:412`).
 
-Posiciones finales: `Close 22.5 / Mini 44.5 / Zoom 66.5` (centros de 22px, `15px` con `grow 3`, `lower 8`, `shift_right 16` + `extra_gap 0/2/4`, `pl-[96px] sm:pl-[108px]` en header). `setAutoresizingMask(0)` evita que AppKit vuelva a auto-resize entre frames. Ver `lib.rs:adjust_macos_traffic_lights` + `ensure_traffic_lights_observer`.
+Posiciones finales: `Close 19.5 / Mini 41.5 / Zoom 63.5` (centros de 22px, `15px` con `grow 3`, `lower 8`, `shift_right 16` + `extra_gap 0/2/4`, `pl-[96px] sm:pl-[108px]` en header). `setAutoresizingMask(0)` evita que AppKit vuelva a auto-resize entre frames. Ver `lib.rs:adjust_macos_traffic_lights` + `ensure_traffic_lights_observer`.
 
 Verifica: `pnpm typecheck && pnpm lint && pnpm build` + testear scroll / click / no-zoom en un build real por plataforma.
 

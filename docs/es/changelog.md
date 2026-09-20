@@ -121,6 +121,11 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 - `header.tsx:18` — los botones de idioma / tema comparten un único token de hover, `hover:bg-black/10 dark:hover:bg-white/15`, aplicado a **las dos** ramas, shadcn y glass. Los valores viejos no se leían sobre la banda: `bg-muted` / `dark:bg-muted/50` desaparecen sobre la barra oscura translúcida, y el `hover:bg-white/10` de glass se invierte a 6 % de negro en tema claro (`globals.css:403`). Los botones glass mantienen `hover:scale-100`, así la pastilla no crece fuera de la titlebar.
 - Verificado en la VM Windows 11 build 26200 (VNC + sonda de píxeles): la banda de la titlebar mide 44px (48 px capturados con el escala ~1,09 de la VM = rect de hover de los caption buttons + borde de 1px), el hover de tema / idioma pasa de `(11,11,11)` a `(49,49,49)` en oscuro y de `(254,254,254)` a `(228,228,228)` en claro, el hover rojo de cerrar sigue ocupando los últimos 46px (x=1350..1399, borde del cliente 1400) y arrastrar la banda mueve la ventana exactamente lo mismo que el puntero.
 
+## 2026-09-19 — Traffic lights de macOS: 3px a la izquierda
+
+- `lib.rs:116` — los tres dots hacen snap en `19.5 / 41.5 / 63.5` (antes `22.5 / 44.5 / 66.5`): 3px más cerca del borde izquierdo de la ventana, con `grow 3` / `lower 8` / `shift 16` + `extra_gap` intactos.
+- La X objetivo ahora vive en `TRAFFIC_LIGHTS_X` (`lib.rs:116`), compartida por `adjust_macos_traffic_lights` (`lib.rs:124`) y el detector de drift `needs_traffic_lights_update` (`lib.rs:234`). Tener dos copias a mano era lo que hacía que el observer de 60 fps re-aplicara el frame en cada tick; los punteros `lib.rs:116` de los docs se actualizaron con el cambio.
+
 ## 2026-09-18 — cross-compile de Windows funcionando
 
 `scripts/build-windows.sh` ahora cross-compila el bundle Windows x64 desde macOS/Linux con `cargo-xwin` (antes invocaba el `cargo-tauri` con branding de Prestly y caía en `--bundles msi`, que no puede correr fuera de Windows). Resuelve las rutas keg-only de LLVM/lld, valida `cargo-xwin` / el target MSVC / `makensis`, y usa el CLI stock: `pnpm tauri build --target x86_64-pc-windows-msvc --runner cargo-xwin --bundles nsis`. Genera `tauri-react-template.exe` + el `.exe` instalador NSIS. Docs: `docs/es/scripts.md` § Cross-compile Windows.

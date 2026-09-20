@@ -107,6 +107,14 @@ pub extern "C" fn start_app() {
     run()
 }
 
+/// Posición X objetivo de cada traffic light en macOS (Close / Miniaturize /
+/// Zoom). Estaba en `22.5 / 44.5 / 66.5`; se movió 3px a la izquierda. Vive en
+/// una sola const porque la usan el snap de `adjust_macos_traffic_lights` y el
+/// detector de drift `needs_traffic_lights_update`: si se separan, el observer
+/// re-aplica el frame en cada tick del polling de 60 fps.
+#[cfg(all(target_os = "macos", desktop))]
+const TRAFFIC_LIGHTS_X: [f64; 3] = [19.5, 41.5, 63.5];
+
 /// Ajusta los traffic lights nativos de macOS (patrón "bajarlos y
 /// agrandarlos"). Accede a los botones de ventana estándar vía `NSWindow`
 /// (AppKit tipado) y modifica su `frame` en bloque: `grow` agranda cada dot
@@ -152,9 +160,9 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
         // Targets con lower 8: y -3 vs anterior. Aplica x y y juntos.
         if frame.size.width > NATIVE_SIZE + 1.5 && frame.size.width < GROWN_SIZE + 2.0 {
             let target_x = match button {
-                NSWindowButton::CloseButton => 22.5,
-                NSWindowButton::MiniaturizeButton => 44.5,
-                NSWindowButton::ZoomButton => 66.5,
+                NSWindowButton::CloseButton => TRAFFIC_LIGHTS_X[0],
+                NSWindowButton::MiniaturizeButton => TRAFFIC_LIGHTS_X[1],
+                NSWindowButton::ZoomButton => TRAFFIC_LIGHTS_X[2],
                 _ => frame.origin.x,
             };
             let target_y_delta = -3.0; // lower 5->8
@@ -234,9 +242,9 @@ fn needs_traffic_lights_update(window: &tauri::WebviewWindow) -> bool {
         return false;
     };
     let targets = [
-        (NSWindowButton::CloseButton, 22.5),
-        (NSWindowButton::MiniaturizeButton, 44.5),
-        (NSWindowButton::ZoomButton, 66.5),
+        (NSWindowButton::CloseButton, TRAFFIC_LIGHTS_X[0]),
+        (NSWindowButton::MiniaturizeButton, TRAFFIC_LIGHTS_X[1]),
+        (NSWindowButton::ZoomButton, TRAFFIC_LIGHTS_X[2]),
     ];
     for (button, target_x) in targets {
         if let Some(btn) = ns_window.standardWindowButton(button) {
