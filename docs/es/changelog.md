@@ -121,11 +121,16 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 - `header.tsx:18` — los botones de idioma / tema comparten un único token de hover, `hover:bg-black/10 dark:hover:bg-white/15`, aplicado a **las dos** ramas, shadcn y glass. Los valores viejos no se leían sobre la banda: `bg-muted` / `dark:bg-muted/50` desaparecen sobre la barra oscura translúcida, y el `hover:bg-white/10` de glass se invierte a 6 % de negro en tema claro (`globals.css:403`). Los botones glass mantienen `hover:scale-100`, así la pastilla no crece fuera de la titlebar.
 - Verificado en la VM Windows 11 build 26200 (VNC + sonda de píxeles): la banda de la titlebar mide 44px (48 px capturados con el escala ~1,09 de la VM = rect de hover de los caption buttons + borde de 1px), el hover de tema / idioma pasa de `(11,11,11)` a `(49,49,49)` en oscuro y de `(254,254,254)` a `(228,228,228)` en claro, el hover rojo de cerrar sigue ocupando los últimos 46px (x=1350..1399, borde del cliente 1400) y arrastrar la banda mueve la ventana exactamente lo mismo que el puntero.
 
+## 2026-09-19 — Traffic lights de macOS: 2px más a la izquierda
+
+- `TRAFFIC_LIGHTS_X` (`lib.rs:117`) pasa a `17.5 / 39.5 / 61.5` (antes `19.5 / 41.5 / 63.5`): 2px más cerca del borde izquierdo, con el centrado vertical y `grow 3` / `shift_right 16` + `extra_gap` intactos.
+- Verificado con captura de pantalla: dots a `17.5–75px` del borde izquierdo y centro a `26px` del superior (mitad del header de 52px).
+
 ## 2026-09-19 — Traffic lights de macOS centrados en la banda de 52px del header
 
-- `traffic_lights_target_y` (`lib.rs:141`) ahora deriva la `y` del **superview** del botón (`isFlipped()` + altura del contenedor) en vez de asumir que la `y` del frame es la distancia desde el borde superior. En macOS 26 ese contenedor de la titlebar **no está flipped**, así que el antiguo `y` absoluto `26 - size/2` empujaba los dots ~9px *hacia arriba*: medidos desde el borde superior pasaban de `9–23px` (nativos) a `0–13px`.
-- Resultado: los centros de los dots quedan en `MACOS_HEADER_BAND / 2` (`lib.rs:122` = 26px) — la mitad del header de macOS (`header.tsx:29`, `h-[52px]`). Verificado con captura de pantalla: centro nativo `15.8px` → `25.8px`.
-- `adjust_macos_traffic_lights` (`lib.rs:161`) elimina los empujones a ciegas `lower 8` / `−3px`: el objetivo absoluto hace la escritura idempotente, así que el detector de drift de 60 fps (`needs_traffic_lights_update`, `lib.rs:256`) deja de re-aplicar el frame en cada tick.
+- `traffic_lights_target_y` (`lib.rs:142`) ahora deriva la `y` del **superview** del botón (`isFlipped()` + altura del contenedor) en vez de asumir que la `y` del frame es la distancia desde el borde superior. En macOS 26 ese contenedor de la titlebar **no está flipped**, así que el antiguo `y` absoluto `26 - size/2` empujaba los dots ~9px *hacia arriba*: medidos desde el borde superior pasaban de `9–23px` (nativos) a `0–13px`.
+- Resultado: los centros de los dots quedan en `MACOS_HEADER_BAND / 2` (`lib.rs:123` = 26px) — la mitad del header de macOS (`header.tsx:29`, `h-[52px]`). Verificado con captura de pantalla: centro nativo `15.8px` → `25.8px`.
+- `adjust_macos_traffic_lights` (`lib.rs:162`) elimina los empujones a ciegas `lower 8` / `−3px`: el objetivo absoluto hace la escritura idempotente, así que el detector de drift de 60 fps (`needs_traffic_lights_update`, `lib.rs:257`) deja de re-aplicar el frame en cada tick.
 
 ## 2026-09-19 — Traffic lights de macOS: 3px a la izquierda
 

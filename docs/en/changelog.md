@@ -121,11 +121,16 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 - `header.tsx:18` — language / theme buttons share one hover token, `hover:bg-black/10 dark:hover:bg-white/15`, applied to **both** the shadcn and the glass branch. The old defaults were unreadable on the band: `bg-muted` / `dark:bg-muted/50` vanish on the dark translucent bar, and the glass `hover:bg-white/10` inverts to 6 % black in the light theme (`globals.css:403`). The glass buttons keep `hover:scale-100`, so the pill no longer grows out of the titlebar.
 - Verified on the Windows 11 build 26200 VM (VNC + pixel probe): the titlebar band is 44px (48 captured px at the VM's ~1.09 scale, caption hover rect + 1px border), the theme / language hover goes `(11,11,11)` → `(49,49,49)` in dark and `(254,254,254)` → `(228,228,228)` in light, the red close hover still spans the last 46px (x=1350..1399, client edge 1400) and dragging the band moves the window exactly as far as the pointer.
 
+## 2026-09-19 — macOS traffic lights: 2px further left
+
+- `TRAFFIC_LIGHTS_X` (`lib.rs:117`) is now `17.5 / 39.5 / 61.5` (was `19.5 / 41.5 / 63.5`): 2px closer to the window's left edge, vertical centring and `grow 3` / `shift_right 16` + `extra_gap` untouched.
+- Verified with a screen capture: dots at `17.5–75px` from the window's left edge, centre `26px` from the top (middle of the 52px header).
+
 ## 2026-09-19 — macOS traffic lights centred in the 52px header band
 
-- `traffic_lights_target_y` (`lib.rs:141`) now derives `y` from the button **superview** (`isFlipped()` + container height) instead of assuming the frame `y` is the distance from the window top. On macOS 26 that titlebar container is **not flipped**, so the old absolute write of `26 - size/2` pushed the dots ~9px *up*: measured from the window top they went from `9–23px` (native) to `0–13px`.
-- Result: dot centres sit at `MACOS_HEADER_BAND / 2` (`lib.rs:122` = 26px) — the middle of the macOS header (`header.tsx:29`, `h-[52px]`). Verified with a plain screen capture: native centre `15.8px` → `25.8px`.
-- `adjust_macos_traffic_lights` (`lib.rs:161`) drops the blind `lower 8` / `−3px` nudges: the absolute target makes the write idempotent, so the 60 fps drift detector (`needs_traffic_lights_update`, `lib.rs:256`) stops re-applying a frame on every tick.
+- `traffic_lights_target_y` (`lib.rs:142`) now derives `y` from the button **superview** (`isFlipped()` + container height) instead of assuming the frame `y` is the distance from the window top. On macOS 26 that titlebar container is **not flipped**, so the old absolute write of `26 - size/2` pushed the dots ~9px *up*: measured from the window top they went from `9–23px` (native) to `0–13px`.
+- Result: dot centres sit at `MACOS_HEADER_BAND / 2` (`lib.rs:123` = 26px) — the middle of the macOS header (`header.tsx:29`, `h-[52px]`). Verified with a plain screen capture: native centre `15.8px` → `25.8px`.
+- `adjust_macos_traffic_lights` (`lib.rs:162`) drops the blind `lower 8` / `−3px` nudges: the absolute target makes the write idempotent, so the 60 fps drift detector (`needs_traffic_lights_update`, `lib.rs:257`) stops re-applying a frame on every tick.
 
 ## 2026-09-19 — macOS traffic lights: 3px to the left
 

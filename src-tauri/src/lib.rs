@@ -108,12 +108,13 @@ pub extern "C" fn start_app() {
 }
 
 /// Posición X objetivo de cada traffic light en macOS (Close / Miniaturize /
-/// Zoom). Estaba en `22.5 / 44.5 / 66.5`; se movió 3px a la izquierda. Vive en
-/// una sola const porque la usan el snap de `adjust_macos_traffic_lights` y el
-/// detector de drift `needs_traffic_lights_update`: si se separan, el observer
-/// re-aplica el frame en cada tick del polling de 60 fps.
+/// Zoom). Estaba en `22.5 / 44.5 / 66.5`; se movió 3px y luego 2px más a la
+/// izquierda (`19.5` → `17.5`). Vive en una sola const porque la usan el snap de
+/// `adjust_macos_traffic_lights` y el detector de drift
+/// `needs_traffic_lights_update`: si se separan, el observer re-aplica el frame
+/// en cada tick del polling de 60 fps.
 #[cfg(all(target_os = "macos", desktop))]
-const TRAFFIC_LIGHTS_X: [f64; 3] = [19.5, 41.5, 63.5];
+const TRAFFIC_LIGHTS_X: [f64; 3] = [17.5, 39.5, 61.5];
 
 /// Alto de la banda del header en macOS: tiene que coincidir con
 /// `HEADER_HEIGHT.macos` de `apps/web/src/components/layout/header.tsx`
