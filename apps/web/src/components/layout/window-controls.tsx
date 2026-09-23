@@ -4,6 +4,8 @@ import { Copy, Minus, Square, X } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
+import { usePlatform } from "./native-chrome"
+
 /** Hover delay before the Snap Layouts flyout opens — Windows 11 uses ~600ms. */
 const SNAP_OVERLAY_DELAY_MS = 620
 
@@ -44,22 +46,27 @@ function CaptionButton({
 }
 
 /**
- * Windows caption buttons (minimize / maximize-restore / close).
+ * Caption buttons (minimize / maximize-restore / close).
  *
- * On Windows the window is **frameless** (`decorations:false`) and the app
- * draws its own titlebar — same model as Edge / VS Code: `tauri-plugin-decorum`
- * creates the overlay and this component provides the controls, so the fixed
- * 44px header stays the fusioned draggable band (`data-tauri-drag-region` +
- * `useWindowDragRegion`). Linux keeps a GTK `GtkHeaderBar` (CSD) and macOS the
- * native traffic lights, hence `Header` renders this only for Windows.
+ * Windows is **frameless** (`decorations:false`) with `tauri-plugin-decorum`
+ * providing the overlay, and Linux uses a **latched CSD** frame
+ * (`install_linux_frame`) whose native GTK titlebar is hidden — both draw their
+ * own titlebar, so this component provides the controls and the fixed 44px
+ * header stays the fusioned draggable band (`data-tauri-drag-region` +
+ * `useWindowDragRegion`). macOS keeps the native traffic lights, hence `Header`
+ * renders this only for Win/Linux.
  *
  * Hovering *maximize* opens the Windows 11 Snap Layouts flyout through
- * decorum's `show_snap_overlay` (Win+Z). Chromium gets the hover flyout by
- * answering `WM_NCHITTEST` with `HTMAXBUTTON`; tao does not expose that hook,
- * so Win+Z is the closest available equivalent.
+ * decorum's `show_snap_overlay` (Win+Z) — Windows only: the plugin is a
+ * `cfg(windows)` dependency, so on Linux the hover does nothing.
+ * Chromium gets the hover flyout by answering `WM_NCHITTEST` with
+ * `HTMAXBUTTON`; tao does not expose that hook, so Win+Z is the closest
+ * available equivalent.
  */
 export function WindowControls() {
   const { t } = useTranslation()
+  const platform = usePlatform()
+  const isWindows = platform === "windows"
   const [maximized, setMaximized] = useState(false)
   const snapTimer = useRef<number | null>(null)
 
@@ -95,6 +102,8 @@ export function WindowControls() {
   useEffect(() => clearSnapTimer, [clearSnapTimer])
 
   const scheduleSnapOverlay = () => {
+    // Snap Layouts es Windows 11 (decorum): en Linux el hover no hace nada.
+    if (!isWindows) return
     clearSnapTimer()
     snapTimer.current = window.setTimeout(() => {
       snapTimer.current = null

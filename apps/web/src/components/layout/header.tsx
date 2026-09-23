@@ -42,15 +42,13 @@ const HEADER_HEIGHT = {
  * clear of the dots. Dragging comes from the document-level mousedown
  * listener (`useMacDragRegion` in native-chrome.ts).
  *
- * Windows (`decorations: false` + decorum overlay): this header IS the
- * titlebar — one fixed 44px row (Edge-like) that stays draggable through
- * `data-tauri-drag-region` + `useWindowDragRegion` (Prestly band) and hosts
- * the caption buttons (`WindowControls`).
- *
- * Linux (`decorations: true` + a GTK `GtkHeaderBar`): GTK draws the titlebar
- * with its own buttons and it follows the app theme (`useNativeTheme`), so the
- * header is pure app chrome — the same fixed 44px row, still draggable through
- * the same Prestly band.
+ * Windows (`decorations: false` + decorum overlay) and Linux (`decorations:
+ * true` + CSD latched, see `install_linux_frame`): this header IS the titlebar
+ * — one fixed 44px row (Edge / VS Code / Chromium style) that stays draggable
+ * through `data-tauri-drag-region` + `useWindowDragRegion` (Prestly band) and
+ * hosts the caption buttons (`WindowControls`). On Linux the native GTK
+ * titlebar is hidden on purpose (it cannot follow the app theme and is not
+ * draggable under tao); GTK only contributes its native shadow.
  */
 export function Header() {
   const { t, i18n } = useTranslation()
@@ -58,7 +56,6 @@ export function Header() {
   const platform = usePlatform()
   const { enabled: glassEnabled } = useGlassCards()
   const isMac = platform === "macos"
-  const isWindows = platform === "windows"
   const isWinLinux = platform === "windows" || platform === "linux"
   const headerHeight = isMac
     ? HEADER_HEIGHT.macos
@@ -221,8 +218,8 @@ export function Header() {
           )}
         </div>
       </div>
-      {/* Windows: caption buttons propias (ventana frameless con decorum) */}
-      {isWindows && <WindowControls />}
+      {/* Win/Linux: caption buttons propias (titlebar dibujada por la app) */}
+      {isWinLinux && <WindowControls />}
     </header>
   )
 }

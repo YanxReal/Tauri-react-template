@@ -111,18 +111,22 @@ function useWindowDragRegion(enabled: boolean): void {
 }
 
 /**
- * Linux: la barra de título es un `GtkHeaderBar` (CSD) que instala Rust, así que
- * SÍ puede seguir al tema de la app — pero hay que avisarle. En Linux
- * `window.setTheme()` termina en `gtk-application-prefer-dark-theme` (tao), que
- * repinta el HeaderBar al instante.
+ * Linux: la ventana usa un marco CSD "latched" (`install_linux_frame` en Rust):
+ * una `GtkHeaderBar` oculta deja a GTK en modo cliente-decorado para que siga
+ * dibujando su **sombra nativa**, con el fondo transparente para que la forma
+ * la defina `.app-shell`. La titlebar visible la dibuja la app (header +
+ * `WindowControls`), así que el tema del chrome lo controla el CSS.
  *
- * ¿Por qué CSD y no la decoración nativa de mutter? La variante clara/oscura de
- * la SSD la decide mutter **una sola vez**, al gestionar la ventana: la
- * propiedad `_GTK_THEME_VARIANT` está registrada con `LOAD_INIT` en
- * `mutter/src/x11/window-props.c`, así que no cambia en runtime — ni con
- * `set_theme`, ni escribiendo la propiedad con `xprop`, ni remapeando la
- * ventana (los tres comprobados). Con el HeaderBar la barra la pinta GTK en
- * proceso y sigue al tema sin más.
+ * Aun así sincronizamos la variante de GTK: en Linux `window.setTheme()` acaba
+ * en `gtk-application-prefer-dark-theme` (tao), y eso mantiene el marco y
+ * cualquier superficie GTK (p. ej. el fondo de ventana si la regla transparente
+ * no cargase) en el mismo claro/oscuro que la app.
+ *
+ * ¿Por qué no la titlebar nativa de mutter? Su variante clara/oscura se lee una
+ * sola vez, al gestionar la ventana (`_GTK_THEME_VARIANT` con `LOAD_INIT` en
+ * `mutter/src/x11/window-props.c`), y no cambia en runtime — ni con `set_theme`,
+ * ni escribiendo la propiedad con `xprop`, ni remapeando la ventana (los tres
+ * comprobados en GNOME 46).
  *
  * Solo Linux: en macOS `set_theme` cambia la apariencia de NSApp (vibrancy +
  * traffic lights) y en Windows el modo oscuro de toda la app; el chrome de

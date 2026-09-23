@@ -59,12 +59,13 @@ windows = { version = "0.61", features = [
     "Win32_Graphics_Dwm",
 ] }
 
-# Linux: barra de título CSD propia (`GtkHeaderBar`) en vez de la decoración
-# nativa de mutter, para que la barra siga al tema de la app. La variante de la
-# SSD (`_GTK_THEME_VARIANT`) se lee una sola vez al gestionar la ventana
-# (`LOAD_INIT` en mutter/src/x11/window-props.c) y no cambia en runtime; un
-# HeaderBar lo pinta GTK en proceso y sigue a `gtk-application-prefer-dark-theme`
-# al instante. Misma versión de gtk-rs que usa tao/wry (0.18).
+# Linux: marco CSD "latched" — una `GtkHeaderBar` vacía y oculta deja la ventana
+# en modo cliente-decorado para conservar la SOMBRA nativa de GTK, y su fondo se
+# pinta transparente para que la forma la defina `.app-shell` (globals.css). La
+# titlebar visible la dibuja la app (header + WindowControls), patrón
+# Chromium/VS Code/Edge: la SSD de mutter no puede seguir al tema
+# (`_GTK_THEME_VARIANT` con LOAD_INIT) y la `GtkHeaderBar` no es arrastrable
+# cuando tao crea la ventana en modo SSD. Misma versión de gtk-rs que tao/wry.
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
 

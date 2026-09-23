@@ -335,56 +335,70 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
     REGISTERED.with(|s| s.borrow_mut().insert(label));
 }
 
-/// Linux: sustituye la decoración nativa (SSD de mutter) por un
-/// `GtkHeaderBar` (CSD) para que la barra de título siga al tema de la app.
+/// Linux: marco CSD "latched" — patrón Chromium / VS Code / Edge.
 ///
-/// Por qué: con `decorations:true` la variante clara/oscura de la barra la
-/// resuelve mutter **al gestionar la ventana** — la propiedad
-/// `_GTK_THEME_VARIANT` está registrada con `LOAD_INIT` en
-/// `mutter/src/x11/window-props.c`, así que no se puede cambiar después: ni
-/// `window.setTheme()` (que solo toca `gtk-application-prefer-dark-theme`),
-/// ni escribiendo la propiedad a mano, ni remapeando la ventana. Resultado:
-/// app en oscuro + sistema en claro dejaba la barra blanca (y al revés). Con
-/// el HeaderBar la barra la pinta GTK en proceso y repinta al instante cuando
-/// cambia `gtk-application-prefer-dark-theme`.
+/// La app dibuja su **propia** titlebar (el header de React + `WindowControls`),
+/// igual que en Windows: una sola banda. La `GtkHeaderBar` nativa no sirve
+/// porque (a) su variante clara/oscura no puede seguir al tema de la app —
+/// mutter lee `_GTK_THEME_VARIANT` una sola vez, al gestionar la ventana
+/// (`LOAD_INIT` en `mutter/src/x11/window-props.c`) — y (b) cuando tao crea la
+/// ventana en modo SSD, GTK no cablea el arrastre de CSD y la barra no se puede
+/// mover (comprobado: el arrastre del header de la app sí funciona, el de la
+/// `GtkHeaderBar` no).
 ///
-/// Se conservan los botones GTK nativos (minimizar/maximizar/cerrar), la
-/// sombra y las esquinas redondeadas del CSD: no hay CSS ni decoración falsa.
+/// Lo que SÍ se conserva es el **CSD de GTK**: una `GtkHeaderBar` vacía y oculta
+/// deja la ventana en modo cliente-decorado, así que GTK sigue dibujando la
+/// **sombra nativa** del tema. Su fondo se pinta transparente para que la forma
+/// la defina `.app-shell` (`html.linux .app-shell { border-radius }` en
+/// `globals.css`), no el tema — así las 4 esquinas quedan redondeadas.
 ///
 /// La ventana nace oculta (`visible:false` en tauri.linux.conf.json) para
-/// instalar el HeaderBar ANTES de que GTK la realice: así no hay
-/// `Gtk-WARNING: gtk_window_set_titlebar() called on a realized window` ni un
-/// parpadeo de SSD. Pase lo que pase, la ventana se muestra al final.
+/// instalar todo antes del realize: sin parpadeo. Se muestra siempre al final.
 #[cfg(target_os = "linux")]
-fn install_linux_titlebar(window: &tauri::WebviewWindow) {
+fn install_linux_frame(window: &tauri::WebviewWindow) {
     use gtk::prelude::*;
 
     match window.gtk_window() {
         Ok(gtk_window) => {
+            // 1) Latch CSD: titlebar vacía y oculta (la app pone la suya).
+            //    `no_show_all` es imprescindible: tao muestra la ventana con
+            //    `window.show_all()`, que re-mostraría la barra y se comería
+            //    43px arriba (comprobado).
             let header = gtk::HeaderBar::new();
-            header.set_show_close_button(true);
-            header.set_title(Some(window.title().unwrap_or_default().as_str()));
+            header.set_no_show_all(true);
             gtk_window.set_titlebar(Some(&header));
-            header.show_all();
-            log::info!("install_linux_titlebar: GtkHeaderBar instalado");
+            header.hide();
+
+            // 2) El marco GTK solo aporta la sombra: su fondo va transparente.
+            let provider = gtk::CssProvider::new();
+            let _ =
+                provider.load_from_data(b"window.background { background-color: transparent; }");
+            if let Some(screen) = gtk::prelude::WidgetExt::screen(&gtk_window) {
+                gtk::StyleContext::add_provider_for_screen(
+                    &screen,
+                    &provider,
+                    gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+                );
+            }
+            log::info!("install_linux_frame: CSD latch + fondo transparente");
         }
         Err(e) => {
-            log::warn!("install_linux_titlebar: sin GtkWindow ({e}); dejo la SSD nativa");
+            log::warn!("install_linux_frame: sin GtkWindow ({e}); dejo el marco del sistema");
         }
     }
 
     if let Err(e) = window.show() {
-        log::warn!("install_linux_titlebar: no pude mostrar la ventana: {e}");
+        log::warn!("install_linux_frame: no pude mostrar la ventana: {e}");
     }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Linux: la ventana conserva `decorations:true`, pero la barra de título la
-    // dibuja un `GtkHeaderBar` (CSD) instalado en setup() — ver
-    // `install_linux_titlebar`. Sigue sin haber CssProvider, forzado de visual
-    // RGBA ni window opacity: el CSD de GTK aporta botones, sombra y esquinas
-    // nativos, y a diferencia de la SSD de mutter sí sigue al tema de la app.
+    // Linux: la ventana conserva `decorations:true` para que GTK siga en modo
+    // CSD y dibuje su SOMBRA nativa, pero la titlebar visible la pone la app
+    // (header + `WindowControls`, igual que en Windows) — ver
+    // `install_linux_frame`. Sigue sin haber forzado de visual RGBA ni window
+    // opacity: el marco GTK solo aporta la sombra, con el fondo transparente.
     //
     // Linux WebKitGTK: DMABUF renderer causa flicker, Error 71 Wayland y RAM desbocada en resize
     // (NVIDIA + Wayland). Ver https://v2.tauri.app/develop/debug/linux-graphics/ y tauri#9394
@@ -412,8 +426,9 @@ pub fn run() {
         );
 
     // decorum (plugin de la comunidad) — solo Windows: titlebar overlay estilo
-    // Edge/VS Code. Linux usa su propio `GtkHeaderBar` (`install_linux_titlebar`)
-    // y macOS el Overlay nativo con traffic lights, así que no se registra ahí.
+    // Edge/VS Code. Linux usa su propio marco CSD (`install_linux_frame`) + la
+    // titlebar de React, y macOS el Overlay nativo con traffic lights, así que
+    // no se registra ahí.
     #[cfg(target_os = "windows")]
     let builder = builder.plugin(tauri_plugin_decorum::init());
 
@@ -424,12 +439,11 @@ pub fn run() {
             window_effects_set
         ])
         .setup(|app| {
-            // Linux: barra de título CSD (`GtkHeaderBar`) para que siga al tema
-            // de la app — la SSD nativa de mutter no puede (ver
-            // `install_linux_titlebar`).
+            // Linux: marco CSD latched (sombra nativa de GTK) + titlebar propia
+            // de la app, patrón Chromium/VS Code/Edge — ver `install_linux_frame`.
             #[cfg(target_os = "linux")]
             if let Some(window) = app.get_webview_window("main") {
-                install_linux_titlebar(&window);
+                install_linux_frame(&window);
             }
 
             // Windows: ventana FRAMELESS (`decorations:false`) con titlebar

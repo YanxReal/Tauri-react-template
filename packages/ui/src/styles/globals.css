@@ -239,6 +239,13 @@ html.light.vibrancy body {
   html.titlebar-win .app-shell {
     border-radius: 0;
   }
+  /* Linux: marco CSD "latched" (`install_linux_frame` en Rust) — GTK aporta la
+     SOMBRA nativa con su fondo pintado transparente, así que la forma la define
+     el shell. El radius va aquí (mismo valor que macOS) para que las 4 esquinas
+     queden redondeadas; sin él el webview taparía el redondeo de GTK abajo. */
+  html.linux .app-shell {
+    border-radius: 10px;
+  }
   /* Windows + decorum: el plugin inyecta su propia barra de título fija
      (32px, z-index 100) con un `data-tauri-drag-region`. Este template ya
      tiene su header fusionado (drag band + caption buttons del design
@@ -247,11 +254,6 @@ html.light.vibrancy body {
   [data-tauri-decorum-tb] {
     display: none !important;
   }
-  /* Linux usa un `GtkHeaderBar` CSD (`decorations:true`; lo instala
-     `install_linux_titlebar` en Rust): GTK dibuja titlebar con botones, sombra
-     y esquinas. Por eso NO hay radius, margin, contain ni box-shadow de sombra
-     falsa en `.app-shell` en Linux — cualquier hueco transparente se vería
-     como recorte. */
   /* Linux WebKitGTK: backdrop-blur es carísimo y causa RAM desbocada en resize;
      lo desactivamos. Ver Tauri linux-graphics docs. */
   html.linux .app-header,

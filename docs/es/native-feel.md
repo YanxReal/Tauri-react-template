@@ -10,7 +10,7 @@ Derivados del commit `c9ae1a4`:
 - `apps/web/index.html:5` — viewport `user-scalable=no, maximum-scale=1.0, viewport-fit=cover`
 - `packages/ui/src/styles/globals.css:137` — `* { user-select:none; -webkit-user-drag:none; touch-action: pan-x pan-y }` (inputs/textarea/contenteditable reactivan selección). Sin `overscroll-behavior:none`.
 - `apps/web/src/main.tsx:21` — bloqueo `dragstart`, bloqueo de zoom por rueda (`ctrl/meta + wheel`), links externos → `openUrl` vía `plugin-opener`.
-- `src-tauri/src/lib.rs:410` — `tauri-plugin-prevent-default` con `Flags::debug()`: en **release** bloquea defaults del webview (menú contextual, devtools, reload); en **debug** los conserva. Nunca toca el scroll del documento.
+- `src-tauri/src/lib.rs:424` — `tauri-plugin-prevent-default` con `Flags::debug()`: en **release** bloquea defaults del webview (menú contextual, devtools, reload); en **debug** los conserva. Nunca toca el scroll del documento.
 
 Móvil (menú long-press iOS, Android) usa las mismas reglas CSS/JS (`touch-action: manipulation` mata el double-tap zoom en iOS).
 
@@ -20,9 +20,9 @@ Referencia: `wry#1747`, `tauri#13044`. `titleBarStyle: Overlay` + `hiddenTitle` 
 
 **Fix HuLa (3 mecanismos en `src-tauri/src/lib.rs:162`)**
 
-1. Hook `WindowEvent::Focused/Resized/ScaleFactorChanged` (`lib.rs:472`) — fallback general.
+1. Hook `WindowEvent::Focused/Resized/ScaleFactorChanged` (`lib.rs:486`) — fallback general.
 2. `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (`lib.rs:288`) — más fiable que `WindowEvent` en macOS 26.
-3. **Polling live-resize a 60 fps** (`NSTimer` en `NSRunLoopCommonModes` + `needs_update` `±0.6px`) mientras `inLiveResize` — dispara durante `NSEventTrackingRunLoopMode`, no solo al soltar (`lib.rs:499`).
+3. **Polling live-resize a 60 fps** (`NSTimer` en `NSRunLoopCommonModes` + `needs_update` `±0.6px`) mientras `inLiveResize` — dispara durante `NSEventTrackingRunLoopMode`, no solo al soltar (`lib.rs:513`).
 
 Posiciones finales: `Close 17.5 / Mini 39.5 / Zoom 61.5` (dots de 14px en macOS 26, `grow 3` cuando AppKit todavía los sirve a 12px, `shift_right 16` + `extra_gap 0/2/4`, `pl-[96px] sm:pl-[108px]` en header). `setAutoresizingMask(0)` evita que AppKit vuelva a auto-resize entre frames. Ver `lib.rs:162` `adjust_macos_traffic_lights` + `lib.rs:288` `ensure_traffic_lights_observer`.
 
@@ -56,10 +56,10 @@ Ambas están cubiertas por invariantes junto a `window-controls`: mira la fila `
 Modelo Edge / VS Code: la ventana es **frameless** y la titlebar la dibuja la app (`decorations: false`). El plugin de la comunidad [decorum](https://github.com/clearlysid/tauri-plugin-decorum) aporta el overlay y el comando de Snap Layouts; el header pone la banda de arrastre y los caption buttons.
 
 - `tauri.windows.conf.json:12` → `decorations: false` (`transparent: true` se mantiene para que Mica / `window_effects_set` siga viéndose).
-- `setup()` llama a `create_overlay_titlebar()` (`lib.rs:448`); el plugin solo se registra en Windows (`lib.rs:418`).
+- `setup()` llama a `create_overlay_titlebar()` (`lib.rs:462`); el plugin solo se registra en Windows (`lib.rs:433`).
 - Caption buttons: `apps/web/src/components/layout/window-controls.tsx:61` (minimizar / maximizar-restaurar / cerrar, iconos lucide, zona de `46px`, hover rojo en cerrar), renderizados desde `header.tsx:224`. Llaman a `minimize()` / `toggleMaximize()` / `close()` y siguen `isMaximized()` + `onResized()`.
 - **Snap Layouts:** el hover sobre *maximizar* durante 620 ms (`window-controls.tsx:8`) enfoca la ventana e invoca `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`), que pulsa Win+Z y luego Alt para ocultar los números. Chromium consigue el flyout real de hover respondiendo `WM_NCHITTEST` con `HTMAXBUTTON`; tao no expone ese hook, así que Win+Z es el equivalente más cercano. Permisos: `capabilities/default.json:6` (`allow-minimize` / `allow-close` / `allow-is-maximized`) + `capabilities/default.json:15` (**`core:window:allow-set-focus`** — la cadena es `setFocus().then(invoke(...))`, así que sin él la promesa se rechaza y el flyout nunca abre; no viene en `core:window:default`) + `capabilities/windows.json:7` (`decorum:allow-show-snap-overlay`) — el plugin es dep `cfg(windows)`, así que su permiso vive en una capability con `platforms: ["windows"]` y las builds no-Windows nunca lo resuelven (registrarlo global rompe `cargo check` en macOS/Linux con `Permission decorum:allow-show-snap-overlay not found`).
-- Esquinas redondeadas: `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` (`lib.rs:452`) — una ventana frameless es cuadrada por defecto.
+- Esquinas redondeadas: `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` (`lib.rs:466`) — una ventana frameless es cuadrada por defecto.
 - **Banda con alto fijo (no quitar `shrink-0`):** `header.tsx:29` clava la titlebar de Win/Linux en `h-11` (44px) + `shrink-0` — el alto al que el flex-column la comprimía antes, y la misma banda compacta que usa Edge. Sin `shrink-0` el flex-column del shell comprimía el header hasta su altura min-content, así que el alto de la titlebar cambiaba con la longitud del contenido de cada página. El arrastre mide el header en runtime (`native-chrome.ts:14`, fallback 52 macOS / 44 Win-Linux) en vez de duplicar su alto, así la banda y la zona de arrastre no pueden desincronizarse.
 - Los controles del header (idioma / tema) comparten un único token de hover, `hover:bg-black/10 dark:hover:bg-white/15` (`header.tsx:18`), aplicado a **las dos** ramas, shadcn y glass, y mantienen `hover:scale-100` en la variante glass. Los valores por defecto no se leían sobre la banda de la titlebar: `bg-muted` / `dark:bg-muted/50` desaparecen sobre la banda oscura translúcida, el `hover:bg-white/10` de glass se invierte a sólo 6 % de negro en tema claro (`globals.css:403`) y `hover:scale-105` hacía que la pastilla creciera fuera de la banda.
 - El arrastre sigue siendo propio: `data-tauri-drag-region` + `useWindowDragRegion` (`header.tsx:68`). Decorum además inyecta su propia titlebar fija de 32px con una capa de arrastre en `z-index:100`, que se pondría encima de nuestro header y se tragaría los clics de los botones — `globals.css:247` la oculta.
@@ -69,25 +69,26 @@ Así, en Windows el header fijo de 44px **es** la titlebar (sin doble barra); en
 
 ## Linux — issues conocidos
 
-### 0. Marco de ventana — titlebar CSD de GTK (sigue al tema)
+### 0. Marco de ventana — titlebar propia + CSD "latched" (Chromium / VS Code / Edge)
 
 `tauri`/`tao` no soportan `WindowConfig.shadow` en Linux (*"Linux: Unsupported"*), y falsear la sombra desde Rust no funcionó: un `HeaderBar` dummy para forzar CSD + `GtkCssProvider` reescribiendo `window.background` / `decoration` + forzar el visual RGBA después del realize + `set_opacity(0.99)` seguía dejando artefactos (esquinas opacas de 1px, buffer cuadrado bajo el `decoration` redondeado, todo ligeramente translúcido).
 
 Causa raíz (por qué esos hacks no podían arreglarlo): con `transparent:false` tao nunca instala un visual RGBA (tao lo instala **antes del realize** y solo para ventanas transparentes) y `gtk_widget_set_visual()` después del realize no tiene efecto, así que las esquinas nunca pueden mezclarse — ningún CSS lo cambia.
 
-**Diseño actual — un `GtkHeaderBar` (CSD) de verdad, instalado desde Rust:**
+**Diseño actual — una sola banda y la titlebar la dibuja la app (igual que en Windows):**
 
-- `tauri.linux.conf.json:11` → `decorations: true` + `transparent: false`; la ventana nace oculta (`visible: false`, `tauri.linux.conf.json:12`). GTK dibuja la titlebar con **minimizar / maximizar / cerrar nativos**, su propia sombra y su radio de esquinas.
-- `install_linux_titlebar` (`lib.rs:359`) instala un `GtkHeaderBar` en la ventana desde `setup()` y la muestra después. Estar oculta hasta entonces es lo que permite que el headerbar entre **antes** de que GTK realice la ventana: sin `Gtk-WARNING: gtk_window_set_titlebar() called on a realized window` y sin parpadeo del marco del sistema.
-- **¿Por qué no el marco nativo (SSD de mutter)?** Porque su variante clara/oscura no puede seguir al tema de la app. mutter lee la propiedad X11 `_GTK_THEME_VARIANT` **una sola vez, al gestionar la ventana** (`LOAD_INIT` en `mutter/src/x11/window-props.c`), y nunca más: `window.setTheme()` solo llega a `gtk-application-prefer-dark-theme`, y escribir la propiedad a mano o remapear la ventana no cambia nada (los tres comprobados en GNOME 46). Por eso una app oscura en un escritorio claro dejaba la barra blanca — y al revés. Un `GtkHeaderBar` lo pinta GTK en proceso, así que se repinta en cuanto cambia `gtk-application-prefer-dark-theme`, que es justo lo que hace `window.setTheme()` en Linux (`useNativeTheme`, `native-chrome.ts:131`).
-- `globals.css:215` — **sin** `border-radius` / `margin` / `box-shadow` / `contain` de Linux en `.app-shell`. El shell es simplemente el área cliente dentro del marco; recortarlo o meterle margen dejaría esquinas cortadas bajo la titlebar.
-- El área de arrastre personalizada sigue: el header mantiene `data-tauri-drag-region` + `useWindowDragRegion` (banda Prestly, recortada a la altura real medida del header — 44px) en `apps/web/src/components/layout/header.tsx:68`, así la barra fusionada de la app se sigue arrastrando bajo la titlebar.
+- `tauri.linux.conf.json:11` → `decorations: true` + `transparent: false`; la ventana nace oculta (`visible: false`, `:12`) para que el marco entre **antes** de que GTK la realice (sin parpadeo).
+- `install_linux_frame` (`lib.rs:358`) engancha **CSD** con una `GtkHeaderBar` vacía y oculta, y pinta el fondo de ventana de GTK transparente. GTK aporta por tanto **solo su sombra nativa**; la forma la pone la app. `set_no_show_all(true)` es crítico: tao muestra la ventana con `show_all()`, que si no re-mostraría la barra y se comería 43px arriba.
+- La **titlebar la dibuja la app**: `header.tsx` es la banda fija de 44px (`data-tauri-drag-region` + `useWindowDragRegion`) y `WindowControls` pinta los caption buttons para Win/Linux (`header.tsx:222`) — patrón "custom frame" de Edge / VS Code / Chromium.
+- `globals.css:246` → `html.linux .app-shell { border-radius: 10px }`. Sin él el webview tapa el redondeo inferior de GTK; con él las 4 esquinas quedan redondeadas y la sombra nativa las sigue.
+- **¿Por qué no la titlebar nativa (SSD de mutter, o una `GtkHeaderBar` visible)?** Dos motivos comprobados: (1) mutter resuelve la variante de la SSD desde `_GTK_THEME_VARIANT` **una sola vez, al gestionar la ventana** (`LOAD_INIT` en `mutter/src/x11/window-props.c`), así que nunca puede seguir al tema de la app — una app oscura en un escritorio claro mantenía la titlebar blanca; (2) cuando tao crea la ventana en modo SSD, GTK no cablea el arrastre de CSD, así que la `GtkHeaderBar` no se podía arrastrar en absoluto (el arrastre del header de la app sí funciona — por eso la banda es de la app).
+- `useNativeTheme` (`native-chrome.ts:135`, enganchado en `title-bar.tsx:20`) sigue reflejando el tema resuelto en la variante de GTK (`window.setTheme()` → `gtk-application-prefer-dark-theme`), así el marco y cualquier superficie GTK quedan en el mismo claro/oscuro que la app.
 
 ### 1. Glass + WebKitGTK → glitches amarillos y RAM disparada
 
 `backdrop-blur` + `DMABUF` en WebKitGTK 4.1 (sobre todo NVIDIA/Wayland) dispara `AcceleratedSurfaceDMABuf was unable to construct a complete framebuffer` + `Error 71` + RAM al redimensionar (docs `linux-graphics` de Tauri, `wry#1747`).
 
-**Fix actual (veto):** en Linux se fuerza `glass OFF` — `glass-cards-provider.tsx` expone `supported: false` (`platform==='linux'`) y colapsa `enabled` a `false`, `GlassCardsToggle` deshabilitado con tooltip, y `globals.css:247` pone `html.linux .glass-card { backdrop-filter:none; background:var(--card) }`. `lib.rs:394` fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder`.
+**Fix actual (veto):** en Linux se fuerza `glass OFF` — `glass-cards-provider.tsx` expone `supported: false` (`platform==='linux'`) y colapsa `enabled` a `false`, `GlassCardsToggle` deshabilitado con tooltip, y `globals.css:247` pone `html.linux .glass-card { backdrop-filter:none; background:var(--card) }`. `lib.rs:408` fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder`.
 
 **Plan A (glass degradado sin blur — no implementado):** renderizar `GlassCard` sin `backdrop-blur` en Linux — solo `bg-white/[0.06] + border` translúcido + `box-shadow` sutil. Ver `README.md` para el sketch.
 

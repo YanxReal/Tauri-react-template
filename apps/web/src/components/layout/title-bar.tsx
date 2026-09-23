@@ -6,10 +6,9 @@ const DESKTOP_PLATFORMS = new Set(["macos", "windows", "linux"])
 
 /**
  * Titlebar side-effects only — Prestly pattern para macOS Overlay.
- * En Win/Linux la titlebar es nativa, así que aquí solo se monta la clase
- * `.titlebar` (alto de banda + estilos del shell). Linux es la excepción: su
- * barra es un `GtkHeaderBar` (CSD) que instala Rust, y `useNativeTheme` le
- * pasa el tema de la app para que la barra no se quede en el del sistema.
+ * Aquí solo se monta la clase `.titlebar` (alto de banda + estilos del shell) y,
+ * en Linux, se sincroniza la variante de GTK (`useNativeTheme`): esa ventana usa
+ * un marco CSD "latched" y la titlebar visible la dibuja la app.
  */
 export function TitleBar() {
   const platform = usePlatform()
