@@ -63,7 +63,7 @@ Config `src-tauri/tauri.conf.json:build`:
 }
 ```
 
-¿Por qué `pnpm --filter web dev` y no `turbo dev`? Turbo activa su TUI (`?1000h` mouse mode). Cuando `tauri dev` lo mata con `SIGTERM` la terminal queda en ese modo y escribe `35;22;36M`. Vite directo evita eso — ver `docs/es/native-feel.md` y `src-tauri/src/lib.rs:330`.
+¿Por qué `pnpm --filter web dev` y no `turbo dev`? Turbo activa su TUI (`?1000h` mouse mode). Cuando `tauri dev` lo mata con `SIGTERM` la terminal queda en ese modo y escribe `35;22;36M`. Vite directo evita eso — ver `docs/es/native-feel.md` y `src-tauri/src/lib.rs:410`.
 
 ### Variables de entorno
 

@@ -14,13 +14,13 @@ Ensure `lib.rs:162` `adjust_macos_traffic_lights` + `lib.rs:288` `ensure_traffic
 
 If the dots sit too **high** (or vanish), check `traffic_lights_target_y` (`lib.rs:142`): the frame belongs to the button's superview, so `y` must be derived from `isFlipped()` + the container height — not from the window height or the raw `26 - size/2`.
 
-## Linux window flat / no shadow / square corners
+## Linux titlebar ignores the app theme / no shadow / square corners
 
-By design the app does **not** draw its own frame: `tauri.linux.conf.json:11` uses `decorations: true`, so GTK (CSD) or the compositor (SSD) draws the titlebar, the shadow and the corner radius. If you see none of that, the problem is the session/theme, not the app — check `echo $XDG_SESSION_TYPE` and that a GTK theme is set. Never re-add `box-shadow` / `border-radius` / `margin` on `.app-shell` for Linux: the shell is the client area inside the native frame and those rules show up as cut corners under the titlebar.
+The titlebar is a `GtkHeaderBar` (CSD) installed from Rust (`install_linux_titlebar`, `lib.rs:359`) on top of `tauri.linux.conf.json:11` (`decorations: true` + `visible: false`, shown again at the end of `setup()`). If the titlebar does not follow the in-app theme toggle, check that `useNativeTheme` is still wired in `title-bar.tsx:21` and that `core:window:allow-set-theme` is still in `capabilities/default.json:16` — without that permission `setTheme()` rejects silently and the headerbar stays on the system variant. If the window is flat / square instead, the problem is the session/theme, not the app — check `echo $XDG_SESSION_TYPE` and that a GTK theme is set. Never re-add `box-shadow` / `border-radius` / `margin` on `.app-shell` for Linux: the shell is the client area inside the frame and those rules show up as cut corners under the titlebar.
 
 ## Windows: no caption buttons / no Snap Layouts
 
-Windows is frameless (`tauri.windows.conf.json:12` → `decorations: false`) and the titlebar is the app's own: `header.tsx:224` renders `window-controls.tsx` and `lib.rs:361` calls `create_overlay_titlebar()`. If the buttons don't appear, check that `platform === 'windows'` resolved (the Rust `platform_info` command) and that `capabilities/default.json:6` still lists `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:15`) plus `capabilities/windows.json:7` for `decorum:allow-show-snap-overlay` (Windows-only capability; keep it out of `default.json` or `cargo check` fails on macOS/Linux). Snap Layouts only open via the 620 ms hover on maximize (`window-controls.tsx:8` → `show_snap_overlay`), which is decorum's Win+Z equivalent — tao cannot answer `WM_NCHITTEST` with `HTMAXBUTTON`, so there is no true native hover flyout. If the plugin's injected 32px bar ever shows up over the header, the `[data-tauri-decorum-tb]` rule (`globals.css:247`) was removed.
+Windows is frameless (`tauri.windows.conf.json:12` → `decorations: false`) and the titlebar is the app's own: `header.tsx:224` renders `window-controls.tsx` and `lib.rs:448` calls `create_overlay_titlebar()`. If the buttons don't appear, check that `platform === 'windows'` resolved (the Rust `platform_info` command) and that `capabilities/default.json:6` still lists `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:15`) plus `capabilities/windows.json:7` for `decorum:allow-show-snap-overlay` (Windows-only capability; keep it out of `default.json` or `cargo check` fails on macOS/Linux). Snap Layouts only open via the 620 ms hover on maximize (`window-controls.tsx:8` → `show_snap_overlay`), which is decorum's Win+Z equivalent — tao cannot answer `WM_NCHITTEST` with `HTMAXBUTTON`, so there is no true native hover flyout. If the plugin's injected 32px bar ever shows up over the header, the `[data-tauri-decorum-tb]` rule (`globals.css:247`) was removed.
 
 ## Scrollbar with arrows / header not reaching the right edge
 
@@ -44,7 +44,7 @@ Do **not** "fix" it with CSS: `::-webkit-scrollbar` rules override the native ov
 
 **Fix:** launch the app the normal way, as the logged-in desktop user (shortcut / `pnpm tauri:dev`). To pin the folder explicitly, set `WEBVIEW2_USER_DATA_FOLDER=C:\some\writable\dir` before starting (note the cmd gotcha: `set VAR=value && app.exe` captures the trailing space, so quote it: `set "VAR=value" && app.exe`). Debug tip: `scripts/build-windows.sh` + `PsExec64 -i 1 -s` reproduces the failure, so it is useless for checking UI work — copy the exe to a real session and double-click it instead.
 
-Disable glass — Linux forces `glass OFF` by design (`glass-cards-provider.tsx` + `globals.css:247`). Keep `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` in `lib.rs:315`. See `native-feel.md` Plan A for a degraded-glass alternative.
+Disable glass — Linux forces `glass OFF` by design (`glass-cards-provider.tsx` + `globals.css:247`). Keep `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` in `lib.rs:394`. See `native-feel.md` Plan A for a degraded-glass alternative.
 
 ## `pnpm install` fails / Node version mismatch
 

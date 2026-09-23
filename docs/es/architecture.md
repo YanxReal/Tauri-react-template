@@ -55,7 +55,7 @@
 ## Frontera frontend → backend
 
 - El frontend llama a Rust vía `invoke` (`@tauri-apps/api`) — ver `apps/web/src/App.tsx:32`.
-- Comandos registrados en `src-tauri/src/lib.rs:342`:
+- Comandos registrados en `src-tauri/src/lib.rs:421`:
   `tauri::generate_handler![greet, platform_info, window_effects_set]`
 - Plugins: `tauri_plugin_opener`, `tauri_plugin_prevent_default` (con `Flags::debug()` — ver `native-feel.md`).
 
@@ -66,7 +66,7 @@ Los overlays por OS lo extienden (Tauri los mezcla en el build):
 
 - `tauri.macos.conf.json` — `titleBarStyle: Overlay`, `hiddenTitle`, `transparent`, `decorations`, `dragDropEnabled:false`.
 - `tauri.windows.conf.json` — mismos guards de drag/zoom + titlebar overlay frameless (`decorations: false`, plugin decorum, caption buttons dibujados por la app).
-- `tauri.linux.conf.json` — mismos guards de drag/zoom + decoración nativa completa (`decorations: true`, titlebar nativa con sus propios botones/sombra).
+- `tauri.linux.conf.json` — mismos guards de drag/zoom + un `GtkHeaderBar` (CSD) de GTK instalado desde Rust para que la titlebar siga al tema de la app (`decorations: true`; la ventana queda oculta hasta que `setup()` la muestra).
 - `tauri.ios.conf.json` / `tauri.android.conf.json` — bundling móvil.
 
 Los 4 configs de escritorio deben mantenerse sincronizados en `dragDropEnabled` / `zoomHotkeysEnabled` / guards de viewport.

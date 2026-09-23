@@ -50,7 +50,7 @@ function CaptionButton({
  * draws its own titlebar — same model as Edge / VS Code: `tauri-plugin-decorum`
  * creates the overlay and this component provides the controls, so the fixed
  * 44px header stays the fusioned draggable band (`data-tauri-drag-region` +
- * `useWindowDragRegion`). Linux keeps the full native decorations and macOS the
+ * `useWindowDragRegion`). Linux keeps a GTK `GtkHeaderBar` (CSD) and macOS the
  * native traffic lights, hence `Header` renders this only for Windows.
  *
  * Hovering *maximize* opens the Windows 11 Snap Layouts flyout through

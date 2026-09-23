@@ -1,10 +1,10 @@
 # Backend Tauri (`src-tauri`)
 
-Rust + Tauri v2. Entradas: `src-tauri/src/lib.rs:304` (`run()`) y `src-tauri/src/main.rs`.
+Rust + Tauri v2. Entradas: `src-tauri/src/lib.rs:382` (`run()`) y `src-tauri/src/main.rs`.
 
 ## Comandos
 
-Registrados en `lib.rs:342`:
+Registrados en `lib.rs:421`:
 
 ```rust
 tauri::generate_handler![greet, platform_info, window_effects_set]
@@ -75,32 +75,34 @@ Overlays por OS (merged en build): `tauri.macos.conf.json`, `tauri.windows.conf.
 
 ## Traffic lights de macOS (fix HuLa)
 
-Contexto y fix en `docs/es/native-feel.md`. Implementación en `lib.rs:124`:
+Contexto y fix en `docs/es/native-feel.md`. Implementación en `lib.rs:162`:
 
 - `adjust_macos_traffic_lights` (`lib.rs:162`) — mueve/agranda los 3 `NSWindowButton`s (targets `17.5/39.5/61.5`, histéresis `±0.6px`, `grow 3`, `shift_right 16` + `extra_gap`).
 - `traffic_lights_target_y` (`lib.rs:142`) — `y` absoluto para que el centro del dot caiga en `MACOS_HEADER_BAND / 2` (`lib.rs:123` = 26px, mitad del header de 52px de macOS). El frame vive en el superview del botón, que en macOS 26 **no está flipped**: hay que leer `isFlipped()` + la altura del contenedor en vez de asumir "distancia desde arriba".
 - `needs_traffic_lights_update` + `ensure_traffic_lights_observer` (`NSWindowDidResizeNotification`/`DidMove`) + **polling a 60 fps** (`NSTimer` en `NSRunLoopCommonModes`) durante `NSEventTrackingRunLoopMode` (live-resize).
 - `setAutoresizingMask(0)` evita que AppKit vuelva a resetear.
 
-## Marco de ventana en Linux — decoración nativa
+## Marco de ventana en Linux — titlebar CSD de GTK
 
-`tauri.linux.conf.json:11` → `decorations: true` + `transparent: false`: GTK / el compositor dibujan la titlebar (minimizar / maximizar / cerrar nativos), la sombra y el radio de esquinas. Rust ya **no** tiene código GTK — `apply_linux_window_shadow` (CssProvider + `HeaderBar` dummy + visual RGBA forzado + `opacity 0.99`) y las deps linux `gtk` / `gdk` se eliminaron, porque forzar el visual GDK después del realize no puede funcionar (tao lo instala antes del realize y solo con `transparent: true`). Razonamiento completo en `docs/es/native-feel.md`.
+`tauri.linux.conf.json:11` → `decorations: true` + `transparent: false` + `visible: false` (`:12`): `install_linux_titlebar` (`lib.rs:359`) instala un `GtkHeaderBar` (CSD) de verdad en la ventana desde `setup()` y la muestra después, así que GTK dibuja la titlebar (minimizar / maximizar / cerrar nativos), la sombra y el radio de esquinas. La ventana nace oculta para que el headerbar entre **antes** de que GTK la realice (sin warning de `set_titlebar()` y sin parpadeo de marco).
 
-También fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder` (`lib.rs:315`) para evitar crashes DMABUF de WebKitGTK.
+Por qué CSD y no la SSD de mutter: mutter lee la variante clara/oscura del marco nativo **una sola vez**, al gestionar la ventana (`LOAD_INIT` sobre `_GTK_THEME_VARIANT` en `mutter/src/x11/window-props.c`), así que nunca puede seguir al tema de la app — una app oscura en un escritorio claro dejaba la barra blanca. Un `GtkHeaderBar` se pinta en proceso y se repinta con `gtk-application-prefer-dark-theme`, que es lo que setea `window.setTheme()` en Linux (`useNativeTheme`, `native-chrome.ts:131`). Los viejos hacks de `apply_linux_window_shadow` (CssProvider + visual RGBA forzado + `opacity 0.99`) siguen eliminados: forzar el visual GDK después del realize no puede funcionar. Razonamiento completo en `docs/es/native-feel.md`.
+
+También fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder` (`lib.rs:394`) para evitar crashes DMABUF de WebKitGTK.
 
 ## Windows — titlebar overlay frameless (`tauri-plugin-decorum`)
 
-`tauri.windows.conf.json:12` → `decorations: false`: la ventana es frameless y la titlebar la dibuja la app (modelo Edge / VS Code). `setup()` llama a `create_overlay_titlebar()` (`lib.rs:361`) del plugin de la comunidad [decorum](https://github.com/clearlysid/tauri-plugin-decorum), registrado solo en Windows (`lib.rs:339`). `transparent: true` se mantiene para que Mica / `window_effects_set` siga viéndose.
+`tauri.windows.conf.json:12` → `decorations: false`: la ventana es frameless y la titlebar la dibuja la app (modelo Edge / VS Code). `setup()` llama a `create_overlay_titlebar()` (`lib.rs:448`) del plugin de la comunidad [decorum](https://github.com/clearlysid/tauri-plugin-decorum), registrado solo en Windows (`lib.rs:418`). `transparent: true` se mantiene para que Mica / `window_effects_set` siga viéndose.
 
 Los caption buttons son React (`apps/web/src/components/layout/window-controls.tsx:61`, renderizados por `header.tsx:224`); el hover de 620 ms sobre maximizar invoca `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`) para abrir el flyout de Snap Layouts de Windows 11. Permisos: `capabilities/default.json:6` (`allow-minimize` / `allow-close` / `allow-is-maximized`) + `capabilities/default.json:15` (`allow-set-focus`, lo exige la cadena `setFocus().then(invoke(...))`) + `capabilities/windows.json:7` (`decorum:allow-show-snap-overlay`, `platforms: ["windows"]` — el plugin es dep `cfg(windows)`, así que un `cargo check` en macOS/Linux rechazaría el permiso si viviera en `default.json`).
 
 `tauri.windows.conf.json:13` → `scrollBarStyle: "fluentOverlay"`: WebView2 dibuja la scrollbar **overlay** (pastilla fina, se auto-oculta, flota sobre el contenido) en vez de la barra clásica con carril y botones de flecha. Necesita WebView2 Runtime >= 125.0.2535.41 y fuera de Windows no hace nada. Cambio hermano obligatorio: el contenedor de scroll es `.app-scroll` (solo contenido), así la barra nunca le roba ancho al header — ver `native-feel.md`.
 
-`lib.rs:365` — `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` en Windows 11 (solo en deps `target_os = "windows"` — `Cargo.toml:57`): una ventana frameless es cuadrada por defecto, así que esta llamada es la que mantiene las esquinas redondeadas. Razonamiento completo en `docs/es/native-feel.md`.
+`lib.rs:452` — `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` en Windows 11 (solo en deps `target_os = "windows"` — `Cargo.toml:57`): una ventana frameless es cuadrada por defecto, así que esta llamada es la que mantiene las esquinas redondeadas. Razonamiento completo en `docs/es/native-feel.md`.
 
 ## Entrada desktop vs móvil
 
-- Desktop: `run()` vía `main.rs` → `lib.rs:304`.
+- Desktop: `run()` vía `main.rs` → `lib.rs:382`.
 - Target unificado iOS/macOS Xcode: `start_app()` (`lib.rs:106`, `#[no_mangle] extern "C"`) llamado desde `main.mm` del proyecto Xcode generado. Requerido para `cargo check --target aarch64-apple-ios`.
 - Entrada móvil `#[cfg_attr(mobile, tauri::mobile_entry_point)]` envuelve `run()`.
 

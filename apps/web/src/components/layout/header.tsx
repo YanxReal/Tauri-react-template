@@ -47,9 +47,10 @@ const HEADER_HEIGHT = {
  * `data-tauri-drag-region` + `useWindowDragRegion` (Prestly band) and hosts
  * the caption buttons (`WindowControls`).
  *
- * Linux (`decorations: true`): the OS draws the native titlebar with its own
- * buttons, so the header is pure app chrome — the same fixed 44px row, still
- * draggable through the same Prestly band.
+ * Linux (`decorations: true` + a GTK `GtkHeaderBar`): GTK draws the titlebar
+ * with its own buttons and it follows the app theme (`useNativeTheme`), so the
+ * header is pure app chrome — the same fixed 44px row, still draggable through
+ * the same Prestly band.
  */
 export function Header() {
   const { t, i18n } = useTranslation()
