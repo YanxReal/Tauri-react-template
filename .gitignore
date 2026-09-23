@@ -41,6 +41,9 @@ coverage
 src-tauri/target
 src-tauri/Cargo.lock
 
+# Bundles traídos de la caja SSH (scripts/build-linux.sh --fetch)
+dist-linux/
+
 # OS
 Thumbs.db
 # Team de desarrollador (opcional; lo inyecta scripts/Xcode/apple-xcode.sh).

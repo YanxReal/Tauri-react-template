@@ -30,6 +30,45 @@
 
 Per-OS build shells: `scripts/build-linux.sh`, `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`.
 
+## Linux build (`scripts/build-linux.sh`)
+
+Builds the Linux bundles, and can compile **and run** the app on a Linux dev box over SSH.
+Two backends: `--remote [HOST]` (push over SSH and build there) and `--native` (build on a
+Linux host). With no mode flag: native on Linux, remote when the dev box answers — and if the
+box is unreachable the script stops with instructions instead of building anywhere else.
+
+| Flag | Effect |
+|------|--------|
+| `--remote [HOST]` | rsync → SSH build box (default `$LINUX_BUILD_REMOTE` or `ubuntu-vnc`) |
+| `--native` | build on this host (must be Linux) |
+| `--release` / `--debug` | build profile (release default; debug is much faster) |
+| `--dev` | `tauri dev` (Vite + app, hot reload) instead of a bundle; implies `--debug` |
+| `--run` | after building, launch the app on the target display |
+| `--bundles LIST` | `deb` (default) \| `appimage` \| `rpm` \| `all` |
+| `--target ARCH` | `aarch64` \| `x86_64` \| a rust triple (must match the box) |
+| `--display :N` | X display used by `--dev`/`--run` (default `:1`) |
+| `--fetch` | copy the built bundles back to `./dist-linux` |
+| `--sync-only` / `--no-sync` | only push the sources / reuse what is already on the remote |
+| `--logs` / `--stop` | follow / kill the remote dev server or app (remote only) |
+
+```bash
+./scripts/build-linux.sh --remote --dev                  # compile + run on the dev box
+./scripts/build-linux.sh --remote --debug --run          # fast build, then launch
+./scripts/build-linux.sh --remote --release --bundles all --fetch
+./scripts/build-linux.sh                                 # auto: remote, or native on Linux
+./scripts/build-linux.sh --native                        # force a local Linux build
+```
+
+The remote backend drives `pnpm tauri` (the CLI pinned in `devDependencies`, so no
+`cargo install tauri-cli` step) and expects the box to provide Rust, Node 24 and the
+WebKitGTK/GTK dev headers. It covers the whole loop over SSH: build (release or debug),
+`--dev`, `--run`, `--logs`, `--stop`. Sync uses `rsync` when both ends have it and falls
+back to `tar` otherwise.
+
+Because the box keeps `node_modules` and `target/` on disk, rebuilds are incremental
+(seconds) and `--dev` gives Vite + hot reload; a container-per-build backend was dropped
+in favour of this, as it could never run the app for testing.
+
 ## Windows cross-compile (`cargo-xwin`)
 
 `scripts/build-windows.sh [--bundles nsis] [tauri build args]` builds the Windows x64 bundle from macOS/Linux — it resolves the keg-only LLVM/lld paths itself and calls `pnpm tauri build --target x86_64-pc-windows-msvc --runner cargo-xwin --bundles nsis`.

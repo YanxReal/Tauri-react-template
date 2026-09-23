@@ -93,6 +93,8 @@ Per-OS shells are available:
 ./scripts/build-windows.sh
 ```
 
+`scripts/build-linux.sh` builds the Linux bundles — and can compile and run the app — on a Linux dev box over SSH (`--remote [HOST]`, default `ubuntu-vnc`), or locally with `--native`. Details in `docs/en/scripts.md`.
+
 `scripts/build-windows.sh` cross-compiles the Windows x64 bundle from macOS/Linux with `cargo-xwin` (NSIS installer; MSI/WiX needs a Windows host). One-time setup: `brew install llvm lld makensis`, `cargo install cargo-xwin --locked`, `rustup target add x86_64-pc-windows-msvc` — full details in `docs/en/scripts.md`.
 
 ## Scripts reference (root)

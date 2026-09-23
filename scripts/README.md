@@ -5,6 +5,14 @@
 - `rust-toolchain.toml` fija `stable` + targets `aarch64-apple-ios*` y `android` para `cargo check --target ...` y los builds móviles.
 - `src-tauri/Assets.xcassets` + `Info.plist` + `tauri.macos.conf.json` (`titleBarStyle Overlay`, `transparent`) replican la capa macOS/Xcode de Prestly pero genérica.
 
+## Build por OS
+
+| Script | Qué hace |
+|--------|----------|
+| `scripts/build-linux.sh` | Bundles Linux y compilar/lanzar la app. Backends `--remote [HOST]` (SSH, vía principal) y `--native`. Perfiles `--release`/`--debug`; extras `--dev`, `--run`, `--fetch`, `--logs`, `--stop`. Detalle: `docs/es/scripts.md`. |
+| `scripts/build-windows.sh` | Cross-compile Windows x64 desde macOS/Linux (`cargo-xwin` + NSIS). |
+| `scripts/Xcode/apple-xcode.sh` | Regenera `src-tauri/gen/apple` y compila iOS sim + macOS host. |
+
 ## Xcode unificado (iOS + macOS en UN target)
 
 La fuente de verdad del proyecto Xcode es el template:

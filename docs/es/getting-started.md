@@ -93,6 +93,8 @@ Shells por OS disponibles:
 ./scripts/build-windows.sh
 ```
 
+`scripts/build-linux.sh` construye los bundles de Linux — y puede compilar y lanzar la app — en una caja Linux por SSH (`--remote [HOST]`, por defecto `ubuntu-vnc`), o en local con `--native`. Detalle en `docs/es/scripts.md`.
+
 `scripts/build-windows.sh` cross-compila el bundle Windows x64 desde macOS/Linux con `cargo-xwin` (instalador NSIS; MSI/WiX necesita un host Windows). Setup una sola vez: `brew install llvm lld makensis`, `cargo install cargo-xwin --locked`, `rustup target add x86_64-pc-windows-msvc` — detalle completo en `docs/es/scripts.md`.
 
 ## Referencia de scripts (root)
