@@ -10,7 +10,7 @@
         "center": true,
         "decorations": true,
         "visible": false,
-        "transparent": false,
+        "transparent": true,
         "disableInputAccessoryView": true,
         "dragDropEnabled": false,
         "zoomHotkeysEnabled": false
