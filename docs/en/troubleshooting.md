@@ -14,17 +14,16 @@ Ensure `lib.rs:162` `adjust_macos_traffic_lights` + `lib.rs:288` `ensure_traffic
 
 If the dots sit too **high** (or vanish), check `traffic_lights_target_y` (`lib.rs:142`): the frame belongs to the button's superview, so `y` must be derived from `isFlipped()` + the container height — not from the window height or the raw `26 - size/2`.
 
-## Linux titlebar ignores the app theme / no shadow / square corners
+## Linux titlebar ignores the app theme / corners look square
 
-The titlebar is **the app's own**: `header.tsx` is the 44px band with `data-tauri-drag-region` + `useWindowDragRegion`, and `WindowControls` (`header.tsx:222`) renders the caption buttons for Win/Linux. `install_linux_frame` (`lib.rs:412`) latches CSD with an empty, hidden `GtkHeaderBar` (plus `set_no_show_all(true)` — tao shows the window with `show_all()`), rewrites the frame radius from a `GtkCssProvider` and clips the webview's surface (`clip_webview_to_rounded`, `lib.rs:360`); `globals.css:246` gives `.app-shell` the same `border-radius`.
+The titlebar is **the app's own**: `header.tsx` is the 44px band with `data-tauri-drag-region` + `useWindowDragRegion`, and `WindowControls` (`header.tsx:222`) renders the caption buttons for Win/Linux. `install_linux_frame` (`lib.rs:359`) latches CSD with an empty, hidden `GtkHeaderBar` (plus `set_no_show_all(true)` — tao shows the window with `show_all()`), so GTK keeps drawing its native background and shadow; `globals.css:247` gives `.app-shell` a `border-top-left/right-radius: 8px` matching Adwaita's `$window_radius`.
 
-- **Corners look square** (the radius is there, but instead of the desktop you see a near-black fill): `transparent: true` was dropped from `tauri.linux.conf.json:13`. Without alpha the webview's own background (Adwaita base `#1e1e1e`) fills the corners.
-- **The bottom corners show a square shoulder of shadow** while the top ones are round: the `decoration { border-radius: 10px }` rule is gone from the provider. GTK3's Adwaita only rounds the top corners, so its shadow is square at the bottom (Firefox bug 1964149).
-- **A square "shoulder" appears just outside the rounded corners** (only with the software renderer): `clip_webview_to_rounded` is not running — check that the window has a `GtkBox` child whose first child is the webview, and that the clip is re-applied on `size-allocate` and `realize` (a page reload recreates the webview's `GdkWindow` and loses it).
+- **Top corners look square**: the `.app-shell` top radius is gone, so the content covers GTK's rounding. It must equal `$window_radius` (8px). Note that in a **dark** app theme the reveal is the theme's window colour (`#1e1e1e`) against the app's `#0a0a0a`: it is rounded, just a slightly lighter edge.
+- **Bottom corners are square**: this is GTK3's native behaviour — `decoration { border-radius: r r 0 0 }` only rounds the top. Do not "fix" it with CSS; see `docs/en/native-feel.md` §0 for why `transparent: true` / shape clips trade this for worse artifacts on Linux.
 - **The titlebar ignores the in-app theme toggle**: check that `useNativeTheme` is still wired in `title-bar.tsx:20` and that `core:window:allow-set-theme` is still in `capabilities/default.json:16` — without that permission `setTheme()` rejects silently.
 - **The caption buttons do nothing**: check `core:window:allow-minimize` / `allow-toggle-maximize` / `allow-close` in `capabilities/default.json:6`.
 
-If the window is flat / square overall, the problem is the session/theme, not the app — check `echo $XDG_SESSION_TYPE` and that a GTK theme is set. Never add `box-shadow` / `margin` on `.app-shell` for Linux: GTK already draws the shadow and an inset would show cut corners.
+If the window is flat / square, the problem is the session/theme, not the app — check `echo $XDG_SESSION_TYPE` and that a GTK theme is set. Never add `box-shadow` / `margin` on `.app-shell` for Linux: GTK already draws the shadow and an inset would show cut corners.
 
 ## Windows: no caption buttons / no Snap Layouts
 

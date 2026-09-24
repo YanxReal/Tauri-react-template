@@ -82,16 +82,9 @@ Background and fix documented in `docs/en/native-feel.md`. Implementation in `li
 - `needs_traffic_lights_update` + `ensure_traffic_lights_observer` (`NSWindowDidResizeNotification`/`DidMove`) + **60 fps polling** (`NSTimer` in `NSRunLoopCommonModes`) during `NSEventTrackingRunLoopMode` (live-resize).
 - `setAutoresizingMask(0)` prevents AppKit from re-resetting.
 
-## Linux window frame — app-drawn titlebar + latched CSD
+## Linux window frame — latched CSD, GTK keeps its native decoration
 
-`tauri.linux.conf.json:11` → `decorations: true` + `transparent: true` (`:13`) + `visible: false` (`:12`). `install_linux_frame` (`lib.rs:412`) latches **CSD** with an empty, hidden `GtkHeaderBar` (plus `set_no_show_all(true)`, because tao shows the window with `show_all()`) and then:
-
-1. **rewrites the frame radius** (`window.background` + `decoration { border-radius: 10px }` via a `GtkCssProvider`): GTK3's Adwaita only rounds the **top** corners (`decoration { border-radius: $window_radius $window_radius 0 0 }`), so its shadow is square at the bottom — the bug Firefox fixed behind `gtk.rounded-bottom-corners` (bugzilla 1964149);
-2. **clips the webview's surface to the same rounded rect** (`clip_webview_to_rounded`, `lib.rs:360`), because with the software renderer Linux requires the webview surface is opaque and a square "shoulder" shows outside the rounded corners (Firefox bug 1509931). Re-applied on `size-allocate` and `realize`.
-
-`transparent: true` is required: with `transparent: false` the window has no alpha, so the corners cannot be transparent and the webview's own background (Adwaita base `#1e1e1e`) fills them. The titlebar itself is the app's: the fixed 44px `header.tsx` band (drag region) plus `WindowControls` (`header.tsx:222`) — the same "custom frame" model as Windows / Edge / VS Code / Chromium. `globals.css:246` gives `.app-shell` the same `border-radius`.
-
-Why not the native titlebar: mutter reads `_GTK_THEME_VARIANT` **once**, when the window is managed (`LOAD_INIT` in `mutter/src/x11/window-props.c`), so the SSD can never follow the app theme — a dark app on a light desktop kept a white titlebar; and a `GtkHeaderBar` is not draggable when tao creates the window in SSD mode. `useNativeTheme` (`native-chrome.ts:135`) still mirrors the theme into GTK's variant. The old `apply_linux_window_shadow` hacks (forced RGBA visual + `opacity 0.99`) stay removed: forcing a GDK visual after realize cannot work. Full rationale in `docs/en/native-feel.md`.
+`tauri.linux.conf.json:11` → `decorations: true` + `transparent: false` + `visible: false` (`:12`). `install_linux_frame` (`lib.rs:359`) only latches **CSD**: an empty `GtkHeaderBar` is set as the window titlebar and hidden (`set_no_show_all(true)`, because tao shows the window with `show_all()`). GTK keeps drawing its **own** background and shadow — no radius overrides, no shape clips, no transparency. The titlebar is the app's: the fixed 44px `header.tsx` band (drag region) plus `WindowControls` (`header.tsx:222`). `globals.css:247` gives `.app-shell` a `border-top-left/right-radius: 8px` (Adwaita's `$window_radius`) so the content does not cover the native top rounding; GTK3 leaves the bottom corners square, like any GTK3 app.
 
 Also sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` (`lib.rs:408`) to avoid WebKitGTK DMABUF crashes.
 

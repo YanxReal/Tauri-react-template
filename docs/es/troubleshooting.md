@@ -14,17 +14,16 @@ Asegúrate de que `lib.rs:162` `adjust_macos_traffic_lights` + `lib.rs:288` `ens
 
 Si los dots quedan demasiado **arriba** (o desaparecen), revisa `traffic_lights_target_y` (`lib.rs:142`): el frame pertenece al superview del botón, así que la `y` debe salir de `isFlipped()` + la altura del contenedor — no de la altura de la ventana ni del `26 - size/2` a pelo.
 
-## La titlebar de Linux ignora el tema de la app / sin sombra / esquinas cuadradas
+## La titlebar de Linux ignora el tema de la app / esquinas cuadradas
 
-La titlebar es **de la app**: `header.tsx` es la banda de 44px con `data-tauri-drag-region` + `useWindowDragRegion`, y `WindowControls` (`header.tsx:222`) pinta los caption buttons para Win/Linux. `install_linux_frame` (`lib.rs:412`) engancha CSD con una `GtkHeaderBar` vacía y oculta (más `set_no_show_all(true)` — tao muestra la ventana con `show_all()`), reescribe el radio del marco desde un `GtkCssProvider` y recorta la superficie del webview (`clip_webview_to_rounded`, `lib.rs:360`); `globals.css:246` da a `.app-shell` el mismo `border-radius`.
+La titlebar es **de la app**: `header.tsx` es la banda de 44px con `data-tauri-drag-region` + `useWindowDragRegion`, y `WindowControls` (`header.tsx:222`) pinta los caption buttons para Win/Linux. `install_linux_frame` (`lib.rs:359`) engancha CSD con una `GtkHeaderBar` vacía y oculta (más `set_no_show_all(true)` — tao muestra la ventana con `show_all()`), así que GTK sigue dibujando su fondo y su sombra nativos; `globals.css:247` da a `.app-shell` `border-top-left/right-radius: 8px`, el `$window_radius` de Adwaita.
 
-- **Las esquinas se ven cuadradas** (el radio está, pero en vez del escritorio ves un relleno casi negro): se quitó `transparent: true` de `tauri.linux.conf.json:13`. Sin alfa, el fondo del propio webview (el *base* de Adwaita, `#1e1e1e`) rellena las esquinas.
-- **Las esquinas de abajo muestran un hombro cuadrado de sombra** y las de arriba no: falta la regla `decoration { border-radius: 10px }` en el provider. El Adwaita de GTK3 solo redondea las de arriba, así que su sombra es cuadrada abajo (bug de Firefox 1964149).
-- **Aparece un "hombro" cuadrado justo fuera de las esquinas redondeadas** (solo con el renderer software): `clip_webview_to_rounded` no se está aplicando — comprueba que la ventana tenga un hijo `GtkBox` cuyo primer hijo sea el webview, y que el clip se re-aplique en `size-allocate` y `realize` (una recarga de la página recrea la `GdkWindow` del webview y lo pierde).
+- **Las esquinas de arriba se ven cuadradas**: falta el radio superior de `.app-shell`, así que el contenido tapa el redondeo de GTK. Debe valer `$window_radius` (8px). Ojo: con tema **oscuro** lo que se ve es el color de ventana del tema (`#1e1e1e`) contra el `#0a0a0a` de la app — está redondeado, solo que es un borde algo más claro.
+- **Las esquinas de abajo son rectas**: es el comportamiento nativo de GTK3 — `decoration { border-radius: r r 0 0 }` solo redondea arriba. No lo "arregles" con CSS; ver `docs/es/native-feel.md` §0 para por qué `transparent: true` / los clips de forma cambian esto por artefactos peores en Linux.
 - **La titlebar ignora el toggle de tema de la app**: comprueba que `useNativeTheme` sigue enganchado en `title-bar.tsx:20` y que `core:window:allow-set-theme` sigue en `capabilities/default.json:16` — sin ese permiso `setTheme()` se rechaza en silencio.
 - **Los caption buttons no hacen nada**: revisa `core:window:allow-minimize` / `allow-toggle-maximize` / `allow-close` en `capabilities/default.json:6`.
 
-Si la ventana sale plana / cuadrada en general, el problema es la sesión/tema, no la app — revisa `echo $XDG_SESSION_TYPE` y que haya un tema GTK. Nunca añadas `box-shadow` / `margin` sobre `.app-shell` en Linux: GTK ya dibuja la sombra y un inset dejaría esquinas cortadas.
+Si la ventana sale plana / cuadrada, el problema es la sesión/tema, no la app — revisa `echo $XDG_SESSION_TYPE` y que haya un tema GTK. Nunca añadas `box-shadow` / `margin` sobre `.app-shell` en Linux: GTK ya dibuja la sombra y un inset dejaría esquinas cortadas.
 
 ## Windows: no aparecen los caption buttons / no hay Snap Layouts
 

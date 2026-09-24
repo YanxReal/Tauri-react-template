@@ -164,11 +164,11 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 - Dos bugs del diseño del 2026-09-22, ambos comprobados en GNOME 46: (1) las esquinas de **abajo** salían cuadradas — el CSD de GTK redondea el fondo de la ventana, pero el webview lo tapa (las de arriba solo se veían bien porque las cubría la headerbar de GTK); (2) la `GtkHeaderBar` **no era arrastrable** — tao crea la ventana en modo SSD, así que GTK nunca cablea el arrastre de CSD (el arrastre del header de la app **sí** funcionaba).
 - El arreglo sigue el patrón "custom frame" de Edge / VS Code / Chromium, o sea el mismo modelo que Windows: la **titlebar la dibuja la app** (banda de 44px de `header.tsx` + `WindowControls` para Win/Linux, `header.tsx:222`) e `install_linux_frame` (`lib.rs:358`) engancha CSD con una `GtkHeaderBar` vacía y oculta más el fondo de ventana de GTK transparente, así que GTK aporta solo su **sombra nativa**.
 - `set_no_show_all(true)` es crítico: tao muestra la ventana con `window.show_all()` (`vendor/tao-0.35.3/src/platform_impl/linux/event_loop.rs:308`), que re-mostraba la barra oculta y se comía 43px arriba.
-- `globals.css:246` → `html.linux .app-shell { border-radius: 10px }`: con el marco transparente la forma la define el shell.
+- `globals.css:247` → `html.linux .app-shell { border-radius: 10px }`: con el marco transparente la forma la define el shell.
 - **`transparent: true`** (`tauri.linux.conf.json:13`) es lo que hace que las esquinas *se vean* curvas. Con `transparent: false` el radio se aplicaba y las esquinas eran transparentes en el DOM, pero el **fondo del propio webview** seguía opaco (el *base* de Adwaita, `#1e1e1e`) y rellenaba el área fuera del radio, así que se leían como cuadradas. tao instala el visual RGBA **antes del realize** y solo para ventanas transparentes, y wry solo limpia el fondo del webview si la ventana es transparente — la pieza que al viejo `apply_linux_window_shadow` le faltaba. Verificado con un barrido de píxeles por fila en la esquina: con `transparent: false` el borde del contenido es una recta (`inset=0` en todas las filas); con `transparent: true` sigue el arco (`inset 8 → 4 → 2 → 1 → 0`) y los píxeles de la esquina son el escritorio.
 - Verificado en la caja Ubuntu ARM: arrastre (`80,80 → 179,180`), minimizar (`_NET_WM_STATE_HIDDEN`), maximizar (`MAXIMIZED_HORZ/VERT` + icono de restaurar), doble click para restaurar, las 4 esquinas redondeadas con sombra, en claro y oscuro.
 
-## 2026-09-24 — Esquinas en Linux: sombra redondeada + clip del webview
+## 2026-09-24 — Esquinas en Linux: sombra redondeada + clip del webview → superseded
 
 - Las esquinas *sí* estaban redondeadas (el radio CSS se aplicaba y los píxeles eran transparentes) pero seguían leyéndose como cuadradas, porque el Adwaita de GTK3 solo redondea las esquinas de **arriba**: `decoration { border-radius: $window_radius $window_radius 0 0 }` (`$window_radius = 8px`), así que su sombra es cuadrada abajo. El mismo bug que Firefox arregló tras `gtk.rounded-bottom-corners` (bugzilla 1964149). Arreglo: reescribir el radio del marco desde un `GtkCssProvider` (`window.background` + `decoration { border-radius: 10px }`), el enfoque que recomienda la comunidad GTK.
 - Segundo artefacto: con el renderer software que Linux necesita (`WEBKIT_DISABLE_DMABUF_RENDERER=1`) la **superficie del webview es opaca** — el `set_background_color(transparent)` de wry no basta — y asomaba un "hombro" cuadrado justo fuera de las esquinas redondeadas (bug de Firefox 1509931). Arreglo: `clip_webview_to_rounded` (`lib.rs:360`) da forma a la `GdkWindow` del webview con el mismo rectángulo redondeado vía `gdk_window_shape_combine_region` (X11; no-op en Wayland, donde la superficie ya es transparente). Se re-aplica en `size-allocate` y `realize`.
@@ -178,12 +178,21 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 
 ---
 
+## 2026-09-24 — Linux: decoración CSD nativa, sin overrides
+
+- Simplifica el marco después de medir las alternativas. `transparent: true` + un override del radio del `decoration` + un clip de forma X11 sobre el webview sí redondeaban las 4 esquinas, pero el clip se pierde cada vez que WebKit recrea su ventana de render (una recarga de página), y con `transparent: false` la superficie del webview sigue opaca, así que el clip era lo único que daba forma a las esquinas.
+- Diseño final: GTK conserva su decoración **nativa** intacta. `install_linux_frame` (`lib.rs:359`) solo engancha CSD con una `GtkHeaderBar` vacía y oculta; `transparent: false`; `.app-shell` lleva `border-top-left/right-radius: 8px` (el `$window_radius` de Adwaita) para que el contenido no tape el redondeo de arriba de GTK. GTK3 solo redondea arriba (`decoration { border-radius: r r 0 0 }`), así que las esquinas de abajo son rectas — GTK3 nativo.
+- La titlebar sigue siendo de la app (header de 44px + `WindowControls`), que es el objetivo: la SSD de mutter no puede seguir al tema de la app (`_GTK_THEME_VARIANT` se lee una vez, `LOAD_INIT`) y su titlebar no es arrastrable con tao.
+- Medido con barrido de píxeles en la esquina superior-izquierda: el arco de 8px está, relleno con el fondo del webview (`#1e1e1e` oscuro / blanco claro) — con tema oscuro se lee como un borde redondeado algo más claro, el color del marco nativo. Arrastre, minimizar, maximizar y restaurar verificados.
+
+---
+
 ## Lecciones para futuros cambios
 
 - Si ves `// Prestly pattern` o `// HuLa fix`, esa línea sobrevivió a múltiples bugs de plataforma. Lee el commit antes de tocarla.
 - `backdrop-blur` en Linux está vetado por motivo — cualquier re-activación debe manejar DMABUF + NVIDIA + Wayland y mantener RAM plana al redimensionar.
 - Traffic lights: nunca elimines uno de los tres mecanismos — cada uno cubre un timing distinto (general, macOS 26, live-drag).
-- Titlebar de Linux: mutter lee `_GTK_THEME_VARIANT` **solo** al gestionar la ventana (`LOAD_INIT`), y una `GtkHeaderBar` no es arrastrable cuando tao crea la ventana en modo SSD — así que la titlebar la dibuja la app (`header.tsx` + `WindowControls`) sobre un marco CSD "latched" (`install_linux_frame`, `lib.rs:412`). Ese marco necesita además dos arreglos para verse bien: el override del radio (GTK3 solo redondea arriba) y el clip de la superficie del webview (`clip_webview_to_rounded`, `lib.rs:360`). Nunca "arregles" un desajuste de tema escribiendo esa propiedad o remapeando la ventana.
+- Titlebar de Linux: mutter lee `_GTK_THEME_VARIANT` **solo** al gestionar la ventana (`LOAD_INIT`), y una `GtkHeaderBar` no es arrastrable cuando tao crea la ventana en modo SSD — así que la titlebar la dibuja la app (`header.tsx` + `WindowControls`) sobre un marco CSD "latched" (`install_linux_frame`, `lib.rs:359`). Ese marco necesita además dos arreglos para verse bien: el override del radio (GTK3 solo redondea arriba) y el clip de la superficie del webview (`clip_webview_to_rounded`, `lib.rs:360`). Nunca "arregles" un desajuste de tema escribiendo esa propiedad o remapeando la ventana.
 - `src-tauri/gen/` siempre es desechable — la fuente real de Xcode es `vendor/tauri-cli-*/templates/mobile/ios/`.
 
 Siguiente: [Contribuir →](./contributing.md) · [Sensación nativa →](./native-feel.md)

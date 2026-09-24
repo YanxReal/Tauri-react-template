@@ -82,16 +82,9 @@ Contexto y fix en `docs/es/native-feel.md`. Implementación en `lib.rs:162`:
 - `needs_traffic_lights_update` + `ensure_traffic_lights_observer` (`NSWindowDidResizeNotification`/`DidMove`) + **polling a 60 fps** (`NSTimer` en `NSRunLoopCommonModes`) durante `NSEventTrackingRunLoopMode` (live-resize).
 - `setAutoresizingMask(0)` evita que AppKit vuelva a resetear.
 
-## Marco de ventana en Linux — titlebar propia + CSD "latched"
+## Marco de ventana en Linux — CSD "latched", GTK conserva su decoración nativa
 
-`tauri.linux.conf.json:11` → `decorations: true` + `transparent: true` (`:13`) + `visible: false` (`:12`). `install_linux_frame` (`lib.rs:412`) engancha **CSD** con una `GtkHeaderBar` vacía y oculta (más `set_no_show_all(true)`, porque tao muestra la ventana con `show_all()`) y después:
-
-1. **reescribe el radio del marco** (`window.background` + `decoration { border-radius: 10px }` vía un `GtkCssProvider`): el Adwaita de GTK3 solo redondea las esquinas de **arriba** (`decoration { border-radius: $window_radius $window_radius 0 0 }`), así que su sombra es cuadrada abajo — el bug que Firefox arregló tras `gtk.rounded-bottom-corners` (bugzilla 1964149);
-2. **recorta la superficie del webview al mismo rectángulo redondeado** (`clip_webview_to_rounded`, `lib.rs:360`), porque con el renderer software que Linux necesita la superficie del webview es opaca y asoma un "hombro" cuadrado fuera de las esquinas redondeadas (bug de Firefox 1509931). Se re-aplica en `size-allocate` y en `realize`.
-
-`transparent: true` es obligatorio: con `transparent: false` la ventana no tiene alfa, así que las esquinas no pueden ser transparentes y las rellena el fondo del propio webview (el *base* de Adwaita, `#1e1e1e`). La titlebar la dibuja la app: la banda fija de 44px de `header.tsx` (zona de arrastre) más `WindowControls` (`header.tsx:222`) — el mismo modelo "custom frame" que Windows / Edge / VS Code / Chromium. `globals.css:246` da a `.app-shell` el mismo `border-radius`.
-
-Por qué no la titlebar nativa: mutter lee `_GTK_THEME_VARIANT` **una sola vez**, al gestionar la ventana (`LOAD_INIT` en `mutter/src/x11/window-props.c`), así que la SSD nunca puede seguir al tema de la app — una app oscura en un escritorio claro mantenía la titlebar blanca; y una `GtkHeaderBar` no es arrastrable cuando tao crea la ventana en modo SSD. `useNativeTheme` (`native-chrome.ts:135`) sigue reflejando el tema en la variante de GTK. Los viejos hacks de `apply_linux_window_shadow` (visual RGBA forzado + `opacity 0.99`) siguen eliminados: forzar el visual GDK después del realize no puede funcionar. Razonamiento completo en `docs/es/native-feel.md`.
+`tauri.linux.conf.json:11` → `decorations: true` + `transparent: false` + `visible: false` (`:12`). `install_linux_frame` (`lib.rs:359`) solo engancha **CSD**: una `GtkHeaderBar` vacía queda como titlebar y se oculta (`set_no_show_all(true)`, porque tao muestra la ventana con `show_all()`). GTK sigue dibujando **su propio** fondo y su sombra — sin overrides de radio, sin clips de forma, sin transparencia. La titlebar la dibuja la app: la banda fija de 44px de `header.tsx` (zona de arrastre) más `WindowControls` (`header.tsx:222`). `globals.css:247` da a `.app-shell` `border-top-left/right-radius: 8px` (el `$window_radius` de Adwaita) para que el contenido no tape el redondeo nativo de arriba; GTK3 deja las esquinas de abajo rectas, como cualquier app GTK3.
 
 También fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder` (`lib.rs:408`) para evitar crashes DMABUF de WebKitGTK.
 

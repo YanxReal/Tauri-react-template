@@ -164,11 +164,11 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 - Two bugs in the 2026-09-22 design, both verified on GNOME 46: (1) the **bottom** corners were square — GTK's CSD rounds the window background, but the webview paints over it (the top ones only looked right because the GTK headerbar covered them); (2) the `GtkHeaderBar` was **not draggable** — tao creates the window in SSD mode, so GTK never wires the CSD drag (the app header's own drag *did* work).
 - The fix follows the Edge / VS Code / Chromium "custom frame" pattern, i.e. the same model as Windows: the **app draws the titlebar** (`header.tsx` 44px band + `WindowControls` for Win/Linux, `header.tsx:222`) and `install_linux_frame` (`lib.rs:358`) latches CSD with an empty, hidden `GtkHeaderBar` plus a transparent GTK window background, so GTK contributes only its **native shadow**.
 - `set_no_show_all(true)` is load-bearing: tao shows the window with `window.show_all()` (`vendor/tao-0.35.3/src/platform_impl/linux/event_loop.rs:308`), which re-showed the hidden bar and ate 43px at the top.
-- `globals.css:246` → `html.linux .app-shell { border-radius: 10px }`: with a transparent frame the shell defines the shape.
+- `globals.css:247` → `html.linux .app-shell { border-radius: 10px }`: with a transparent frame the shell defines the shape.
 - **`transparent: true`** (`tauri.linux.conf.json:13`) is what makes the corners *look* round. With `transparent: false` the radius was applied and the corners were transparent in the DOM, but the **webview's own background** stayed opaque (Adwaita's base `#1e1e1e`) and filled the area outside the radius, so they read as square. tao installs the RGBA visual **before realize** and only for transparent windows, and wry only clears the webview background for transparent windows — the missing piece the old `apply_linux_window_shadow` never had. Verified with a per-row pixel scan of the corner: with `transparent: false` the content edge is a straight line (`inset=0` on every row); with `transparent: true` it follows the arc (`inset 8 → 4 → 2 → 1 → 0`) and the corner pixels are the desktop.
 - Verified on the Ubuntu ARM box: drag (`80,80 → 179,180`), minimize (`_NET_WM_STATE_HIDDEN`), maximize (`MAXIMIZED_HORZ/VERT` + restore icon), double-click to restore, four rounded corners with shadow, in light and dark.
 
-## 2026-09-24 — Linux corners: rounded shadow + webview clip
+## 2026-09-24 — Linux corners: rounded shadow + webview clip → superseded
 
 - The corners *were* rounded (the CSS radius applied and the pixels were transparent) but they still read as square, because GTK3's Adwaita only rounds the **top** corners: `decoration { border-radius: $window_radius $window_radius 0 0 }` (`$window_radius = 8px`), so its shadow is square at the bottom. Same bug Firefox fixed behind `gtk.rounded-bottom-corners` (bugzilla 1964149). Fix: rewrite the frame radius from a `GtkCssProvider` (`window.background` + `decoration { border-radius: 10px }`), the approach the GTK community recommends.
 - Second artifact: with the software renderer Linux requires (`WEBKIT_DISABLE_DMABUF_RENDERER=1`) the **webview surface is opaque** — wry's `set_background_color(transparent)` is not enough — and a square "shoulder" showed just outside the rounded corners (Firefox bug 1509931). Fix: `clip_webview_to_rounded` (`lib.rs:360`) shapes the webview's `GdkWindow` to the same rounded rect via `gdk_window_shape_combine_region` (X11; a no-op on Wayland, where the surface is already transparent). Re-applied on `size-allocate` and `realize`.
@@ -178,12 +178,21 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 
 ---
 
+## 2026-09-24 — Linux: native CSD decoration, no overrides
+
+- Simplifies the frame after measuring the alternatives. `transparent: true` + a `decoration` radius override + an X11 shape clip on the webview did round all four corners, but the clip is lost whenever WebKit recreates its render window (a page reload), and with `transparent: false` the webview surface stays opaque, so the clip was the only thing shaping the corners in the first place.
+- Final design: GTK keeps its **native** decoration untouched. `install_linux_frame` (`lib.rs:359`) only latches CSD with an empty, hidden `GtkHeaderBar`; `transparent: false`; `.app-shell` gets `border-top-left/right-radius: 8px` (Adwaita's `$window_radius`) so the content does not cover GTK's top rounding. GTK3 rounds only the top corners (`decoration { border-radius: r r 0 0 }`), so the bottom corners are square — native GTK3.
+- The titlebar stays the app's (44px header + `WindowControls`), which is the whole point: mutter's SSD cannot follow the app theme (`_GTK_THEME_VARIANT` is read once, `LOAD_INIT`) and its titlebar is not draggable under tao.
+- Measured with a pixel scan of the top-left corner: the 8px arc is there, filled by the webview's background (`#1e1e1e` dark / white light) — in a dark theme it reads as a slightly lighter rounded edge, which is the native frame colour. Drag, minimize, maximize and restore verified.
+
+---
+
 ## Lessons for future changes
 
 - If you see `// Prestly pattern` or `// HuLa fix`, that line survived multiple platform bugs. Read the commit before touching it.
 - Linux `backdrop-blur` is vetoed for a reason — any re-enable must handle DMABUF + NVIDIA + Wayland and keep RAM flat on resize.
 - Traffic lights: never remove one of the three mechanisms — each covers a different timing (general, macOS 26, live-drag).
-- Linux titlebar: mutter reads `_GTK_THEME_VARIANT` **only** at window-manage time (`LOAD_INIT`), and a `GtkHeaderBar` is not draggable when tao creates the window in SSD mode — so the app draws its own titlebar (`header.tsx` + `WindowControls`) over a latched CSD frame (`install_linux_frame`, `lib.rs:412`). That frame also needs two fixes to look right: the radius override (GTK3 rounds only the top corners) and the webview surface clip (`clip_webview_to_rounded`, `lib.rs:360`). Never "fix" a theme mismatch by writing that property or remapping the window.
+- Linux titlebar: mutter reads `_GTK_THEME_VARIANT` **only** at window-manage time (`LOAD_INIT`), and a `GtkHeaderBar` is not draggable when tao creates the window in SSD mode — so the app draws its own titlebar (`header.tsx` + `WindowControls`) over a latched CSD frame (`install_linux_frame`, `lib.rs:359`). That frame also needs two fixes to look right: the radius override (GTK3 rounds only the top corners) and the webview surface clip (`clip_webview_to_rounded`, `lib.rs:360`). Never "fix" a theme mismatch by writing that property or remapping the window.
 - `src-tauri/gen/` is always disposable — the real Xcode source is `vendor/tauri-cli-*/templates/mobile/ios/`.
 
 Next: [Contributing →](./contributing.md) · [Native Feel →](./native-feel.md)

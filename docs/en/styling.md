@@ -30,7 +30,7 @@ Window shell pattern (`globals.css:209`):
 
 - `html.titlebar` / `html.titlebar-mac` / `html.titlebar-win` / `html.linux` — mounted by `TitleBar` component (Tauri desktop only).
 - `html.titlebar body { background: transparent }` — window shape is native.
-- `.app-shell` — the **window shell**: `height: 100dvh; overflow: hidden; background: var(--background)`. It clips everything (header included) and **does not scroll**. macOS and Linux round it via CSS (`border-radius: 10px`): macOS for the transparent Overlay titlebar, Linux (`globals.css:246`) because the latched CSD frame is transparent and the app owns the shape. Windows runs frameless with DWM rounding (`decorations: false` + decorum), so it stays square. Never add `margin` here: an inset would show cut corners.
+- `.app-shell` — the **window shell**: `height: 100dvh; overflow: hidden; background: var(--background)`. It clips everything (header included) and **does not scroll**. macOS rounds it via CSS (`border-radius: 10px`) for the transparent Overlay titlebar, and Linux (`globals.css:247`) applies `border-top-left/right-radius: 8px` — Adwaita's `$window_radius` — so the content does not cover the top rounding GTK draws on a CSD window (GTK3 leaves the bottom corners square). Windows runs frameless with DWM rounding (`decorations: false` + decorum), so it stays square. Never add `margin` here: an inset would show cut corners.
 - `.app-scroll` (`globals.css:231`) — the **scroll container** (`flex: 1 1 auto; min-height: 0; overflow-y: auto`) and the **only** one on desktop. It wraps `main` + `Footer`, i.e. content only. The header lives **outside** it: it is the titlebar, so the scrollbar can never steal width from it nor paint over the caption buttons. In the browser build the div is inert and the document scrolls, which is why the header keeps `md:sticky`.
 - **Scrollbars are native, never styled.** `::-webkit-scrollbar` rules are deliberately absent: they would force classic bars (gutter + arrow buttons) and kill the overlay. Windows uses `scrollBarStyle: "fluentOverlay"` (`tauri.windows.conf.json:13`), macOS keeps its auto-hiding overlay and Linux WebKitGTK follows `gtk-overlay-scrolling` — all three are thin pills floating over the content edge.
 
@@ -48,7 +48,7 @@ Provider chain: `VibrancyProvider` (`vibrancy-provider.tsx` — `localStorage: v
 
 `globals.css:132` — `* { user-select:none; -webkit-user-drag:none }` except inputs; `html,body { touch-action: pan-x pan-y }` (native scroll, no pinch-zoom).
 
-`globals.css:256` — Linux veto: `backdrop-filter: none !important` on `.app-header` / `.app-shell` (WebKitGTK blur is expensive and glitchy). Linux's frame is 100% native, so there is no CSS shadow or radius on `.app-shell`; `globals.css:247` hides the titlebar decorum injects on Windows.
+`globals.css:256` — Linux veto: `backdrop-filter: none !important` on `.app-header` / `.app-shell` (WebKitGTK blur is expensive and glitchy). Linux's frame is 100% native (GTK draws the background and the shadow), so `.app-shell` only carries the 8px top radius; `globals.css:247` also hides the titlebar decorum injects on Windows.
 
 See `docs/en/native-feel.md` for the full rationale per OS.
 
