@@ -153,10 +153,92 @@ function useNativeTheme(enabled: boolean): void {
   }, [enabled])
 }
 
+type ResizeEdge =
+  | "North"
+  | "South"
+  | "West"
+  | "East"
+  | "NorthWest"
+  | "NorthEast"
+  | "SouthWest"
+  | "SouthEast"
+
+const RESIZE_CURSOR: Record<ResizeEdge, string> = {
+  North: "ns-resize",
+  South: "ns-resize",
+  West: "ew-resize",
+  East: "ew-resize",
+  NorthWest: "nwse-resize",
+  SouthEast: "nwse-resize",
+  NorthEast: "nesw-resize",
+  SouthWest: "nesw-resize",
+}
+
+/** Borde bajo el puntero, o null si está lejos de los cantos. */
+function resizeEdgeAt(x: number, y: number, band: number): ResizeEdge | null {
+  const w = window.innerWidth
+  const h = window.innerHeight
+  const top = y <= band
+  const bottom = y >= h - band
+  const left = x <= band
+  const right = x >= w - band
+
+  if (top && left) return "NorthWest"
+  if (top && right) return "NorthEast"
+  if (bottom && left) return "SouthWest"
+  if (bottom && right) return "SouthEast"
+  if (top) return "North"
+  if (bottom) return "South"
+  if (left) return "West"
+  if (right) return "East"
+  return null
+}
+
+/**
+ * Linux: la ventana CSD **no trae agarres de resize**. GTK delega el borde en
+ * el gestor de ventanas, pero una ventana cliente-decorada no lleva marco del
+ * WM, así que no hay nada que arrastrar (comprobado también con una ventana CSD
+ * de referencia: tampoco redimensiona). Tauri 2.11 tampoco expone un
+ * `startResizing`, así que el borde lo detecta la app y lo ejecuta Rust con el
+ * mismo `gtk_window_begin_resize_drag` que usaría GTK (`start_window_resize`).
+ *
+ * El cursor del borde también es cosa nuestra: con CSD lo pondría GTK y aquí no
+ * hay zona del WM que lo active.
+ */
+function useWindowResizeEdges(enabled: boolean): void {
+  useEffect(() => {
+    if (!enabled || !isTauriRuntime()) return
+    // Banda de agarre, en px CSS. 6 da margen al ratón sin comerse la UI.
+    const BAND = 6
+
+    const onMouseDown = (event: MouseEvent) => {
+      if (event.button !== 0) return
+      const edge = resizeEdgeAt(event.clientX, event.clientY, BAND)
+      if (!edge) return
+      // Capturamos: el arrastre lo lleva GTK, no el DOM.
+      event.preventDefault()
+      void invoke("start_window_resize", { direction: edge }).catch(() => {})
+    }
+    const onMouseMove = (event: MouseEvent) => {
+      const edge = resizeEdgeAt(event.clientX, event.clientY, BAND)
+      document.documentElement.style.cursor = edge ? RESIZE_CURSOR[edge] : ""
+    }
+
+    document.addEventListener("mousedown", onMouseDown, true)
+    document.addEventListener("mousemove", onMouseMove)
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown, true)
+      document.removeEventListener("mousemove", onMouseMove)
+      document.documentElement.style.cursor = ""
+    }
+  }, [enabled])
+}
+
 export {
   isTauriRuntime,
   useMacDragRegion,
   useNativeTheme,
   usePlatform,
   useWindowDragRegion,
+  useWindowResizeEdges,
 }

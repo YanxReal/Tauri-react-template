@@ -245,8 +245,7 @@ html.light.vibrancy body {
      fondo de ventana del tema detrás; abajo las esquinas son rectas, como en
      cualquier app GTK3. Ver docs/native-feel.md §0. */
   html.linux .app-shell {
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
+    border-radius: 8px;
   }
   /* Windows + decorum: el plugin inyecta su propia barra de título fija
      (32px, z-index 100) con un `data-tauri-drag-region`. Este template ya

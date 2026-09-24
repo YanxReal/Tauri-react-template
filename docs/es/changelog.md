@@ -187,6 +187,15 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 
 ---
 
+## 2026-09-24 — Linux: resize por la app + sombra redondeada en las 4 esquinas
+
+- **La ventana CSD no es redimensionable por el borde.** GTK delega el borde en el gestor de ventanas y una ventana cliente-decorada no lleva marco del WM, así que no hay nada que arrastrar; Tauri 2.11 tampoco expone `startResizing` (solo tao tiene `drag_resize_window`). Comprobado con una ventana CSD de referencia: tampoco redimensiona.
+- Solución: `useWindowResizeEdges` (`native-chrome.ts`, solo Linux) detecta el `mousedown` a menos de 6px del borde del **webview**, pone el cursor (ns/ew/nwse/nesw-resize) y llama al comando `start_window_resize` (`lib.rs`), que ejecuta el mismo `gtk_window_begin_resize_drag` que usaría GTK. El agarre está en el borde del contenido: el margen de la sombra queda ~26px por fuera (`_GTK_FRAME_EXTENTS`), que es donde apunta el usuario. Verificado: 1100 → 1170 px.
+- Esquinas: `.app-shell` pasa a `border-radius: 8px` en las 4, e `install_linux_frame` sobreescribe `decoration { border-radius: 8px }` para que la **sombra** siga el arco (el fix de Firefox tras `gtk.rounded-bottom-corners`, bugzilla 1964149).
+- Límite honesto: con `transparent: false` y el renderer software, lo que se ve en la esquina es el fondo del webview (el color de ventana del tema). En tema **oscuro** contrasta (`#1e1e1e` vs `#0a0a0a`) y la curva se ve; en tema **claro** ambos son blancos, así que la curva casi no se aprecia. Redondearla también en claro exigiría `transparent: true` o un clip de forma X11, y ambos traen peores problemas (superficie opaca + clip que se pierde al recargar).
+
+---
+
 ## Lecciones para futuros cambios
 
 - Si ves `// Prestly pattern` o `// HuLa fix`, esa línea sobrevivió a múltiples bugs de plataforma. Lee el commit antes de tocarla.

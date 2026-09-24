@@ -1,6 +1,11 @@
 import { useEffect } from "react"
 
-import { useMacDragRegion, useNativeTheme, usePlatform } from "./native-chrome"
+import {
+  useMacDragRegion,
+  useNativeTheme,
+  usePlatform,
+  useWindowResizeEdges,
+} from "./native-chrome"
 
 const DESKTOP_PLATFORMS = new Set(["macos", "windows", "linux"])
 
@@ -18,6 +23,8 @@ export function TitleBar() {
 
   useMacDragRegion(visible && isMac)
   useNativeTheme(visible && isLinux)
+  // Linux CSD no trae agarres de resize: los pone la app.
+  useWindowResizeEdges(visible && isLinux)
 
   useEffect(() => {
     if (!visible || !platform) return

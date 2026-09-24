@@ -78,6 +78,49 @@ fn set_window_effect(
     Err("unsupported".to_string())
 }
 
+/// Redimensiona la ventana desde el borde indicado.
+///
+/// En Linux la ventana CSD no trae agarres de resize (GTK delega en el WM y el
+/// WM no decora una ventana cliente-decorada), asi que el borde lo detecta la
+/// app (`useWindowResizeEdges`) y acaba aqui, en el mismo `begin_resize_drag`
+/// que usaria GTK. En el resto de plataformas el WM ya lo hace solo.
+#[tauri::command]
+fn start_window_resize(window: tauri::WebviewWindow, direction: String) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        use gtk::prelude::*;
+
+        let gtk_window = window.gtk_window().map_err(|e| e.to_string())?;
+        let edge = match direction.as_str() {
+            "North" => gtk::gdk::WindowEdge::North,
+            "South" => gtk::gdk::WindowEdge::South,
+            "West" => gtk::gdk::WindowEdge::West,
+            "East" => gtk::gdk::WindowEdge::East,
+            "NorthWest" => gtk::gdk::WindowEdge::NorthWest,
+            "NorthEast" => gtk::gdk::WindowEdge::NorthEast,
+            "SouthWest" => gtk::gdk::WindowEdge::SouthWest,
+            "SouthEast" => gtk::gdk::WindowEdge::SouthEast,
+            _ => return Err(format!("direccion desconocida: {direction}")),
+        };
+        let (root_x, root_y) = gtk::gdk::Display::default()
+            .and_then(|display| display.default_seat())
+            .and_then(|seat| seat.pointer())
+            .map(|pointer| {
+                let (_screen, x, y) = pointer.position();
+                (x, y)
+            })
+            .ok_or_else(|| "sin dispositivo de puntero".to_string())?;
+        // `GDK_CURRENT_TIME` (= 0): gdk-rs no lo exporta, así que va el valor.
+        gtk_window.begin_resize_drag(edge, 1, root_x, root_y, 0);
+        Ok(())
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = (window, direction);
+        Err("unsupported".to_string())
+    }
+}
+
 #[tauri::command]
 fn window_effects_set(
     window: tauri::WebviewWindow,
@@ -370,6 +413,21 @@ fn install_linux_frame(window: &tauri::WebviewWindow) {
             gtk_window.set_titlebar(Some(&header));
             header.hide();
 
+            // El Adwaita de GTK3 redondea SOLO las esquinas de arriba
+            // (`decoration { border-radius: $window_radius $window_radius 0 0 }`),
+            // asi que su sombra es cuadrada abajo. Se reescribe el radio para que
+            // la sombra siga el arco en las 4 esquinas — el mismo arreglo que
+            // Firefox publico tras `gtk.rounded-bottom-corners` (bugzilla 1964149).
+            let provider = gtk::CssProvider::new();
+            let _ = provider.load_from_data(b"decoration { border-radius: 8px; }");
+            if let Some(screen) = gtk::prelude::WidgetExt::screen(&gtk_window) {
+                gtk::StyleContext::add_provider_for_screen(
+                    &screen,
+                    &provider,
+                    gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+                );
+            }
+
             log::info!("install_linux_frame: CSD latch (decoracion nativa de GTK)");
         }
         Err(e) => {
@@ -426,6 +484,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             platform_info,
+            start_window_resize,
             window_effects_set
         ])
         .setup(|app| {
