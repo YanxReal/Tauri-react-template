@@ -335,6 +335,60 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
     REGISTERED.with(|s| s.borrow_mut().insert(label));
 }
 
+/// Radio del marco redondeado, en px. Debe coincidir con
+/// `html.linux .app-shell { border-radius }` de `globals.css`.
+#[cfg(target_os = "linux")]
+const LINUX_FRAME_RADIUS: i32 = 10;
+
+/// Recorta la superficie del webview al mismo rectángulo redondeado que pinta
+/// `.app-shell`.
+///
+/// Hace falta porque con el renderer **software** de WebKitGTK
+/// (`WEBKIT_DISABLE_DMABUF_RENDERER=1`, obligatorio en Linux) la superficie del
+/// webview es **opaca**: el `set_background_color(transparent)` que hace wry no
+/// basta, y asoma un "hombro" cuadrado justo fuera de las esquinas redondeadas.
+/// Es el mismo síntoma que el bug de Firefox 1509931 (*"the GL subsurface that
+/// Firefox content is rendered to does not have rounded corners; it overdraws
+/// the parent GTK surface that contains the border and shadow"*), y se corrige
+/// igual: dar forma a la ventana del contenido. X11 lo soporta
+/// (`gdk_window_shape_combine_region`); en Wayland es un no-op, y allí la
+/// superficie sí es transparente, así que no se necesita.
+///
+/// El clip es duro (sin antialias), pero va exactamente debajo del arco que ya
+/// pinta el CSS: solo elimina el sobrante opaco, no el borde visible.
+#[cfg(target_os = "linux")]
+fn clip_webview_to_rounded(webview: &gtk::Widget, radius: i32) {
+    use gtk::prelude::*;
+
+    let Some(gdk_window) = webview.window() else {
+        return; // aún sin realizar; se aplicará en el primer size-allocate
+    };
+    let (w, h) = (gdk_window.width(), gdk_window.height());
+    if w <= 2 * radius || h <= 2 * radius {
+        return;
+    }
+
+    let region = gtk::cairo::Region::create();
+    // Banda central: rectángulo completo.
+    let _ = region.union_rectangle(&gtk::cairo::RectangleInt::new(0, radius, w, h - 2 * radius));
+    // Bandas superior e inferior: el arco, fila a fila (x = r - √(r² - (r-y)²)).
+    for y in 0..radius {
+        let dy = radius - y;
+        // `ceil` (no `round`): el clip corta siempre un pelo POR FUERA del arco
+        // del CSS, así no asoma el fondo opaco del webview por el borde.
+        let inset = radius - ((radius * radius - dy * dy) as f64).sqrt().ceil() as i32;
+        let _ = region.union_rectangle(&gtk::cairo::RectangleInt::new(inset, y, w - 2 * inset, 1));
+        let _ = region.union_rectangle(&gtk::cairo::RectangleInt::new(
+            inset,
+            h - 1 - y,
+            w - 2 * inset,
+            1,
+        ));
+    }
+
+    gdk_window.shape_combine_region(Some(&region), 0, 0);
+}
+
 /// Linux: marco CSD "latched" — patrón Chromium / VS Code / Edge.
 ///
 /// La app dibuja su **propia** titlebar (el header de React + `WindowControls`),
@@ -369,10 +423,21 @@ fn install_linux_frame(window: &tauri::WebviewWindow) {
             gtk_window.set_titlebar(Some(&header));
             header.hide();
 
-            // 2) El marco GTK solo aporta la sombra: su fondo va transparente.
+            // 2) El marco GTK aporta SOLO la sombra: se reescribe el radio para
+            //    que las 4 esquinas sean curvas.
+            //
+            //    GTK3 Adwaita trae `decoration { border-radius: $window_radius
+            //    $window_radius 0 0 }` — solo las de ARRIBA. La sombra sigue esa
+            //    forma, así que abajo queda un "hombro" cuadrado que choca con el
+            //    redondeo de `.app-shell` (es el mismo bug que Firefox: bugzilla
+            //    1964149, `gtk.rounded-bottom-corners`). Se corrige como lo hacen
+            //    Firefox y la recomendación de GNOME: reescribir el radio desde un
+            //    `GtkCssProvider` de la app. GTK recalcula con él su región opaca y
+            //    la de input, así que las esquinas transparentes no reciben clics.
             let provider = gtk::CssProvider::new();
-            let _ =
-                provider.load_from_data(b"window.background { background-color: transparent; }");
+            let _ = provider.load_from_data(
+                b"window.background { border-radius: 10px; } decoration { border-radius: 10px; }",
+            );
             if let Some(screen) = gtk::prelude::WidgetExt::screen(&gtk_window) {
                 gtk::StyleContext::add_provider_for_screen(
                     &screen,
@@ -380,7 +445,34 @@ fn install_linux_frame(window: &tauri::WebviewWindow) {
                     gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
                 );
             }
-            log::info!("install_linux_frame: CSD latch + fondo transparente");
+
+            // 3) Recorta la superficie del webview al rectángulo redondeado
+            //    (ver `clip_webview_to_rounded`). wry mete el webview en un
+            //    `GtkBox` dentro de la ventana, así que hay que bajar un nivel.
+            if let Some(container) = gtk_window
+                .child()
+                .and_then(|child| child.downcast::<gtk::Box>().ok())
+            {
+                match container.children().into_iter().next() {
+                    Some(webview) => {
+                        clip_webview_to_rounded(&webview, LINUX_FRAME_RADIUS);
+                        // Se re-aplica al cambiar de tamaño y al realizarse: una
+                        // recarga de la página recrea la GdkWindow del webview y
+                        // el clip se perdería (comprobado con HMR).
+                        webview.connect_size_allocate(move |widget, _alloc| {
+                            clip_webview_to_rounded(widget, LINUX_FRAME_RADIUS);
+                        });
+                        webview.connect_realize(move |widget| {
+                            clip_webview_to_rounded(widget, LINUX_FRAME_RADIUS);
+                        });
+                    }
+                    None => log::warn!("install_linux_frame: el GtkBox no tiene hijos"),
+                }
+            } else {
+                log::warn!("install_linux_frame: no encontré el GtkBox del webview");
+            }
+
+            log::info!("install_linux_frame: CSD latch + sombra redondeada + clip del webview");
         }
         Err(e) => {
             log::warn!("install_linux_frame: sin GtkWindow ({e}); dejo el marco del sistema");
