@@ -23,7 +23,7 @@ The app owns the titlebar; GTK owns the CSD frame/shadow. `install_linux_frame` 
 - **The titlebar ignores the in-app theme toggle:** check `useNativeTheme` at `title-bar.tsx:20` and `core:window:allow-set-theme` at `capabilities/default.json:16`.
 - **The caption buttons do nothing:** check `core:window:allow-minimize` / `allow-toggle-maximize` / `allow-close` in `capabilities/default.json:6`.
 
-The application keeps `transparent: false`; GTK owns the native background and shadow. The GTK provider applies a 16px radius to the decoration and the webview shell to keep their curves aligned.
+The application uses `transparent: true` so the compositor blends the 16px arc; GTK owns the native CSD background and shadow. The GTK provider applies a 16px radius to the decoration and the webview shell to keep their curves aligned.
 
 ## Windows: no caption buttons / no Snap Layouts
 

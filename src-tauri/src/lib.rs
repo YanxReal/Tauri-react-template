@@ -582,10 +582,11 @@ fn install_linux_frame(window: &tauri::WebviewWindow) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Linux: la ventana conserva `decorations:true` y `transparent:false`.
-    // GTK dibuja el fondo y la sombra CSD; un provider con la clase `tauri-app`
-    // ajusta el radio del nodo decoration a 16px (ver `install_linux_frame`).
-    // La titlebar visible y las caption buttons son de la app, como en Windows.
+    // Linux: la ventana conserva `decorations:true` y usa `transparent:true`.
+    // GTK dibuja el fondo y la sombra CSD con canal alfa real; un provider con
+    // la clase `tauri-app` ajusta el radio del nodo decoration a 16px (ver
+    // `install_linux_frame`). La titlebar visible y las caption buttons son de
+    // la app, como en Windows.
     //
     // Linux WebKitGTK: DMABUF renderer causa flicker, Error 71 Wayland y RAM desbocada en resize
     // (NVIDIA + Wayland). Ver https://v2.tauri.app/develop/debug/linux-graphics/ y tauri#9394

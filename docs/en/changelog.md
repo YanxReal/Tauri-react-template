@@ -197,12 +197,20 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 
 ---
 
+## 2026-09-25 — Linux: `transparent: true` makes the corners real
+
+- The 16px `decoration` radius and the `tauri-app` class were correctly applied (proven with a temporary magenta border test), yet zoomed screenshots still showed square corners. Root cause, confirmed by evidence: with `transparent: false` the X11 window has no alpha channel, so the compositor cannot blend anything — every pixel of the window rectangle stays opaque and CSS radius can only round what is drawn inside.
+- Fix: `tauri.linux.conf.json:13` → `transparent: true`. Tao installs the RGBA visual before realize, the compositor antialiases the arc, and the desktop shows through. Verified with zoomed screenshots in light and dark themes, margin/content resize (1100 → 1220px), header drag, minimize/maximize/restore, and a maximized window with no gaps — no WebKit errors.
+- Kept deliberately: CSD latch, `tauri-app` class, `decoration` radius override, both resize paths, `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
+
+---
+
 ## Lessons for future changes
 
 - If you see `// Prestly pattern` or `// HuLa fix`, that line survived multiple platform bugs. Read the commit before touching it.
 - Linux `backdrop-blur` is vetoed for a reason — any re-enable must handle DMABUF + NVIDIA + Wayland and keep RAM flat on resize.
 - Traffic lights: never remove one of the three mechanisms — each covers a different timing (general, macOS 26, live-drag).
-- Linux titlebar: mutter reads `_GTK_THEME_VARIANT` **only** at window-manage time (`LOAD_INIT`), and a `GtkHeaderBar` is not draggable when tao creates the window in SSD mode — so the app draws its own titlebar (`header.tsx` + `WindowControls`) over a latched CSD frame (`install_linux_frame`, `lib.rs:527`). That frame also needs two fixes to look right: the radius override (GTK3 rounds only the top corners) and the webview surface clip (the experimental X11 webview shape clip). Never "fix" a theme mismatch by writing that property or remapping the window.
+- Linux titlebar: mutter reads `_GTK_THEME_VARIANT` **only** at window-manage time (`LOAD_INIT`), and a `GtkHeaderBar` is not draggable when tao creates the window in SSD mode — so the app draws its own titlebar (`header.tsx` + `WindowControls`) over a latched CSD frame (`install_linux_frame`, `lib.rs:527`). That frame needs the radius override on the `decoration` node (GTK3 rounds only the top corners by default) plus `transparent: true` so the compositor blends the arc. Never "fix" a theme mismatch by writing that property or remapping the window.
 - `src-tauri/gen/` is always disposable — the real Xcode source is `vendor/tauri-cli-*/templates/mobile/ios/`.
 
 Next: [Contributing →](./contributing.md) · [Native Feel →](./native-feel.md)

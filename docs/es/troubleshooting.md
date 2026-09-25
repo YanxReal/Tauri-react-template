@@ -23,7 +23,7 @@ La app es dueña de la titlebar; GTK es dueño del marco y la sombra CSD. `insta
 - **La titlebar ignora el toggle de tema de la app:** comprueba `useNativeTheme` en `title-bar.tsx:20` y `core:window:allow-set-theme` en `capabilities/default.json:16`.
 - **Los caption buttons no hacen nada:** revisa `core:window:allow-minimize` / `allow-toggle-maximize` / `allow-close` en `capabilities/default.json:6`.
 
-La app mantiene `transparent: false`; GTK es dueño del fondo y la sombra nativos. El provider GTK aplica un radio de 16px a la decoración y al shell del webview para alinear las curvas.
+La app usa `transparent: true` para que el compositor mezcle el arco de 16px; GTK es dueño del fondo y la sombra CSD nativos. El provider GTK aplica un radio de 16px a la decoración y al shell del webview para alinear las curvas.
 
 ## Windows: no aparecen los caption buttons / no hay Snap Layouts
 

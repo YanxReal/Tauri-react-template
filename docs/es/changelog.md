@@ -193,7 +193,15 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 - **CSD nativo redondeado:** Adwaita GTK3 redondea arriba por defecto. El provider de la app fija explícitamente `border-radius: 16px` en el nodo `decoration` (`lib.rs:548`), y `.app-shell` coincide (`globals.css:247`), así GTK dibuja sombra/marco con las cuatro esquinas curvas y la ventana sigue con `transparent: false`.
 - **Resize desde el margen de sombra CSD:** GTK documenta la sombra `.csd` como agarre de resize normal, pero tao no entregaba esos eventos de borde de forma fiable. `install_linux_resize_grip` (`lib.rs:441`) incluye el margen en la región de entrada GTK (los 8px exteriores quedan click-through), pone el cursor direccional y llama a `gtk_window_begin_resize_drag`. La región se reaplica en realize/map/size-allocate. `useWindowResizeEdges` / `start_window_resize` (`lib.rs:88`) manejan el borde interior de 6px del webview. Verificado en los ocho bordes/esquinas; arrastres repetidos a la derecha 1100 → 1220px.
 - **Comparación con Chromium:** el `BrowserFrameViewLinux` actual dibuja un marco Views propio con sombra/hit-testing y usa radios solo arriba. Esta app mantiene deliberadamente la decoración y sombra CSD nativas de GTK; toma de Chromium la clase GTK con nombre propio para integrar temas.
-- Verificado en Ubuntu ARM GTK3: clase de tema, decoración GTK de 12px en las cuatro esquinas, resize en margen y borde interior, arrastre, minimizar/maximizar/restaurar. Se mantiene `transparent: false`.
+- Verificado en Ubuntu ARM GTK3: clase de tema, decoración GTK de 16px en las cuatro esquinas, resize en margen y borde interior, arrastre, minimizar/maximizar/restaurar, con `transparent: true`.
+
+---
+
+## 2026-09-25 — Linux: `transparent: true` vuelve las esquinas reales
+
+- El radio de 16px en `decoration` y la clase `tauri-app` estaban bien aplicados (probado con un borde magenta temporal), pero las capturas ampliadas seguían mostrando esquinas cuadradas. Causa raíz, confirmada con evidencia: con `transparent: false` la ventana X11 no tiene canal alfa, así que el compositor no puede mezclar nada — cada píxel del rectángulo sigue opaco y el radio CSS solo redondea lo dibujado dentro.
+- Arreglo: `tauri.linux.conf.json:13` → `transparent: true`. Tao instala el visual RGBA antes del realize, el compositor suaviza el arco y el escritorio se ve en las esquinas. Verificado con capturas ampliadas en temas claro y oscuro, resize de margen/contenido (1100 → 1220px), arrastre del header, minimizar/maximizar/restaurar y ventana maximizada sin huecos — sin errores de WebKit.
+- Se conserva a propósito: latch CSD, clase `tauri-app`, override del radio en `decoration`, ambas vías de resize, `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
 
 ---
 
@@ -202,7 +210,7 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 - Si ves `// Prestly pattern` o `// HuLa fix`, esa línea sobrevivió a múltiples bugs de plataforma. Lee el commit antes de tocarla.
 - `backdrop-blur` en Linux está vetado por motivo — cualquier re-activación debe manejar DMABUF + NVIDIA + Wayland y mantener RAM plana al redimensionar.
 - Traffic lights: nunca elimines uno de los tres mecanismos — cada uno cubre un timing distinto (general, macOS 26, live-drag).
-- Titlebar de Linux: mutter lee `_GTK_THEME_VARIANT` **solo** al gestionar la ventana (`LOAD_INIT`), y una `GtkHeaderBar` no es arrastrable cuando tao crea la ventana en modo SSD — así que la titlebar la dibuja la app (`header.tsx` + `WindowControls`) sobre un marco CSD "latched" (`install_linux_frame`, `lib.rs:527`). Ese marco necesita además dos arreglos para verse bien: el override del radio (GTK3 solo redondea arriba) y el clip de la superficie del webview (the experimental X11 webview shape clip). Nunca "arregles" un desajuste de tema escribiendo esa propiedad o remapeando la ventana.
+- Titlebar de Linux: mutter lee `_GTK_THEME_VARIANT` **solo** al gestionar la ventana (`LOAD_INIT`), y una `GtkHeaderBar` no es arrastrable cuando tao crea la ventana en modo SSD — así que la titlebar la dibuja la app (`header.tsx` + `WindowControls`) sobre un marco CSD "latched" (`install_linux_frame`, `lib.rs:527`). Ese marco necesita el override del radio en el nodo `decoration` (GTK3 solo redondea arriba por defecto) más `transparent: true` para que el compositor mezcle el arco. Nunca "arregles" un desajuste de tema escribiendo esa propiedad o remapeando la ventana.
 - `src-tauri/gen/` siempre es desechable — la fuente real de Xcode es `vendor/tauri-cli-*/templates/mobile/ios/`.
 
 Siguiente: [Contribuir →](./contributing.md) · [Sensación nativa →](./native-feel.md)

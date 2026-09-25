@@ -84,13 +84,13 @@ Background and fix documented in `docs/en/native-feel.md`. Implementation in `li
 
 ## Linux window frame — native CSD + app-drawn titlebar
 
-`tauri.linux.conf.json:11` → `decorations: true` + `transparent: false` + `visible: false` (`:12`). `install_linux_frame` (`lib.rs:527`) latches CSD with an empty hidden `GtkHeaderBar` (`set_no_show_all(true)`, required because tao uses `show_all()`). GTK draws the native CSD background and shadow; the app draws its titlebar as one 44px header with drag region and caption buttons (`header.tsx:222`).
+`tauri.linux.conf.json:11` → `decorations: true` + `transparent: true` + `visible: false` (`:12`). `install_linux_frame` (`lib.rs:527`) latches CSD with an empty hidden `GtkHeaderBar` (`set_no_show_all(true)`, required because tao uses `show_all()`). GTK draws the native CSD background and shadow with a real alpha channel; the app draws its titlebar as one 44px header with drag region and caption buttons (`header.tsx:222`).
 
 The window has the GTK CSS class `tauri-app` (`APP_FRAME_CLASS`, `lib.rs:385`), following Chromium's GTK style-class convention. An application CSS provider styles the actual GTK decoration node via `window.background.tauri-app decoration { border-radius: 16px }` (`lib.rs:548`); `.app-shell` uses the same radius (`globals.css:247`). GTK themes/user GTK CSS can target `window.background.tauri-app`.
 
 **Resize:** `install_linux_resize_grip` (`lib.rs:441`) captures presses in the CSD shadow margin and delegates resize to GTK's `begin_resize_drag`; the inner 6px webview edge uses `useWindowResizeEdges` + `start_window_resize` (`lib.rs:88`).
 
-`transparent: false` keeps the system frame opaque and avoids transparent WebKit software-rendering artifacts. Full rationale and Chromium source comparison: [Native Feel](./native-feel.md#0-linux--gtk-csd-frame--app-drawn-titlebar-chromium-inspired).
+`transparent: true` gives the window a real alpha channel: tao installs the RGBA visual before realize, so the compositor blends the 16px arc and the desktop shows through the corners. Full rationale and Chromium source comparison: [Native Feel](./native-feel.md#0-linux--gtk-csd-frame--app-drawn-titlebar-chromium-inspired).
 
 ## Windows — frameless overlay titlebar (`tauri-plugin-decorum`)
 
