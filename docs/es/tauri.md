@@ -86,7 +86,7 @@ Contexto y fix en `docs/es/native-feel.md`. Implementación en `lib.rs:205`:
 
 `tauri.linux.conf.json:11` → `decorations: true` + `transparent: true` + `visible: false` (`:12`). `install_linux_frame` (`lib.rs:527`) engancha CSD con una `GtkHeaderBar` vacía y oculta (`set_no_show_all(true)`, necesario porque tao usa `show_all()`). GTK dibuja el fondo y la sombra CSD nativos con canal alfa real; la app dibuja su titlebar como un header de 44px con arrastre y caption buttons (`header.tsx:222`).
 
-La ventana recibe la clase CSS GTK `tauri-app` (`APP_FRAME_CLASS`, `lib.rs:385`), siguiendo la convención de clases GTK de Chromium. Un provider CSS de la app estila el nodo real de decoración GTK con `window.background.tauri-app decoration { border-radius: 16px }` (`lib.rs:548`); `.app-shell` usa el mismo radio (`globals.css:247`). Los temas/hojas CSS GTK del usuario pueden seleccionar `window.background.tauri-app`.
+La ventana recibe la clase CSS GTK `tauri-app` (`APP_FRAME_CLASS`, `lib.rs:385`), siguiendo la convención de clases GTK de Chromium. Un provider CSS de la app estila ambos nodos GTK (`lib.rs:548`): `window.background.tauri-app { border-radius: 16px }` — el fondo de la ventana pintaba en cuadrado y asomaba en las puntas — y `window.background.tauri-app decoration { border-radius: 16px; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5) }`, una sola sombra. `.app-shell` usa el mismo radio (`globals.css:247`). Los temas/hojas CSS GTK del usuario pueden seleccionar `window.background.tauri-app`.
 
 **Resize:** `install_linux_resize_grip` (`lib.rs:441`) captura pulsaciones en el margen CSD y delega el resize a GTK (`begin_resize_drag`); el borde interior de 6px del webview usa `useWindowResizeEdges` + `start_window_resize` (`lib.rs:88`).
 

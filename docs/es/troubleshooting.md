@@ -16,7 +16,7 @@ Si los dots quedan demasiado **arriba** (o desaparecen), revisa `traffic_lights_
 
 ## Titlebar / resize / esquinas redondeadas de Linux
 
-La app es dueña de la titlebar; GTK es dueño del marco y la sombra CSD. `install_linux_frame` (`lib.rs:527`) engancha CSD con una `GtkHeaderBar` vacía y oculta, asigna la clase GTK `tauri-app` e instala `window.background.tauri-app decoration { border-radius: 16px }` (`lib.rs:548`). `.app-shell` usa el mismo radio (`globals.css:247`).
+La app es dueña de la titlebar; GTK es dueño del marco y la sombra CSD. `install_linux_frame` (`lib.rs:527`) engancha CSD con una `GtkHeaderBar` vacía y oculta, asigna la clase GTK `tauri-app` y aplica radio a ambos nodos GTK (`lib.rs:548`). `.app-shell` usa el mismo radio (`globals.css:247`).
 
 - **No aparece el cursor/arrastre de resize en el margen de sombra:** `install_linux_resize_grip` (`lib.rs:441`) lo maneja; comprueba que la región de entrada GTK se aplique en `realize`, `map` y `size-allocate`. El borde interior de 6px del webview usa `useWindowResizeEdges` / `start_window_resize` (`native-chrome.ts`, `lib.rs:88`). El agarre está dentro de las extents del marco GTK, no en el píxel exterior de la sombra.
 - **Un tema GTK no estila el marco:** usa el selector `window.background.tauri-app decoration`. La clase se asigna en `lib.rs:559`; el selector de prueba se verificó sobre el nodo de decoración.

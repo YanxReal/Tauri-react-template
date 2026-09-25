@@ -16,7 +16,7 @@ If the dots sit too **high** (or vanish), check `traffic_lights_target_y` (`lib.
 
 ## Linux titlebar / resize / rounded corners
 
-The app owns the titlebar; GTK owns the CSD frame/shadow. `install_linux_frame` (`lib.rs:527`) latches CSD with an empty hidden `GtkHeaderBar`, assigns GTK class `tauri-app`, and applies `window.background.tauri-app decoration { border-radius: 16px }` (`lib.rs:548`). `.app-shell` uses the same radius (`globals.css:247`).
+The app owns the titlebar; GTK owns the CSD frame/shadow. `install_linux_frame` (`lib.rs:527`) latches CSD with an empty hidden `GtkHeaderBar`, assigns GTK class `tauri-app`, and applies radius to both GTK nodes (`lib.rs:548`). `.app-shell` uses the same radius (`globals.css:247`).
 
 - **The resize cursor/drag is missing on the shadow margin:** `install_linux_resize_grip` (`lib.rs:441`) handles it; check the GTK input region is applied on `realize`, `map`, and `size-allocate`. The inner 6px webview edge uses `useWindowResizeEdges` / `start_window_resize` (`native-chrome.ts`, `lib.rs:88`). The grip is inside GTK frame extents, not on the outermost shadow pixel.
 - **A GTK theme doesn't style the frame:** use the `window.background.tauri-app decoration` selector. The class is assigned at `lib.rs:559`; the test selector was verified to style the decoration node.

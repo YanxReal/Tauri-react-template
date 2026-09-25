@@ -205,6 +205,14 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 
 ---
 
+## 2026-09-25 — Linux: radius on both GTK nodes + single shadow fixes corner tips
+
+- Zoomed screenshots still showed a small opaque square at each extreme corner tip, past the rounded content arc. Proven with a temporary green test: it was the `window.background` node painting square — the radius was only on the `decoration` child. Fix: `window.background.tauri-app { border-radius: 16px }` plus `window.background.tauri-app decoration { border-radius: 16px; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5) }` (`lib.rs:548`).
+- The single `box-shadow` matters: an earlier revision styled the shadow on both nodes and the stacked shadows left a dense patch at the tips.
+- Verified at 6x zoom on all four corners: clean antialiased arcs, soft shadow, no nubs — with `transparent: true` retained.
+
+---
+
 ## Lessons for future changes
 
 - If you see `// Prestly pattern` or `// HuLa fix`, that line survived multiple platform bugs. Read the commit before touching it.

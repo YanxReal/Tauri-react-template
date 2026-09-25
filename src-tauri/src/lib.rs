@@ -516,10 +516,12 @@ fn apply_grip_input_shape(gtk_window: &gtk::ApplicationWindow) {
 ///
 /// Lo que SÍ se conserva es el CSD de GTK: una `GtkHeaderBar` vacía y oculta
 /// deja la ventana en modo cliente-decorado, así que GTK sigue dibujando su
-/// fondo y su sombra. Un `GtkCssProvider` de aplicación redondea el nodo
-/// `decoration` en las 4 esquinas; la clase `.tauri-app` permite que los temas
-/// GTK identifiquen y personalicen este marco. El webview y `.app-shell` usan
-/// el mismo radio para que el contenido no cubra la decoración.
+/// fondo y su sombra. Un `GtkCssProvider` de aplicación pone `border-radius`
+/// en `window.background` (su fondo pintaba en cuadrado y asomaba en las
+/// puntas) y en `decoration`, con UNA sola `box-shadow`; la clase `.tauri-app`
+/// permite que los temas GTK identifiquen y personalicen este marco. El webview
+/// y `.app-shell` usan el mismo radio para que el contenido no cubra la
+/// decoración.
 ///
 /// La ventana nace oculta (`visible:false` en tauri.linux.conf.json) para
 /// instalar todo antes del realize: sin parpadeo. Se muestra siempre al final.
@@ -538,14 +540,18 @@ fn install_linux_frame(window: &tauri::WebviewWindow) {
             gtk_window.set_titlebar(Some(&header));
             header.hide();
 
-            // GTK3 Adwaita redondea solo arriba (`r r 0 0`), dejando cuadrada
-            // la sombra inferior. Override limitado a esta ventana CSD (Firefox
-            // resolvió el mismo caso en bugzilla 1964149). La clase `tauri-app`
-            // queda en el nodo window.background para que temas GTK puedan
-            // personalizar este frame, siguiendo la convención de Chromium.
+            // 2) Radio en los dos nodos: `window.background` pintaba su fondo en
+            //    cuadrado y asomaba en las puntas por fuera del arco del contenido
+            //    (se vio con una prueba temporal en verde); `decoration` lleva el
+            //    radio para la forma y UNA sola sombra (dos sombras superpuestas
+            //    dejaban un parche denso en las puntas). GTK3 Adwaita redondea
+            //    solo arriba (`r r 0 0`); el override va limitado a esta ventana
+            //    (Firefox resolvio el mismo caso en bugzilla 1964149). La clase
+            //    `tauri-app` queda en window.background para que temas GTK puedan
+            //    personalizar este frame, siguiendo la convencion de Chromium.
             let provider = gtk::CssProvider::new();
             let _ = provider
-                .load_from_data(b"window.background.tauri-app decoration { border-radius: 16px; }");
+                .load_from_data(b"window.background.tauri-app { border-radius: 16px; } window.background.tauri-app decoration { border-radius: 16px; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5); }");
             if let Some(screen) = gtk::prelude::WidgetExt::screen(&gtk_window) {
                 gtk::StyleContext::add_provider_for_screen(
                     &screen,

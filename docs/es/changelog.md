@@ -205,6 +205,14 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 
 ---
 
+## 2026-09-25 — Linux: radio en ambos nodos GTK + sombra única arregla las puntas
+
+- Las capturas ampliadas aún mostraban un pequeño cuadrado opaco en la punta extrema de cada esquina, más allá del arco redondeado del contenido. Probado con un verde temporal: era el nodo `window.background` pintando en cuadrado — el radio solo estaba en el hijo `decoration`. Arreglo: `window.background.tauri-app { border-radius: 16px }` más `window.background.tauri-app decoration { border-radius: 16px; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5) }` (`lib.rs:548`).
+- La sombra única importa: una revisión anterior estilaba la sombra en ambos nodos y las sombras superpuestas dejaban un parche denso en las puntas.
+- Verificado a 6x en las cuatro esquinas: arcos limpios con antialiasing, sombra suave, sin nubs — con `transparent: true`.
+
+---
+
 ## Lecciones para futuros cambios
 
 - Si ves `// Prestly pattern` o `// HuLa fix`, esa línea sobrevivió a múltiples bugs de plataforma. Lee el commit antes de tocarla.
