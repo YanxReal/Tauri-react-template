@@ -46,9 +46,9 @@ const HEADER_HEIGHT = {
  * true` + CSD latched, see `install_linux_frame`): this header IS the titlebar
  * — one fixed 44px row (Edge / VS Code / Chromium style) that stays draggable
  * through `data-tauri-drag-region` + `useWindowDragRegion` (Prestly band) and
- * hosts the caption buttons (`WindowControls`). On Linux the native GTK
+ * hosts the caption buttons (`WindowControls`). On Linux the empty GTK
  * titlebar is hidden on purpose (it cannot follow the app theme and is not
- * draggable under tao); GTK only contributes its native shadow.
+ * draggable under tao); GTK keeps the native CSD frame, radius and shadow.
  */
 export function Header() {
   const { t, i18n } = useTranslation()

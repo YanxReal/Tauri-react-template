@@ -30,7 +30,7 @@ Patrón del shell de ventana (`globals.css:209`):
 
 - `html.titlebar` / `html.titlebar-mac` / `html.titlebar-win` / `html.linux` — montadas por el componente `TitleBar` (solo Tauri desktop).
 - `html.titlebar body { background: transparent }` — la forma de la ventana es nativa.
-- `.app-shell` — el **shell de la ventana**: `height: 100dvh; overflow: hidden; background: var(--background)`. Recorta todo (header incluido) y **no scrollea**. macOS lo redondea vía CSS (`border-radius: 10px`) por la titlebar Overlay transparente, y Linux (`globals.css:247`) aplica `border-top-left/right-radius: 8px` — el `$window_radius` de Adwaita — para que el contenido no tape el redondeo de arriba que GTK dibuja en una ventana CSD (GTK3 deja rectas las esquinas de abajo). Windows va frameless con redondeo de DWM (`decorations: false` + decorum), así que queda cuadrado. Nunca añadas `margin` aquí: un inset dejaría esquinas cortadas.
+- `.app-shell` — el **shell de la ventana**: `height: 100dvh; overflow: hidden; background: var(--background)`. Recorta todo (header incluido) y **no scrollea**. macOS lo redondea vía CSS (`border-radius: 10px`) por la titlebar Overlay transparente. Linux (`globals.css:247`) usa `border-radius: 16px`, igualado por la regla GTK `window.background.tauri-app decoration` (`lib.rs:548`): GTK dibuja la sombra CSD y el marco redondeado mientras la app controla la titlebar. Windows va frameless con redondeo DWM (`decorations: false` + decorum), así que queda cuadrado. Nunca añadas `margin` aquí: un inset dejaría esquinas cortadas.
 - `.app-scroll` (`globals.css:231`) — el **contenedor de scroll** (`flex: 1 1 auto; min-height: 0; overflow-y: auto`) y el **único** en desktop. Envuelve `main` + `Footer`, es decir solo el contenido. El header vive **fuera**: es la barra de título, así que la barra de scroll no puede robarle ancho ni pintarse encima de los caption buttons. En la build web el div es inerte y scrollea el documento, por eso el header mantiene `md:sticky`.
 - **Las barras de scroll son nativas y no se estilan.** No hay reglas `::-webkit-scrollbar` a propósito: forzarían barras clásicas (carril + flechas) y matarían el overlay. Windows usa `scrollBarStyle: "fluentOverlay"` (`tauri.windows.conf.json:13`), macOS mantiene su overlay auto-oculto y Linux WebKitGTK sigue `gtk-overlay-scrolling` — las tres son pastillas finas flotando sobre el borde del contenido.
 
@@ -48,7 +48,7 @@ Cadena de providers: `VibrancyProvider` (`vibrancy-provider.tsx` — `localStora
 
 `globals.css:132` — `* { user-select:none; -webkit-user-drag:none }` salvo inputs; `html,body { touch-action: pan-x pan-y }` (scroll nativo, sin pinch-zoom).
 
-`globals.css:256` — veto Linux: `backdrop-filter: none !important` en `.app-header` / `.app-shell` (el blur de WebKitGTK es caro y da glitches). El marco en Linux es 100% nativo, así que no hay sombra ni radio CSS en `.app-shell`; `globals.css:247` oculta la titlebar que decorum inyecta en Windows.
+`globals.css:256` — veto Linux: `backdrop-filter: none !important` en `.app-header` / `.app-shell` (el blur de WebKitGTK es caro y da glitches). El marco en Linux es CSD de GTK (fondo, sombra y nodo `decoration` redondeado); `.app-shell` comparte el radio de 16px. `globals.css:247` oculta además la titlebar que decorum inyecta en Windows.
 
 Ver `docs/es/native-feel.md` para el fundamento completo por OS.
 

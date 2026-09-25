@@ -239,13 +239,11 @@ html.light.vibrancy body {
   html.titlebar-win .app-shell {
     border-radius: 0;
   }
-  /* Linux: GTK dibuja la decoración NATIVA (CSD "latched") y solo redondea las
-     esquinas de ARRIBA — `decoration { border-radius: $window_radius $window_radius 0 0 }`
-     con `$window_radius = 8px`. El contenido respeta ese arco para que se vea el
-     fondo de ventana del tema detrás; abajo las esquinas son rectas, como en
-     cualquier app GTK3. Ver docs/native-feel.md §0. */
+  /* Linux: GTK dibuja el marco CSD y su sombra. El provider Rust redondea el nodo
+     GTK `decoration` en 16px; el shell debe compartir el radio para no tapar su
+     arco. Ver docs/native-feel.md §0. */
   html.linux .app-shell {
-    border-radius: 8px;
+    border-radius: 16px;
   }
   /* Windows + decorum: el plugin inyecta su propia barra de título fija
      (32px, z-index 100) con un `data-tauri-drag-region`. Este template ya

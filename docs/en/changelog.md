@@ -30,7 +30,7 @@
 - **The big native-feel commit:**
   - `dragDropEnabled:false` + `zoomHotkeysEnabled:false` in **all 4** `tauri.*.conf.json` windows.
   - Viewport `user-scalable=no, maximum-scale=1.0` (`index.html:5`), CSS `user-select:none` + `-webkit-user-drag:none` + `touch-action: pan-x pan-y` (`globals.css:137`), JS `dragstart` + `wheel` guards (`main.tsx:21`).
-  - `tauri-plugin-prevent-default` with `Flags::debug()` (`lib.rs:424`) — blocks context menu / reload / devtools in release, keeps them in debug.
+  - `tauri-plugin-prevent-default` with `Flags::debug()` (`lib.rs:612`) — blocks context menu / reload / devtools in release, keeps them in debug.
 - Why `touch-action: pan-x pan-y` not `manipulation`/`none`: keeps native scroll alive; `pan-x pan-y` disables pinch-zoom without killing gesture. See `ae5be97`.
 
 ### `ae5be97` `fix: restore normal scrolling in WebKit — touch-action manipulation instead of pan-x pan-y` (superseded)
@@ -42,13 +42,13 @@
 ## 2026-08-30 — Crystal / glass
 
 ### `f997723` `feat: efecto cristal — toggle de translucidez nativa (window-vibrancy)`
-- `window-vibrancy 0.8` crate, **sync** command `window_effects_set {enabled, dark?}` (`lib.rs:26`, `lib.rs:82`) — `NSVisualEffectView` on macOS (`HudWindow`/`UnderWindowBackground`), Mica on Windows 11; `unsupported` elsewhere. `VibrancyProvider` (`vibrancy-provider.tsx`) + `localStorage: vibrancy` + `html.vibrancy` → `globals.css:177` transparent body.
+- `window-vibrancy 0.8` crate, **sync** command `window_effects_set {enabled, dark?}` (`lib.rs:26`, `lib.rs:125`) — `NSVisualEffectView` on macOS (`HudWindow`/`UnderWindowBackground`), Mica on Windows 11; `unsupported` elsewhere. `VibrancyProvider` (`vibrancy-provider.tsx`) + `localStorage: vibrancy` + `html.vibrancy` → `globals.css:177` transparent body.
 
 ### `efc552c` `feat: el efecto cristal sigue el tema de la app`
 - `VibrancyProvider` watches `html.dark` via `MutationObserver` and re-applies material on theme change. macOS picks material per `dark` (so crystal follows app theme, not system).
 
 ### `5fb6077` `feat: ventana nativa - esquinas redondeadas, arrastre y cristal por tema`
-- Fixes `window-vibrancy` being under `[target.'cfg(windows)']` — moves to main `[dependencies]` so macOS links it. Adds `windows = "0.61"` DWM crate (`Cargo.toml:57`). `DwmSetWindowAttribute(DWMWCP_ROUND)` for Windows 11 frameless (`lib.rs:466`). New `native-chrome.ts` (`usePlatform`, `useMacDragRegion`), header with native caption buttons (`header.tsx`).
+- Fixes `window-vibrancy` being under `[target.'cfg(windows)']` — moves to main `[dependencies]` so macOS links it. Adds `windows = "0.61"` DWM crate (`Cargo.toml:57`). `DwmSetWindowAttribute(DWMWCP_ROUND)` for Windows 11 frameless (`lib.rs:655`). New `native-chrome.ts` (`usePlatform`, `useMacDragRegion`), header with native caption buttons (`header.tsx`).
 
 ### `73d445a` `fix: ventana nativa — arrastre con banda reservada y cristal de fondo`
 - Reserves a **36px band** (`--native-titlebar-height`) for drag, `app-shell` padding, sticky header at `top:36px`. Full-window crystal: `color-mix(var(--background) 62%, transparent)` so background translucency follows theme.
@@ -62,10 +62,10 @@
 - Adds `core:window:allow-start-dragging` to `capabilities/default.json` (without it `startDragging` silently fails). `app-shell` becomes the **scroll container** (`overflow-y: auto`) with `border-radius:10px` on macOS; header gets `data-tauri-drag-region` on Windows/Linux. `html/body` transparent in desktop — `app-shell` owns the background.
 
 ### `938f89a` `fix: traffic lights live-resize sin flicker + header alineado + windows NSIS/Wix`
-- **HuLa 3-mechanism fix for macOS traffic lights** (`lib.rs:117`):
-  1. `WindowEvent::Focused/Resized/ScaleFactorChanged` (`lib.rs:486`)
-  2. `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (`lib.rs:288`)
-  3. **60 fps polling** (`NSTimer` in `NSRunLoopCommonModes` + `needs_update` `±0.6px`, `lib.rs:513`) — fires during `NSEventTrackingRunLoopMode`
+- **HuLa 3-mechanism fix for macOS traffic lights** (`lib.rs:160`):
+  1. `WindowEvent::Focused/Resized/ScaleFactorChanged` (`lib.rs:675`)
+  2. `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (`lib.rs:331`)
+  3. **60 fps polling** (`NSTimer` in `NSRunLoopCommonModes` + `needs_update` `±0.6px`, `lib.rs:702`) — fires during `NSEventTrackingRunLoopMode`
   - Targets `Close 22.5 / Mini 44.5 / Zoom 66.5`, `grow 3`, `lower 8`, `shift 16` + `extra_gap`, `setAutoresizingMask(0)`, header `pl-[96px] sm:pl-[108px]`.
 - Also: Windows NSIS/Wix installer assets (`nsis-header.bmp`, `wix-banner.bmp`), `LICENSE.rtf`, multi-size `src-tauri/icons/`.
 - Verification: `pnpm build` + `cargo check` on macOS + Linux (docker `webkit2gtk-4.1`).
@@ -73,7 +73,7 @@
 ## 2026-09-02 — Linux glass & curves
 
 ### `93657d3` `fix: linux glass veto + curvas ventana + toggle combinado`
-- **Linux yellow glitches** (`a2.png`) — WebKitGTK 4.1 + DMABUF + NVIDIA/Wayland + `backdrop-blur` → `AcceleratedSurfaceDMABuf was unable to…` + `Error 71` + RAM spike. Fix: `GlassCardsProvider` returns `false` if `platform==='linux'`, `GlassEffectToggle` disabled, `globals.css:237` strips `backdrop-filter` → `var(--card)`, `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` (`lib.rs:408`). `html.linux .app-shell {border-radius:10px}` fixes flat window (`a1.png`). New `scripts/build-linux.sh`.
+- **Linux yellow glitches** (`a2.png`) — WebKitGTK 4.1 + DMABUF + NVIDIA/Wayland + `backdrop-blur` → `AcceleratedSurfaceDMABuf was unable to…` + `Error 71` + RAM spike. Fix: `GlassCardsProvider` returns `false` if `platform==='linux'`, `GlassEffectToggle` disabled, `globals.css:237` strips `backdrop-filter` → `var(--card)`, `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` (`lib.rs:596`). `html.linux .app-shell {border-radius:10px}` fixes flat window (`a1.png`). New `scripts/build-linux.sh`.
 
 ## 2026-09-05 — Linux shadow
 
@@ -106,12 +106,12 @@ The window used the OS default scrollbar on all three platforms — on Windows t
 
 ## 2026-09-19 — Windows: overlay titlebar with decorum (Edge style)
 
-Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false`, `transparent: true` kept for Mica) and the app draws the titlebar: the [decorum](https://github.com/clearlysid/tauri-plugin-decorum) community plugin (`Cargo.toml`, Windows-only target deps; `lib.rs:433`) plus `create_overlay_titlebar()` in `setup()` (`lib.rs:462`). This is the Edge / VS Code model — one fixed 44px band instead of the OS frame on top of the app header.
+Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false`, `transparent: true` kept for Mica) and the app draws the titlebar: the [decorum](https://github.com/clearlysid/tauri-plugin-decorum) community plugin (`Cargo.toml`, Windows-only target deps; `lib.rs:621`) plus `create_overlay_titlebar()` in `setup()` (`lib.rs:651`). This is the Edge / VS Code model — one fixed 44px band instead of the OS frame on top of the app header.
 
 - `apps/web/src/components/layout/window-controls.tsx:61` renders minimize / maximize-restore / close (lucide icons, 46px hit area, red hover on close), mounted by `header.tsx:224` only when `platform === 'windows'`.
 - The buttons sit **flush with the right edge** (`window-controls.tsx:120`, no `pr-2`): the 46px close button ends exactly at the client edge, so its red hover reaches the corner and DWM clips it with the window radius. Same geometry as Edge/Chromium (46px wide, icon ~23px from the edge).
 - Snap Layouts: hovering maximize for 620 ms (`window-controls.tsx:8`) focuses the window and invokes `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`) — decorum presses Win+Z and then Alt to hide the numbered badges. Chromium answers `WM_NCHITTEST` with `HTMAXBUTTON` for the true hover flyout; tao does not expose that hook, so this is the closest equivalent. Verified on a Windows 11 build 26200 VM: minimizar / maximizar / restaurar / cerrar work, dragging by the header moves the window, `DwmGetWindowAttribute` reports `corner = 2` (`DWMWCP_ROUND`), `WS_THICKFRAME` stays set (resizable) and the flyout opens after the hover — see `troubleshooting.md` for the black-window gotcha when the app is launched from a service context.
-- `globals.css:230` hides the 32px titlebar decorum injects (`[data-tauri-decorum-tb]`), which would cover the header and swallow the button clicks; the drag band stays ours (`data-tauri-drag-region` + `useWindowDragRegion`, `header.tsx:68`). Resize borders still work (tao hit-tests the frame edges of undecorated resizable windows) and `DWMWCP_ROUND` (`lib.rs:466`) keeps the corners round.
+- `globals.css:230` hides the 32px titlebar decorum injects (`[data-tauri-decorum-tb]`), which would cover the header and swallow the button clicks; the drag band stays ours (`data-tauri-drag-region` + `useWindowDragRegion`, `header.tsx:68`). Resize borders still work (tao hit-tests the frame edges of undecorated resizable windows) and `DWMWCP_ROUND` (`lib.rs:655`) keeps the corners round.
 - Permissions: `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` back in `capabilities/default.json:6` (the last one is `capabilities/default.json:15`; without it `setFocus()` rejects and the `catch` in `window-controls.tsx` swallows it, so the Snap Layouts flyout silently never opens), and `decorum:allow-show-snap-overlay` in its own `capabilities/windows.json:7` with `platforms: ["windows"]` — the plugin is a `cfg(windows)` dependency, so keeping the permission in `default.json` made every macOS/Linux `cargo check` fail with `Permission decorum:allow-show-snap-overlay not found`. Linux keeps full native decorations; macOS untouched.
 
 ## 2026-09-19 — Titlebar: fixed 44px band + readable control hover
@@ -131,19 +131,19 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 
 ## 2026-09-19 — macOS traffic lights: 2px further left
 
-- `TRAFFIC_LIGHTS_X` (`lib.rs:117`) is now `17.5 / 39.5 / 61.5` (was `19.5 / 41.5 / 63.5`): 2px closer to the window's left edge, vertical centring and `grow 3` / `shift_right 16` + `extra_gap` untouched.
+- `TRAFFIC_LIGHTS_X` (`lib.rs:160`) is now `17.5 / 39.5 / 61.5` (was `19.5 / 41.5 / 63.5`): 2px closer to the window's left edge, vertical centring and `grow 3` / `shift_right 16` + `extra_gap` untouched.
 - Verified with a screen capture: dots at `17.5–75px` from the window's left edge, centre `26px` from the top (middle of the 52px header).
 
 ## 2026-09-19 — macOS traffic lights centred in the 52px header band
 
-- `traffic_lights_target_y` (`lib.rs:142`) now derives `y` from the button **superview** (`isFlipped()` + container height) instead of assuming the frame `y` is the distance from the window top. On macOS 26 that titlebar container is **not flipped**, so the old absolute write of `26 - size/2` pushed the dots ~9px *up*: measured from the window top they went from `9–23px` (native) to `0–13px`.
-- Result: dot centres sit at `MACOS_HEADER_BAND / 2` (`lib.rs:123` = 26px) — the middle of the macOS header (`header.tsx:29`, `h-[52px]`). Verified with a plain screen capture: native centre `15.8px` → `25.8px`.
-- `adjust_macos_traffic_lights` (`lib.rs:162`) drops the blind `lower 8` / `−3px` nudges: the absolute target makes the write idempotent, so the 60 fps drift detector (`needs_traffic_lights_update`, `lib.rs:257`) stops re-applying a frame on every tick.
+- `traffic_lights_target_y` (`lib.rs:185`) now derives `y` from the button **superview** (`isFlipped()` + container height) instead of assuming the frame `y` is the distance from the window top. On macOS 26 that titlebar container is **not flipped**, so the old absolute write of `26 - size/2` pushed the dots ~9px *up*: measured from the window top they went from `9–23px` (native) to `0–13px`.
+- Result: dot centres sit at `MACOS_HEADER_BAND / 2` (`lib.rs:166` = 26px) — the middle of the macOS header (`header.tsx:29`, `h-[52px]`). Verified with a plain screen capture: native centre `15.8px` → `25.8px`.
+- `adjust_macos_traffic_lights` (`lib.rs:205`) drops the blind `lower 8` / `−3px` nudges: the absolute target makes the write idempotent, so the 60 fps drift detector (`needs_traffic_lights_update`, `lib.rs:300`) stops re-applying a frame on every tick.
 
 ## 2026-09-19 — macOS traffic lights: 3px to the left
 
-- `lib.rs:117` — the three dots snap to `19.5 / 41.5 / 63.5` (were `22.5 / 44.5 / 66.5`): 3px closer to the window's left edge, with `grow 3` / `lower 8` / `shift 16` + `extra_gap` untouched.
-- The target X now lives in `TRAFFIC_LIGHTS_X` (`lib.rs:117`), shared by `adjust_macos_traffic_lights` (`lib.rs:162`) and the drift detector `needs_traffic_lights_update` (`lib.rs:257`). Two hand-kept copies are what made the 60 fps observer re-apply the frame on every tick; the docs' `lib.rs:117` pointers were updated with it.
+- `lib.rs:160` — the three dots snap to `19.5 / 41.5 / 63.5` (were `22.5 / 44.5 / 66.5`): 3px closer to the window's left edge, with `grow 3` / `lower 8` / `shift 16` + `extra_gap` untouched.
+- The target X now lives in `TRAFFIC_LIGHTS_X` (`lib.rs:160`), shared by `adjust_macos_traffic_lights` (`lib.rs:205`) and the drift detector `needs_traffic_lights_update` (`lib.rs:300`). Two hand-kept copies are what made the 60 fps observer re-apply the frame on every tick; the docs' `lib.rs:160` pointers were updated with it.
 
 ## 2026-09-18 — Windows cross-compile working
 
@@ -159,10 +159,10 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 - `gtk = "0.18"` returns as a Linux-only dependency (`Cargo.toml:69`, the same version tao/wry use). Native buttons, shadow and rounded corners come from GTK's CSD; still no CSS frame on `.app-shell`.
 - New permission `core:window:allow-set-theme` (`capabilities/default.json:16`): without it `setTheme()` rejects silently and the bar keeps the system variant.
 
-## 2026-09-23 — Linux: app-drawn titlebar over a latched CSD frame (Chromium pattern)
+## 2026-09-23 — Linux: app-drawn titlebar over a latched CSD frame (superseded by the GTK frame-class/resize work below)
 
 - Two bugs in the 2026-09-22 design, both verified on GNOME 46: (1) the **bottom** corners were square — GTK's CSD rounds the window background, but the webview paints over it (the top ones only looked right because the GTK headerbar covered them); (2) the `GtkHeaderBar` was **not draggable** — tao creates the window in SSD mode, so GTK never wires the CSD drag (the app header's own drag *did* work).
-- The fix follows the Edge / VS Code / Chromium "custom frame" pattern, i.e. the same model as Windows: the **app draws the titlebar** (`header.tsx` 44px band + `WindowControls` for Win/Linux, `header.tsx:222`) and `install_linux_frame` (`lib.rs:358`) latches CSD with an empty, hidden `GtkHeaderBar` plus a transparent GTK window background, so GTK contributes only its **native shadow**.
+- The fix follows the Edge / VS Code / Chromium "custom frame" pattern, i.e. the same model as Windows: the **app draws the titlebar** (`header.tsx` 44px band + `WindowControls` for Win/Linux, `header.tsx:222`) and `install_linux_frame` (`lib.rs:527`) latches CSD with an empty, hidden `GtkHeaderBar` plus a transparent GTK window background, so GTK contributes only its **native shadow**.
 - `set_no_show_all(true)` is load-bearing: tao shows the window with `window.show_all()` (`vendor/tao-0.35.3/src/platform_impl/linux/event_loop.rs:308`), which re-showed the hidden bar and ate 43px at the top.
 - `globals.css:247` → `html.linux .app-shell { border-radius: 10px }`: with a transparent frame the shell defines the shape.
 - **`transparent: true`** (`tauri.linux.conf.json:13`) is what makes the corners *look* round. With `transparent: false` the radius was applied and the corners were transparent in the DOM, but the **webview's own background** stayed opaque (Adwaita's base `#1e1e1e`) and filled the area outside the radius, so they read as square. tao installs the RGBA visual **before realize** and only for transparent windows, and wry only clears the webview background for transparent windows — the missing piece the old `apply_linux_window_shadow` never had. Verified with a per-row pixel scan of the corner: with `transparent: false` the content edge is a straight line (`inset=0` on every row); with `transparent: true` it follows the arc (`inset 8 → 4 → 2 → 1 → 0`) and the corner pixels are the desktop.
@@ -171,28 +171,29 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 ## 2026-09-24 — Linux corners: rounded shadow + webview clip → superseded
 
 - The corners *were* rounded (the CSS radius applied and the pixels were transparent) but they still read as square, because GTK3's Adwaita only rounds the **top** corners: `decoration { border-radius: $window_radius $window_radius 0 0 }` (`$window_radius = 8px`), so its shadow is square at the bottom. Same bug Firefox fixed behind `gtk.rounded-bottom-corners` (bugzilla 1964149). Fix: rewrite the frame radius from a `GtkCssProvider` (`window.background` + `decoration { border-radius: 10px }`), the approach the GTK community recommends.
-- Second artifact: with the software renderer Linux requires (`WEBKIT_DISABLE_DMABUF_RENDERER=1`) the **webview surface is opaque** — wry's `set_background_color(transparent)` is not enough — and a square "shoulder" showed just outside the rounded corners (Firefox bug 1509931). Fix: `clip_webview_to_rounded` (`lib.rs:360`) shapes the webview's `GdkWindow` to the same rounded rect via `gdk_window_shape_combine_region` (X11; a no-op on Wayland, where the surface is already transparent). Re-applied on `size-allocate` and `realize`.
+- Second artifact: with the software renderer Linux requires (`WEBKIT_DISABLE_DMABUF_RENDERER=1`) the **webview surface is opaque** — wry's `set_background_color(transparent)` is not enough — and a square "shoulder" showed just outside the rounded corners (Firefox bug 1509931). Fix: the experimental X11 webview shape clip shapes the webview's `GdkWindow` to the same rounded rect via `gdk_window_shape_combine_region` (X11; a no-op on Wayland, where the surface is already transparent). Re-applied on `size-allocate` and `realize`.
 - `transparent: false` cannot work: without alpha nothing can blend at the corners, so the webview's own background (Adwaita base `#1e1e1e`) fills them. Verified by pixel scan: with `false` the content edge is a straight line, with `true` it follows the arc (inset 8 → 4 → 2 → 1 → 0).
 - Known residual: a ~1px brighter arc on the corner (GTK draws the shadow around the decoration's box, leaving a thin dead band inside it). Dropping `.app-shell`'s radius and letting the clip alone define the shape removes it at the cost of an aliased corner.
 - Verified on the Ubuntu ARM box: the arc measured at all four corners, drag (`200,150 → 260,210`), minimize (`_NET_WM_STATE_HIDDEN`), maximize (`MAXIMIZED_HORZ/VERT`) + restore, no WebKit errors.
 
 ---
 
-## 2026-09-24 — Linux: native CSD decoration, no overrides
+## 2026-09-24 — Linux: native CSD decoration, no overrides (superseded)
 
 - Simplifies the frame after measuring the alternatives. `transparent: true` + a `decoration` radius override + an X11 shape clip on the webview did round all four corners, but the clip is lost whenever WebKit recreates its render window (a page reload), and with `transparent: false` the webview surface stays opaque, so the clip was the only thing shaping the corners in the first place.
-- Final design: GTK keeps its **native** decoration untouched. `install_linux_frame` (`lib.rs:359`) only latches CSD with an empty, hidden `GtkHeaderBar`; `transparent: false`; `.app-shell` gets `border-top-left/right-radius: 8px` (Adwaita's `$window_radius`) so the content does not cover GTK's top rounding. GTK3 rounds only the top corners (`decoration { border-radius: r r 0 0 }`), so the bottom corners are square — native GTK3.
+- Final design: GTK keeps its **native** decoration untouched. `install_linux_frame` (`lib.rs:527`) only latches CSD with an empty, hidden `GtkHeaderBar`; `transparent: false`; `.app-shell` gets `border-top-left/right-radius: 8px` (Adwaita's `$window_radius`) so the content does not cover GTK's top rounding. GTK3 rounds only the top corners (`decoration { border-radius: r r 0 0 }`), so the bottom corners are square — native GTK3.
 - The titlebar stays the app's (44px header + `WindowControls`), which is the whole point: mutter's SSD cannot follow the app theme (`_GTK_THEME_VARIANT` is read once, `LOAD_INIT`) and its titlebar is not draggable under tao.
 - Measured with a pixel scan of the top-left corner: the 8px arc is there, filled by the webview's background (`#1e1e1e` dark / white light) — in a dark theme it reads as a slightly lighter rounded edge, which is the native frame colour. Drag, minimize, maximize and restore verified.
 
 ---
 
-## 2026-09-24 — Linux: resize por la app + sombra redondeada en las 4 esquinas
+## 2026-09-24 — Linux: GTK frame class + system-rounded CSD + shadow resize grip
 
-- **La ventana CSD no es redimensionable por el borde.** GTK delega el borde en el gestor de ventanas y una ventana cliente-decorada no lleva marco del WM, así que no hay nada que arrastrar; Tauri 2.11 tampoco expone `startResizing` (solo tao tiene `drag_resize_window`). Comprobado con una ventana CSD de referencia: tampoco redimensiona.
-- Solución: `useWindowResizeEdges` (`native-chrome.ts`, solo Linux) detecta el `mousedown` a menos de 6px del borde del **webview**, pone el cursor (ns/ew/nwse/nesw-resize) y llama al comando `start_window_resize` (`lib.rs`), que ejecuta el mismo `gtk_window_begin_resize_drag` que usaría GTK. El agarre está en el borde del contenido: el margen de la sombra queda ~26px por fuera (`_GTK_FRAME_EXTENTS`), que es donde apunta el usuario. Verificado: 1100 → 1170 px.
-- Esquinas: `.app-shell` pasa a `border-radius: 8px` en las 4, y `install_linux_frame` sobreescribe `decoration { border-radius: 8px }` para que la **sombra** siga el arco (el fix de Firefox tras `gtk.rounded-bottom-corners`, bugzilla 1964149).
-- Límite honesto: con `transparent: false` y el renderer software, lo que se ve en la esquina es el fondo del webview (el color de ventana del tema). En tema **oscuro** contrasta (`#1e1e1e` vs `#0a0a0a`) y la curva se ve; en tema **claro** ambos son blancos, así que la curva casi no se aprecia. Redondearla también en claro exigiría `transparent: true` o un clip de forma X11, y ambos traen peores problemas (superficie opaca + clip que se pierde al recargar).
+- **GTK frame class (Chromium theme-integration pattern):** `install_linux_frame` assigns `tauri-app` to the GtkWindow `window.background` node (`APP_FRAME_CLASS`, `lib.rs:385`); the app provider targets `window.background.tauri-app decoration`. Confirmed at runtime: the class appears alongside `background` and `csd`, and a temporary class-scoped GTK border styles the actual frame node. The test style was removed; GTK themes/user CSS can target the same selector.
+- **Rounded native CSD:** GTK3 Adwaita defaults to top-only corner rounding. The app provider explicitly sets `border-radius: 16px` on the `decoration` node (`lib.rs:548`), and `.app-shell` matches (`globals.css:247`), so GTK paints a rounded shadow/frame at all four corners while the window stays `transparent: false`.
+- **Resize from the CSD shadow margin:** GTK docs say the `.csd` shadow area is normally a resize grip, but tao did not reliably deliver those edge events. `install_linux_resize_grip` (`lib.rs:441`) includes the margin in the GTK input region (outermost 8px click-through), sets the directional cursor, and calls `gtk_window_begin_resize_drag`. The input shape is reapplied on realize/map/size-allocate. `useWindowResizeEdges` / `start_window_resize` (`lib.rs:88`) handle the inner 6px webview edge. Verified on all eight edges/corners; repeated right-edge drags 1100 → 1220px.
+- **Chromium comparison:** Current Chromium `BrowserFrameViewLinux` paints a custom Views frame with its own shadow/hit-testing and uses top-only corner radii. This app deliberately keeps GTK's native CSD decoration and shadow; the adopted Chromium-inspired piece is the named GTK CSS class for theme integration.
+- Verified on the Ubuntu ARM GTK3 desktop: theme class, 16px four-corner GTK decoration, shadow-margin resize, app-edge resize, drag, minimize/maximize/restore. `transparent: false` is retained.
 
 ---
 
@@ -201,7 +202,7 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 - If you see `// Prestly pattern` or `// HuLa fix`, that line survived multiple platform bugs. Read the commit before touching it.
 - Linux `backdrop-blur` is vetoed for a reason — any re-enable must handle DMABUF + NVIDIA + Wayland and keep RAM flat on resize.
 - Traffic lights: never remove one of the three mechanisms — each covers a different timing (general, macOS 26, live-drag).
-- Linux titlebar: mutter reads `_GTK_THEME_VARIANT` **only** at window-manage time (`LOAD_INIT`), and a `GtkHeaderBar` is not draggable when tao creates the window in SSD mode — so the app draws its own titlebar (`header.tsx` + `WindowControls`) over a latched CSD frame (`install_linux_frame`, `lib.rs:359`). That frame also needs two fixes to look right: the radius override (GTK3 rounds only the top corners) and the webview surface clip (`clip_webview_to_rounded`, `lib.rs:360`). Never "fix" a theme mismatch by writing that property or remapping the window.
+- Linux titlebar: mutter reads `_GTK_THEME_VARIANT` **only** at window-manage time (`LOAD_INIT`), and a `GtkHeaderBar` is not draggable when tao creates the window in SSD mode — so the app draws its own titlebar (`header.tsx` + `WindowControls`) over a latched CSD frame (`install_linux_frame`, `lib.rs:527`). That frame also needs two fixes to look right: the radius override (GTK3 rounds only the top corners) and the webview surface clip (the experimental X11 webview shape clip). Never "fix" a theme mismatch by writing that property or remapping the window.
 - `src-tauri/gen/` is always disposable — the real Xcode source is `vendor/tauri-cli-*/templates/mobile/ios/`.
 
 Next: [Contributing →](./contributing.md) · [Native Feel →](./native-feel.md)

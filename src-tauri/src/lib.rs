@@ -378,6 +378,132 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
     REGISTERED.with(|s| s.borrow_mut().insert(label));
 }
 
+/// Clase CSS que se añade a la ventana para que los temas GTK puedan estilar el
+/// marco, igual que Chromium marca la suya con `.chromium`
+/// (`window.background.chromium { ... }`). Usa `window.background.tauri-app`.
+#[cfg(target_os = "linux")]
+const APP_FRAME_CLASS: &str = "tauri-app";
+
+/// Banda exterior de la sombra que NO captura clics, en px. El resto del marco
+/// (contenido + margen) sí recibe eventos, para poder agarrar el borde.
+#[cfg(target_os = "linux")]
+const FRAME_CLICK_THROUGH: i32 = 8;
+
+/// Borde de ventana correspondiente a una posición del puntero.
+#[cfg(target_os = "linux")]
+fn edge_from_position(x: i32, y: i32, content: &gtk::Allocation) -> gtk::gdk::WindowEdge {
+    let left = x < content.x();
+    let right = x >= content.x() + content.width();
+    let top = y < content.y();
+    let bottom = y >= content.y() + content.height();
+
+    match (top, bottom, left, right) {
+        (true, _, true, _) => gtk::gdk::WindowEdge::NorthWest,
+        (true, _, _, true) => gtk::gdk::WindowEdge::NorthEast,
+        (_, true, true, _) => gtk::gdk::WindowEdge::SouthWest,
+        (_, true, _, true) => gtk::gdk::WindowEdge::SouthEast,
+        (true, _, _, _) => gtk::gdk::WindowEdge::North,
+        (_, true, _, _) => gtk::gdk::WindowEdge::South,
+        (_, _, true, _) => gtk::gdk::WindowEdge::West,
+        _ => gtk::gdk::WindowEdge::East,
+    }
+}
+
+/// Nombre del cursor X para cada borde.
+#[cfg(target_os = "linux")]
+fn edge_cursor_name(edge: gtk::gdk::WindowEdge) -> &'static str {
+    match edge {
+        gtk::gdk::WindowEdge::North => "n-resize",
+        gtk::gdk::WindowEdge::South => "s-resize",
+        gtk::gdk::WindowEdge::West => "w-resize",
+        gtk::gdk::WindowEdge::East => "e-resize",
+        gtk::gdk::WindowEdge::NorthWest => "nw-resize",
+        gtk::gdk::WindowEdge::NorthEast => "ne-resize",
+        gtk::gdk::WindowEdge::SouthWest => "sw-resize",
+        _ => "se-resize",
+    }
+}
+
+/// Linux: agarre de resize en el **margen de la sombra**.
+///
+/// En una ventana CSD el agarre vive en el `margin` del nodo `decoration` (la
+/// banda que rodea al contenido) — GTK lo describe así en su documentación de
+/// clases de estilo. Con tao no se activaba (comprobado también en una ventana
+/// CSD de referencia), así que se replica: la **región de input** se amplía a
+/// ese margen (dejando fuera solo los `FRAME_CLICK_THROUGH` px exteriores de la
+/// sombra, que siguen siendo "click-through") y un handler de `button-press`
+/// lanza el mismo `gtk_window_begin_resize_drag` que usaría GTK. El cursor de
+/// cada borde también hay que ponerlo a mano.
+///
+/// El borde interior del contenido lo cubre el webview (`useWindowResizeEdges`),
+/// así que aquí solo llegan las pulsaciones del margen.
+#[cfg(target_os = "linux")]
+fn install_linux_resize_grip(gtk_window: &gtk::ApplicationWindow, webview: &gtk::Widget) {
+    use gtk::prelude::*;
+
+    // La región de input NO sobrevive al realize: GTK recalcula la suya al
+    // mapear la ventana, así que hay que (re)aplicarla después.
+    apply_grip_input_shape(gtk_window);
+    gtk_window.connect_realize(|w| {
+        w.add_events(
+            gtk::gdk::EventMask::BUTTON_PRESS_MASK | gtk::gdk::EventMask::POINTER_MOTION_MASK,
+        );
+        apply_grip_input_shape(w);
+    });
+    gtk_window.connect_map(apply_grip_input_shape);
+    gtk_window.connect_size_allocate(|w, _| apply_grip_input_shape(w));
+
+    // Press → arrastre de resize (mismo camino que GTK).
+    let webview_press = webview.clone();
+    gtk_window.connect_button_press_event(move |win, event| {
+        if event.button() != 1 {
+            return gtk::glib::Propagation::Proceed;
+        }
+        let (x, y) = event.position();
+        let edge = edge_from_position(x as i32, y as i32, &webview_press.allocation());
+        let (root_x, root_y) = event.root();
+        win.begin_resize_drag(edge, 1, root_x as i32, root_y as i32, event.time());
+        gtk::glib::Propagation::Stop
+    });
+
+    // Motion → cursor del borde (GTK lo haría por su cuenta; aquí no).
+    let webview_motion = webview.clone();
+    gtk_window.connect_motion_notify_event(move |_win, event| {
+        let (x, y) = event.position();
+        let edge = edge_from_position(x as i32, y as i32, &webview_motion.allocation());
+        let cursor = gtk::gdk::Display::default()
+            .and_then(|display| gtk::gdk::Cursor::from_name(&display, edge_cursor_name(edge)));
+        if let Some(gdk_window) = _win.window() {
+            gdk_window.set_cursor(cursor.as_ref());
+        }
+        gtk::glib::Propagation::Proceed
+    });
+}
+
+/// Aplica la región de input del agarre: el rect completo menos los
+/// `FRAME_CLICK_THROUGH` px exteriores (esa parte de la sombra sigue siendo
+/// click-through, así un clic en el borde exterior llega a lo que hay detrás).
+#[cfg(target_os = "linux")]
+fn apply_grip_input_shape(gtk_window: &gtk::ApplicationWindow) {
+    use gtk::prelude::*;
+
+    let Some(gdk_window) = gtk_window.window() else {
+        return;
+    };
+    let (w, h) = (gdk_window.width(), gdk_window.height());
+    if w <= 2 * FRAME_CLICK_THROUGH || h <= 2 * FRAME_CLICK_THROUGH {
+        return;
+    }
+    let region = gtk::cairo::Region::create();
+    let _ = region.union_rectangle(&gtk::cairo::RectangleInt::new(
+        FRAME_CLICK_THROUGH,
+        FRAME_CLICK_THROUGH,
+        w - 2 * FRAME_CLICK_THROUGH,
+        h - 2 * FRAME_CLICK_THROUGH,
+    ));
+    gdk_window.input_shape_combine_region(&region, 0, 0);
+}
+
 /// Linux: marco CSD "latched" — patrón Chromium / VS Code / Edge.
 ///
 /// La app dibuja su **propia** titlebar (el header de React + `WindowControls`),
@@ -388,13 +514,12 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
 /// ventana en modo SSD, GTK no cablea el arrastre de CSD y la barra no se puede
 /// mover (el arrastre del header de la app sí funciona).
 ///
-/// Lo que SÍ se conserva es el **CSD de GTK con su decoración NATIVA**: una
-/// `GtkHeaderBar` vacía y oculta deja la ventana en modo cliente-decorado, así
-/// que GTK sigue dibujando su fondo y su sombra tal cual, sin overrides de
-/// ningún tipo. El contenido solo tiene que respetar el redondeo que GTK ya
-/// pinta: `border-top-left/right-radius` = `$window_radius` de Adwaita (8px) en
-/// `.app-shell`. Abajo las esquinas son rectas, como en cualquier app GTK3 —
-/// GTK3 solo redondea arriba (`decoration { border-radius: r r 0 0 }`).
+/// Lo que SÍ se conserva es el CSD de GTK: una `GtkHeaderBar` vacía y oculta
+/// deja la ventana en modo cliente-decorado, así que GTK sigue dibujando su
+/// fondo y su sombra. Un `GtkCssProvider` de aplicación redondea el nodo
+/// `decoration` en las 4 esquinas; la clase `.tauri-app` permite que los temas
+/// GTK identifiquen y personalicen este marco. El webview y `.app-shell` usan
+/// el mismo radio para que el contenido no cubra la decoración.
 ///
 /// La ventana nace oculta (`visible:false` en tauri.linux.conf.json) para
 /// instalar todo antes del realize: sin parpadeo. Se muestra siempre al final.
@@ -413,19 +538,34 @@ fn install_linux_frame(window: &tauri::WebviewWindow) {
             gtk_window.set_titlebar(Some(&header));
             header.hide();
 
-            // El Adwaita de GTK3 redondea SOLO las esquinas de arriba
-            // (`decoration { border-radius: $window_radius $window_radius 0 0 }`),
-            // asi que su sombra es cuadrada abajo. Se reescribe el radio para que
-            // la sombra siga el arco en las 4 esquinas — el mismo arreglo que
-            // Firefox publico tras `gtk.rounded-bottom-corners` (bugzilla 1964149).
+            // GTK3 Adwaita redondea solo arriba (`r r 0 0`), dejando cuadrada
+            // la sombra inferior. Override limitado a esta ventana CSD (Firefox
+            // resolvió el mismo caso en bugzilla 1964149). La clase `tauri-app`
+            // queda en el nodo window.background para que temas GTK puedan
+            // personalizar este frame, siguiendo la convención de Chromium.
             let provider = gtk::CssProvider::new();
-            let _ = provider.load_from_data(b"decoration { border-radius: 8px; }");
+            let _ = provider
+                .load_from_data(b"window.background.tauri-app decoration { border-radius: 16px; }");
             if let Some(screen) = gtk::prelude::WidgetExt::screen(&gtk_window) {
                 gtk::StyleContext::add_provider_for_screen(
                     &screen,
                     &provider,
                     gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
                 );
+            }
+
+            // 3) Clase CSS propia para que los temas GTK puedan estilar el marco
+            //    (patron de Chromium, que usa `window.background.chromium`).
+            gtk_window.style_context().add_class(APP_FRAME_CLASS);
+            // 4) Agarre de resize en el margen de la sombra (ver
+            //    `install_linux_resize_grip`). wry mete el webview en un GtkBox.
+            if let Some(container) = gtk_window
+                .child()
+                .and_then(|child| child.downcast::<gtk::Box>().ok())
+            {
+                if let Some(webview) = container.children().into_iter().next() {
+                    install_linux_resize_grip(&gtk_window, &webview);
+                }
             }
 
             log::info!("install_linux_frame: CSD latch (decoracion nativa de GTK)");
@@ -442,11 +582,10 @@ fn install_linux_frame(window: &tauri::WebviewWindow) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Linux: la ventana conserva `decorations:true` para que GTK siga en modo
-    // CSD y dibuje su SOMBRA nativa, pero la titlebar visible la pone la app
-    // (header + `WindowControls`, igual que en Windows) — ver
-    // `install_linux_frame`. La decoración la dibuja GTK tal cual (sin overrides
-    // ni transparencia): el contenido solo respeta el redondeo de arriba.
+    // Linux: la ventana conserva `decorations:true` y `transparent:false`.
+    // GTK dibuja el fondo y la sombra CSD; un provider con la clase `tauri-app`
+    // ajusta el radio del nodo decoration a 16px (ver `install_linux_frame`).
+    // La titlebar visible y las caption buttons son de la app, como en Windows.
     //
     // Linux WebKitGTK: DMABUF renderer causa flicker, Error 71 Wayland y RAM desbocada en resize
     // (NVIDIA + Wayland). Ver https://v2.tauri.app/develop/debug/linux-graphics/ y tauri#9394

@@ -1,10 +1,10 @@
 # Backend Tauri (`src-tauri`)
 
-Rust + Tauri v2. Entradas: `src-tauri/src/lib.rs:396` (`run()`) y `src-tauri/src/main.rs`.
+Rust + Tauri v2. Entradas: `src-tauri/src/lib.rs:584` (`run()`) y `src-tauri/src/main.rs`.
 
 ## Comandos
 
-Registrados en `lib.rs:436`:
+Registrados en `lib.rs:624`:
 
 ```rust
 tauri::generate_handler![greet, platform_info, window_effects_set]
@@ -14,7 +14,7 @@ tauri::generate_handler![greet, platform_info, window_effects_set]
 |---------|-------|-------------|
 | `greet` | `fn greet(name: &str) -> String` | Devuelve saludo (demo) — `lib.rs:12` |
 | `platform_info` | `fn platform_info() -> String` | Devuelve `platform::current_platform()` — `lib.rs:17` |
-| `window_effects_set` | `fn window_effects_set(window, enabled: bool, dark: Option<bool>) -> Result<(), String>` | Aplica/limpia translucidez nativa — `lib.rs:82` |
+| `window_effects_set` | `fn window_effects_set(window, enabled: bool, dark: Option<bool>) -> Result<(), String>` | Aplica/limpia translucidez nativa — `lib.rs:125` |
 
 Uso en frontend (`apps/web/src/App.tsx:34`):
 
@@ -75,33 +75,37 @@ Overlays por OS (merged en build): `tauri.macos.conf.json`, `tauri.windows.conf.
 
 ## Traffic lights de macOS (fix HuLa)
 
-Contexto y fix en `docs/es/native-feel.md`. Implementación en `lib.rs:162`:
+Contexto y fix en `docs/es/native-feel.md`. Implementación en `lib.rs:205`:
 
-- `adjust_macos_traffic_lights` (`lib.rs:162`) — mueve/agranda los 3 `NSWindowButton`s (targets `17.5/39.5/61.5`, histéresis `±0.6px`, `grow 3`, `shift_right 16` + `extra_gap`).
-- `traffic_lights_target_y` (`lib.rs:142`) — `y` absoluto para que el centro del dot caiga en `MACOS_HEADER_BAND / 2` (`lib.rs:123` = 26px, mitad del header de 52px de macOS). El frame vive en el superview del botón, que en macOS 26 **no está flipped**: hay que leer `isFlipped()` + la altura del contenedor en vez de asumir "distancia desde arriba".
+- `adjust_macos_traffic_lights` (`lib.rs:205`) — mueve/agranda los 3 `NSWindowButton`s (targets `17.5/39.5/61.5`, histéresis `±0.6px`, `grow 3`, `shift_right 16` + `extra_gap`).
+- `traffic_lights_target_y` (`lib.rs:185`) — `y` absoluto para que el centro del dot caiga en `MACOS_HEADER_BAND / 2` (`lib.rs:166` = 26px, mitad del header de 52px de macOS). El frame vive en el superview del botón, que en macOS 26 **no está flipped**: hay que leer `isFlipped()` + la altura del contenedor en vez de asumir "distancia desde arriba".
 - `needs_traffic_lights_update` + `ensure_traffic_lights_observer` (`NSWindowDidResizeNotification`/`DidMove`) + **polling a 60 fps** (`NSTimer` en `NSRunLoopCommonModes`) durante `NSEventTrackingRunLoopMode` (live-resize).
 - `setAutoresizingMask(0)` evita que AppKit vuelva a resetear.
 
-## Marco de ventana en Linux — CSD "latched", GTK conserva su decoración nativa
+## Marco de ventana en Linux — CSD nativo + titlebar dibujada por la app
 
-`tauri.linux.conf.json:11` → `decorations: true` + `transparent: false` + `visible: false` (`:12`). `install_linux_frame` (`lib.rs:359`) solo engancha **CSD**: una `GtkHeaderBar` vacía queda como titlebar y se oculta (`set_no_show_all(true)`, porque tao muestra la ventana con `show_all()`). GTK sigue dibujando **su propio** fondo y su sombra — sin overrides de radio, sin clips de forma, sin transparencia. La titlebar la dibuja la app: la banda fija de 44px de `header.tsx` (zona de arrastre) más `WindowControls` (`header.tsx:222`). También sobreescribe `decoration { border-radius: 8px }` para que la sombra de GTK siga el arco en las 4 esquinas (el arreglo que Firefox publicó tras `gtk.rounded-bottom-corners`), y `globals.css:247` da a `.app-shell` el mismo radio para que el contenido no lo tape. El **resize** lo hace la app: `useWindowResizeEdges` + el comando `start_window_resize` (`lib.rs`) ejecutan `gtk_window_begin_resize_drag` desde una banda de 6px dentro del borde del webview, porque una ventana CSD no tiene agarre del WM.
+`tauri.linux.conf.json:11` → `decorations: true` + `transparent: false` + `visible: false` (`:12`). `install_linux_frame` (`lib.rs:527`) engancha CSD con una `GtkHeaderBar` vacía y oculta (`set_no_show_all(true)`, necesario porque tao usa `show_all()`). GTK dibuja el fondo y la sombra CSD nativos; la app dibuja su titlebar como un header de 44px con arrastre y caption buttons (`header.tsx:222`).
 
-También fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder` (`lib.rs:408`) para evitar crashes DMABUF de WebKitGTK.
+La ventana recibe la clase CSS GTK `tauri-app` (`APP_FRAME_CLASS`, `lib.rs:385`), siguiendo la convención de clases GTK de Chromium. Un provider CSS de la app estila el nodo real de decoración GTK con `window.background.tauri-app decoration { border-radius: 16px }` (`lib.rs:548`); `.app-shell` usa el mismo radio (`globals.css:247`). Los temas/hojas CSS GTK del usuario pueden seleccionar `window.background.tauri-app`.
+
+**Resize:** `install_linux_resize_grip` (`lib.rs:441`) captura pulsaciones en el margen CSD y delega el resize a GTK (`begin_resize_drag`); el borde interior de 6px del webview usa `useWindowResizeEdges` + `start_window_resize` (`lib.rs:88`).
+
+`transparent: false` conserva opaco el marco del sistema y evita artefactos del renderer software de WebKit transparente. Razonamiento y comparación del código Chromium: [Sensación nativa](./native-feel.md#0-linux--marco-csd-de-gtk--titlebar-dibujada-por-la-app-inspirado-en-chromium).
 
 ## Windows — titlebar overlay frameless (`tauri-plugin-decorum`)
 
-`tauri.windows.conf.json:12` → `decorations: false`: la ventana es frameless y la titlebar la dibuja la app (modelo Edge / VS Code). `setup()` llama a `create_overlay_titlebar()` (`lib.rs:462`) del plugin de la comunidad [decorum](https://github.com/clearlysid/tauri-plugin-decorum), registrado solo en Windows (`lib.rs:433`). `transparent: true` se mantiene para que Mica / `window_effects_set` siga viéndose.
+`tauri.windows.conf.json:12` → `decorations: false`: la ventana es frameless y la titlebar la dibuja la app (modelo Edge / VS Code). `setup()` llama a `create_overlay_titlebar()` (`lib.rs:651`) del plugin de la comunidad [decorum](https://github.com/clearlysid/tauri-plugin-decorum), registrado solo en Windows (`lib.rs:621`). `transparent: true` se mantiene para que Mica / `window_effects_set` siga viéndose.
 
 Los caption buttons son React (`apps/web/src/components/layout/window-controls.tsx:61`, renderizados por `header.tsx:224`); el hover de 620 ms sobre maximizar invoca `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`) para abrir el flyout de Snap Layouts de Windows 11. Permisos: `capabilities/default.json:6` (`allow-minimize` / `allow-close` / `allow-is-maximized`) + `capabilities/default.json:15` (`allow-set-focus`, lo exige la cadena `setFocus().then(invoke(...))`) + `capabilities/windows.json:7` (`decorum:allow-show-snap-overlay`, `platforms: ["windows"]` — el plugin es dep `cfg(windows)`, así que un `cargo check` en macOS/Linux rechazaría el permiso si viviera en `default.json`).
 
 `tauri.windows.conf.json:13` → `scrollBarStyle: "fluentOverlay"`: WebView2 dibuja la scrollbar **overlay** (pastilla fina, se auto-oculta, flota sobre el contenido) en vez de la barra clásica con carril y botones de flecha. Necesita WebView2 Runtime >= 125.0.2535.41 y fuera de Windows no hace nada. Cambio hermano obligatorio: el contenedor de scroll es `.app-scroll` (solo contenido), así la barra nunca le roba ancho al header — ver `native-feel.md`.
 
-`lib.rs:466` — `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` en Windows 11 (solo en deps `target_os = "windows"` — `Cargo.toml:57`): una ventana frameless es cuadrada por defecto, así que esta llamada es la que mantiene las esquinas redondeadas. Razonamiento completo en `docs/es/native-feel.md`.
+`lib.rs:655` — `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` en Windows 11 (solo en deps `target_os = "windows"` — `Cargo.toml:57`): una ventana frameless es cuadrada por defecto, así que esta llamada es la que mantiene las esquinas redondeadas. Razonamiento completo en `docs/es/native-feel.md`.
 
 ## Entrada desktop vs móvil
 
-- Desktop: `run()` vía `main.rs` → `lib.rs:396`.
-- Target unificado iOS/macOS Xcode: `start_app()` (`lib.rs:106`, `#[no_mangle] extern "C"`) llamado desde `main.mm` del proyecto Xcode generado. Requerido para `cargo check --target aarch64-apple-ios`.
+- Desktop: `run()` vía `main.rs` → `lib.rs:584`.
+- Target unificado iOS/macOS Xcode: `start_app()` (`lib.rs:149`, `#[no_mangle] extern "C"`) llamado desde `main.mm` del proyecto Xcode generado. Requerido para `cargo check --target aarch64-apple-ios`.
 - Entrada móvil `#[cfg_attr(mobile, tauri::mobile_entry_point)]` envuelve `run()`.
 
 ## Añadir un plugin
