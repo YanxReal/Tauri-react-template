@@ -1,10 +1,12 @@
 # Backend Tauri (`src-tauri`)
 
-Rust + Tauri v2. Entradas: `src-tauri/src/lib.rs:737` (`run()`) y `src-tauri/src/main.rs`.
+> **Audiencia:** devs Rust — comandos, setup por SO, plugins.
+
+Rust + Tauri v2. Entradas: `src-tauri/src/lib.rs:382` (`run()`) y `src-tauri/src/main.rs`.
 
 ## Comandos
 
-Registrados en `lib.rs:774`:
+Registrados en `lib.rs:419`:
 
 ```rust
 tauri::generate_handler![greet, platform_info, window_effects_set]
@@ -92,17 +94,17 @@ Contexto y fix en `docs/es/native-feel.md`. Implementación en `lib.rs:205`:
 
 ## Windows — titlebar overlay frameless (`tauri-plugin-decorum`)
 
-`tauri.windows.conf.json:12` → `decorations: false`: la ventana es frameless y la titlebar la dibuja la app (modelo Edge / VS Code). `setup()` llama a `create_overlay_titlebar()` (`lib.rs:814`) del plugin de la comunidad [decorum](https://github.com/clearlysid/tauri-plugin-decorum), registrado solo en Windows (`lib.rs:774`). `transparent: true` se mantiene para que Mica / `window_effects_set` siga viéndose.
+`tauri.windows.conf.json:12` → `decorations: false`: la ventana es frameless y la titlebar la dibuja la app (modelo Edge / VS Code). `setup()` llama a `create_overlay_titlebar()` (`lib.rs:461`) del plugin de la comunidad [decorum](https://github.com/clearlysid/tauri-plugin-decorum), registrado solo en Windows (`lib.rs:419`). `transparent: true` se mantiene para que Mica / `window_effects_set` siga viéndose.
 
 Los caption buttons son React (`apps/web/src/components/layout/window-controls.tsx:61`, renderizados por `header.tsx:224`); el hover de 620 ms sobre maximizar invoca `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`) para abrir el flyout de Snap Layouts de Windows 11. Permisos: `capabilities/default.json:6` (`allow-minimize` / `allow-close` / `allow-is-maximized`) + `capabilities/default.json:15` (`allow-set-focus`, lo exige la cadena `setFocus().then(invoke(...))`) + `capabilities/windows.json:7` (`decorum:allow-show-snap-overlay`, `platforms: ["windows"]` — el plugin es dep `cfg(windows)`, así que un `cargo check` en macOS/Linux rechazaría el permiso si viviera en `default.json`).
 
 `tauri.windows.conf.json:13` → `scrollBarStyle: "fluentOverlay"`: WebView2 dibuja la scrollbar **overlay** (pastilla fina, se auto-oculta, flota sobre el contenido) en vez de la barra clásica con carril y botones de flecha. Necesita WebView2 Runtime >= 125.0.2535.41 y fuera de Windows no hace nada. Cambio hermano obligatorio: el contenedor de scroll es `.app-scroll` (solo contenido), así la barra nunca le roba ancho al header — ver `native-feel.md`.
 
-`lib.rs:810` — `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` en Windows 11 (solo en deps `target_os = "windows"` — `Cargo.toml:57`): una ventana frameless es cuadrada por defecto, así que esta llamada es la que mantiene las esquinas redondeadas. Razonamiento completo en `docs/es/native-feel.md`.
+`lib.rs:457` — `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` en Windows 11 (solo en deps `target_os = "windows"` — `Cargo.toml:57`): una ventana frameless es cuadrada por defecto, así que esta llamada es la que mantiene las esquinas redondeadas. Razonamiento completo en `docs/es/native-feel.md`.
 
 ## Entrada desktop vs móvil
 
-- Desktop: `run()` vía `main.rs` → `lib.rs:737`.
+- Desktop: `run()` vía `main.rs` → `lib.rs:382`.
 - Target unificado iOS/macOS Xcode: `start_app()` (`lib.rs:149`, `#[no_mangle] extern "C"`) llamado desde `main.mm` del proyecto Xcode generado. Requerido para `cargo check --target aarch64-apple-ios`.
 - Entrada móvil `#[cfg_attr(mobile, tauri::mobile_entry_point)]` envuelve `run()`.
 

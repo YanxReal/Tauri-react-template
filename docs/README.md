@@ -24,6 +24,7 @@ Ambos árboles están **espejados y deben mantenerse en paridad**. Ver [`AGENTS.
 | Mobile | [`en/mobile.md`](./en/mobile.md) | [`es/mobile.md`](./es/mobile.md) |
 | Native Feel | [`en/native-feel.md`](./en/native-feel.md) | [`es/native-feel.md`](./es/native-feel.md) |
 | Scripts & Tooling | [`en/scripts.md`](./en/scripts.md) | [`es/scripts.md`](./es/scripts.md) |
+| Testing | [`en/testing.md`](./en/testing.md) | [`es/testing.md`](./es/testing.md) |
 | Troubleshooting | [`en/troubleshooting.md`](./en/troubleshooting.md) | [`es/troubleshooting.md`](./es/troubleshooting.md) |
 | Contributing | [`en/contributing.md`](./en/contributing.md) | [`es/contributing.md`](./es/contributing.md) |
 | Changelog | [`en/changelog.md`](./en/changelog.md) | [`es/changelog.md`](./es/changelog.md) |

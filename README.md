@@ -12,7 +12,7 @@
 
 > 🌐 **Language:** **English** | [Español](README.es.md)
 
-[Overview](#-overview) • [Features](#-features) • [Requirements](#-requirements) • [Quick Start](#-quick-start) • [Window model](#-window-model) • [Configuration](#-configuration) • [Make Targets](#-make-targets) • [Verification](#-verification) • [Security](#-security) • [Troubleshooting](#-troubleshooting) • [Roadmap](#-roadmap) • [Docs](docs/en/README.md)
+[Overview](#-overview) • [Features](#-features) • [Requirements](#-requirements) • [Quick Start](#-quick-start) • [Window model](#-window-model) • [Configuration](#-configuration) • [Make Targets](#-make-targets) • [Verification](#-verification) • [Security](#-security) • [Troubleshooting](#-troubleshooting) • [Roadmap](#-roadmap) • [Documentation](#-documentation) • [Docs](docs/en/README.md)
 
 ---
 
@@ -32,10 +32,11 @@
 12. [Security](#-security)
 13. [Troubleshooting](#-troubleshooting)
 14. [Roadmap](#-roadmap)
-15. [Contributing](#-contributing)
-16. [License](#-license)
-17. [Acknowledgements](#-acknowledgements)
-18. [Links](#-links)
+15. [Documentation](#-documentation)
+16. [Contributing](#-contributing)
+17. [License](#-license)
+18. [Acknowledgements](#-acknowledgements)
+19. [Links](#-links)
 
 ---
 
@@ -230,7 +231,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-Then test **scroll + click + no-zoom** in a real bundle per OS (`pnpm tauri:build`, `scripts/build-linux.sh`, `scripts/build-windows.sh`). CI runs Frontend + Rust matrix (ubuntu/windows/macos) on every PR.
+Then test **scroll + click + no-zoom** in a real bundle per OS (`pnpm tauri:build`, `scripts/build-linux.sh`, `scripts/build-windows.sh`) — full matrix: [`docs/en/testing.md`](docs/en/testing.md). CI runs Frontend + Rust matrix (ubuntu/windows/macos) on every PR.
 
 ---
 
@@ -285,6 +286,30 @@ Full table: [`docs/en/troubleshooting.md`](docs/en/troubleshooting.md)
 - [ ] iOS physical-device pipeline end-to-end (Team ID + USB iPhone)
 - [ ] Android release bundle + store metadata path
 - [ ] Plan A degraded glass on Linux (spec'd in native-feel, not implemented)
+
+---
+
+## 📚 Documentation
+
+Full guides live in [`docs/en/`](docs/en/README.md) (mirror: [`docs/es/`](docs/es/README.md)) — same pages, same order, both languages:
+
+| Doc | Audience | Covers |
+|---|---|---|
+| [Getting Started](docs/en/getting-started.md) | Everyone | Requirements, install, first run, builds |
+| [Architecture](docs/en/architecture.md) | New contributors | Monorepo map, entry points, config layering |
+| [Frontend](docs/en/frontend.md) | Web devs | App shell, providers, shadcn, conventions |
+| [Tauri Backend](docs/en/tauri.md) | Rust devs | Commands, setup per OS, plugins |
+| [Styling](docs/en/styling.md) | Web devs | Tokens, dark mode, shell, glass system |
+| [i18n](docs/en/i18n.md) | Web devs | Locales, toggle, adding languages |
+| [Mobile](docs/en/mobile.md) | iOS/Android devs | Xcode target, configs, emulator |
+| [Native Feel](docs/en/native-feel.md) | Window work | Per-OS chrome, guards, vibrancy, scrollbars |
+| [Scripts](docs/en/scripts.md) | Everyone | `package.json`, Makefile, build scripts, CI |
+| [Testing](docs/en/testing.md) | Everyone | Unit, Rust, manual per-OS matrix |
+| [Troubleshooting](docs/en/troubleshooting.md) | Stuck? | Symptom → fix tables |
+| [Contributing](docs/en/contributing.md) | Contributors | Conventions, parity, gates |
+| [Changelog](docs/en/changelog.md) | Curious | Full evolution, commit by commit |
+
+Parity rule: every `en/` page has an identical-structure `es/` mirror (`AGENTS.md` §3).
 
 ---
 

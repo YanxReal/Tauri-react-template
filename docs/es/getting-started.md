@@ -1,20 +1,22 @@
 # Primeros pasos
 
+> **Audiencia:** del primer clon a la primera app corriendo. Tiempo: ~10 min (más los builds de Rust).
+
 ## Requisitos
 
-| Herramienta | Versión | Notas |
-|-------------|---------|-------|
-| Node.js | `>=24` | Exigido por `package.json:engines` |
-| pnpm | `>=10` | `packageManager: pnpm@10.34.5` |
-| Rust | `stable 1.85+` | `edition 2021`, ver `rust-toolchain.toml` |
-| Xcode | `26+` | Solo para targets iOS/macOS |
-| Android SDK/NDK | última | Solo para targets Android |
+| Herramienta | Versión | Instalación | Necesaria para |
+|---|---|---|---|
+| **Node.js** | ≥ 24 | `nvm use` | todo |
+| **pnpm** | ≥ 10 | `corepack enable && corepack prepare pnpm@latest --activate` | todo |
+| **Rust** | estable 1.85+ | `rustup` (o `rust` de Homebrew) | builds desktop / móvil |
+| **targets rustup** | iOS + Android | `rustup show` (lee `rust-toolchain.toml`) | solo móvil |
+| **Xcode** | 26+ | App Store | iOS / macOS |
+| **xcodegen** | latest | `brew install xcodegen` | regen de Xcode |
+| **Android SDK** | cmdline-tools + emulator + imagen arm64 | Android Studio | solo Android |
+| **Docker** | Desktop 4.x | — | solo caja Linux |
+| **cargo-tauri 2.12.0** | vendoreado + retoques | `make install-tauri-cli` | flujos iOS |
 
-Instala los targets de Rust una vez:
-
-```bash
-rustup show   # instala desde rust-toolchain.toml (targets iOS + Android)
-```
+`package.json:engines` fija Node + pnpm.
 
 ## Instalación
 
@@ -22,37 +24,28 @@ rustup show   # instala desde rust-toolchain.toml (targets iOS + Android)
 git clone <tu-repo> tauri-react-template
 cd tauri-react-template
 pnpm install
+# Done en ~1m · 581 paquetes · hook `husky` de prepare
 ```
 
-Verifica:
+Verifica la instalación (todo en verde antes de seguir):
 
 ```bash
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm build
+pnpm typecheck && pnpm lint && pnpm test && pnpm build
 cargo check --manifest-path src-tauri/Cargo.toml
 ```
 
 ## Desarrollo
 
-### Solo web (más rápido)
+### Solo web (lo más rápido)
 
 ```bash
-pnpm dev              # turbo dev → Vite en http://localhost:1420
-# o sin la TUI de Turbo (útil cuando tauri dev mata la TUI):
-pnpm --filter web dev
-make dev:web
+pnpm dev:web
+# Vite en http://localhost:1420, HMR en :1421 (sin TUI de Turbo)
 ```
 
-### Desktop (Tauri)
-
-```bash
-pnpm tauri:dev        # Tauri v2 dev (beforeDevCommand = pnpm --filter web dev)
-make dev              # alias — también centra la ventana y gestiona la identidad de firma
-```
-
-Config `src-tauri/tauri.conf.json:build`:
+`pnpm dev` (= `turbo dev`) también vale pero activa el modo ratón de la TUI
+(`?1000h`) — `tauri dev` lo mata con `SIGTERM` y deja la terminal garbled
+(`35;22;36M`). `tauri.conf.json:build` ya usa la forma directa:
 
 ```json
 {
@@ -63,66 +56,54 @@ Config `src-tauri/tauri.conf.json:build`:
 }
 ```
 
-¿Por qué `pnpm --filter web dev` y no `turbo dev`? Turbo activa su TUI (`?1000h` mouse mode). Cuando `tauri dev` lo mata con `SIGTERM` la terminal queda en ese modo y escribe `35;22;36M`. Vite directo evita eso — ver `docs/es/native-feel.md` y `src-tauri/src/lib.rs:758`.
+### Desktop (Tauri)
+
+```bash
+make dev          # tauri dev + centrado de ventana + signing identity
+# o: pnpm tauri:dev
+```
+
+### Móvil y caja Linux
+
+Simulador / dispositivo iOS, emulador Android y la caja Linux por SSH tienen
+flujo propio — ver [Móvil](./mobile.md) y [Scripts](./scripts.md):
+
+```bash
+make dev:ios                # simulador iPhone
+make dev-android-emulator   # arranca AVD + android dev
+./scripts/linux-box.sh up   # arranca la caja Linux
+```
 
 ### Variables de entorno
 
-Las vars públicas se incrustan en compilación por `src-tauri/build.rs` (`EMBED_KEYS`):
-
-- `VITE_API_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-
-Provéelas vía:
-
-- `src-tauri/.env` (gitignored, se lee en build), o
-- Env del proceso (`cargo:rerun-if-env-changed`).
-
-En **release**, `SUPABASE_URL` debe ser `https://` y host `*.supabase.co` o el build hace panic (ver `build.rs:135`).
+Las vars públicas se incrustan al compilar vía `src-tauri/build.rs`
+(`EMBED_KEYS`): `VITE_API_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`. Ponlas en `src-tauri/.env`
+(gitignored) o como env del proceso. En **release**, `SUPABASE_URL` debe ser
+`https://*.supabase.co` o el build hace panic (`build.rs:135`).
 
 ## Build
 
 ```bash
 pnpm build            # turbo build → apps/web/dist
-pnpm tauri:build      # bundle Tauri (todos los targets en bundle.targets)
-cargo check --manifest-path src-tauri/Cargo.toml
+pnpm tauri:build      # bundle Tauri (todos los targets de bundle.targets)
 ```
 
-Shells por OS disponibles:
-
-```bash
-./scripts/build-linux.sh
-./scripts/build-windows.sh
-```
-
-`scripts/build-linux.sh` construye los bundles de Linux — y puede compilar y lanzar la app — en una caja Linux por SSH (`--remote [HOST]`, por defecto `ubuntu-vnc`), o en local con `--native`. Detalle en `docs/es/scripts.md`.
-
-`scripts/build-windows.sh` cross-compila el bundle Windows x64 desde macOS/Linux con `cargo-xwin` (instalador NSIS; MSI/WiX necesita un host Windows). Setup una sola vez: `brew install llvm lld makensis`, `cargo install cargo-xwin --locked`, `rustup target add x86_64-pc-windows-msvc` — detalle completo en `docs/es/scripts.md`.
-
-## Referencia de scripts (root)
-
-| Comando | Efecto |
-|---------|--------|
-| `pnpm dev` | `turbo dev` (web) |
-| `pnpm build` | `turbo build` |
-| `pnpm lint` / `pnpm lint:fix` | `biome check` / `biome check --write` |
-| `pnpm format` / `pnpm format:check` | `biome check --write` / `biome check` |
-| `pnpm typecheck` | `turbo typecheck` |
-| `pnpm test` | `turbo test` (vitest) |
-| `pnpm tauri:dev` / `pnpm tauri:build` | `tauri dev` / `tauri build` |
-| `make dev` / `make dev:ios` / `make dev-ios-physical` | Desktop / iOS sim / iOS device |
-| `make install-tauri-cli` | Compila el `cargo-tauri` vendoreado con el parche de Xcode 26 |
+Shells por SO: `./scripts/build-linux.sh` (bundles + opcional `--run` en la
+caja Linux) y `./scripts/build-windows.sh` (cross-compile `cargo-xwin`, NSIS;
+MSI/WiX necesita host Windows). Detalle: [Scripts](./scripts.md).
 
 ## IDE
 
-VS Code es el editor recomendado — ver `.vscode/settings.json:1` y `.vscode/extensions.json`:
-
-- `tauri-vscode`, `rust-analyzer`, `biome`, `tailwindcss`
-- `editor.formatOnSave` + `source.fixAll.biome` + `source.organizeImports.biome`
+VS Code + `tauri-vscode` + `rust-analyzer` + `biome` + `tailwindcss`
+(ver `.vscode/extensions.json`). Settings recomendados (`formatOnSave` +
+`source.fixAll.biome`) en `.vscode/settings.json`.
 
 ## Repo privado
 
 ```bash
 gh repo create tauri-react-template --private --source=. --push
-# o
+# o:
 git remote add origin git@github.com:TU_USUARIO/tauri-react-template.git
 git push -u origin master
 ```

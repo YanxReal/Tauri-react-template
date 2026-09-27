@@ -1,5 +1,7 @@
 # Scripts & Tooling
 
+> **Audience:** everyone — what to run and when.
+
 ## Root scripts
 
 `package.json:11`:
@@ -24,7 +26,8 @@
 | `make dev:web` | `pnpm --filter web dev` |
 | `make dev:ios` | `pnpm tauri ios dev "iPhone 17"` (simulator, uses `IOS_DEVICE`) |
 | `make dev-ios-physical` | `cargo tauri ios dev "iPhone 17" --host $(IOS_DEV_HOST)` (needs `make install-tauri-cli`) |
-| `make dev-android-emulator` | Android APK → emulator |
+| `make dev-android-emulator` | boot `$ANDROID_AVD` + `tauri android dev --target $ANDROID_TARGET` |
+| `make gen-apple` | `scripts/Xcode/apple-xcode.sh` (xcodegen → `gen/apple`) |
 | `make install-tauri-cli` | Builds vendored `src-tauri/vendor/tauri-cli-2.12.0` (stock 2.12.0 + 3 local tweaks: standalone fallback, `_Apple` target) → `~/.cargo/bin/cargo-tauri` |
 | `make lint` / `make build` | aliases |
 

@@ -1,5 +1,7 @@
 # Sensación nativa — multiplataforma
 
+> **Audiencia:** trabajo de ventana — chrome por SO, guards, vibrancy, scrollbars. Todo cambio aquí debe testearse en todos los targets.
+
 > **Esta es una app multiplataforma** (desktop: **macOS, Windows, Linux**; móvil: **iOS, Android**) — cualquier cambio debe funcionar y testearse en todos los sistemas. Nunca asumas solo macOS/iOS.
 
 ## Guards compartidos (todas las ventanas / todos los OS)
@@ -10,7 +12,7 @@ Derivados del commit `c9ae1a4`:
 - `apps/web/index.html:5` — viewport `user-scalable=no, maximum-scale=1.0, viewport-fit=cover`
 - `packages/ui/src/styles/globals.css:137` — `* { user-select:none; -webkit-user-drag:none; touch-action: pan-x pan-y }` (inputs/textarea/contenteditable reactivan selección). Sin `overscroll-behavior:none`.
 - `apps/web/src/main.tsx:21` — bloqueo `dragstart`, bloqueo de zoom por rueda (`ctrl/meta + wheel`), links externos → `openUrl` vía `plugin-opener`.
-- `src-tauri/src/lib.rs:758` — `tauri-plugin-prevent-default` con `Flags::debug()`: en **release** bloquea defaults del webview (menú contextual, devtools, reload); en **debug** los conserva. Nunca toca el scroll del documento.
+- `src-tauri/src/lib.rs:403` — `tauri-plugin-prevent-default` con `Flags::debug()`: en **release** bloquea defaults del webview (menú contextual, devtools, reload); en **debug** los conserva. Nunca toca el scroll del documento.
 
 Móvil (menú long-press iOS, Android) usa las mismas reglas CSS/JS (`touch-action: pan-x pan-y` mata el double-tap zoom en iOS).
 
@@ -20,9 +22,9 @@ Referencia: `wry#1747`, `tauri#13044`. `titleBarStyle: Overlay` + `hiddenTitle` 
 
 **Fix HuLa (3 mecanismos en `src-tauri/src/lib.rs:205`)**
 
-1. Hook `WindowEvent::Focused/Resized/ScaleFactorChanged` (`lib.rs:838`) — fallback general.
+1. Hook `WindowEvent::Focused/Resized/ScaleFactorChanged` (`lib.rs:485`) — fallback general.
 2. `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (`lib.rs:331`) — más fiable que `WindowEvent` en macOS 26.
-3. **Polling live-resize a 60 fps** (`NSTimer` en `NSRunLoopCommonModes` + `needs_update` `±0.6px`) mientras `inLiveResize` — dispara durante `NSEventTrackingRunLoopMode`, no solo al soltar (`lib.rs:865`).
+3. **Polling live-resize a 60 fps** (`NSTimer` en `NSRunLoopCommonModes` + `needs_update` `±0.6px`) mientras `inLiveResize` — dispara durante `NSEventTrackingRunLoopMode`, no solo al soltar (`lib.rs:512`).
 
 Posiciones finales: `Close 17.5 / Mini 39.5 / Zoom 61.5` (dots de 14px en macOS 26, `grow 3` cuando AppKit todavía los sirve a 12px, `shift_right 16` + `extra_gap 0/2/4`, `pl-[96px] sm:pl-[108px]` en header). `setAutoresizingMask(0)` evita que AppKit vuelva a auto-resize entre frames. Ver `lib.rs:205` `adjust_macos_traffic_lights` + `lib.rs:331` `ensure_traffic_lights_observer`.
 
@@ -56,10 +58,10 @@ Ambas están cubiertas por invariantes junto a `window-controls`: mira la fila `
 Modelo Edge / VS Code: la ventana es **frameless** y la titlebar la dibuja la app (`decorations: false`). El plugin de la comunidad [decorum](https://github.com/clearlysid/tauri-plugin-decorum) aporta el overlay y el comando de Snap Layouts; el header pone la banda de arrastre y los caption buttons.
 
 - `tauri.windows.conf.json:12` → `decorations: false` (`transparent: true` se mantiene para que Mica / `window_effects_set` siga viéndose).
-- `setup()` llama a `create_overlay_titlebar()` (`lib.rs:814`); el plugin solo se registra en Windows (`lib.rs:774`).
+- `setup()` llama a `create_overlay_titlebar()` (`lib.rs:461`); el plugin solo se registra en Windows (`lib.rs:419`).
 - Caption buttons: `apps/web/src/components/layout/window-controls.tsx:61` (minimizar / maximizar-restaurar / cerrar, iconos lucide, zona de `46px`, hover rojo en cerrar), renderizados desde `header.tsx:224`. Llaman a `minimize()` / `toggleMaximize()` / `close()` y siguen `isMaximized()` + `onResized()`.
 - **Snap Layouts:** el hover sobre *maximizar* durante 620 ms (`window-controls.tsx:8`) enfoca la ventana e invoca `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`), que pulsa Win+Z y luego Alt para ocultar los números. Chromium consigue el flyout real de hover respondiendo `WM_NCHITTEST` con `HTMAXBUTTON`; tao no expone ese hook, así que Win+Z es el equivalente más cercano. Permisos: `capabilities/default.json:6` (`allow-minimize` / `allow-close` / `allow-is-maximized`) + `capabilities/default.json:15` (**`core:window:allow-set-focus`** — la cadena es `setFocus().then(invoke(...))`, así que sin él la promesa se rechaza y el flyout nunca abre; no viene en `core:window:default`) + `capabilities/windows.json:7` (`decorum:allow-show-snap-overlay`) — el plugin es dep `cfg(windows)`, así que su permiso vive en una capability con `platforms: ["windows"]` y las builds no-Windows nunca lo resuelven (registrarlo global rompe `cargo check` en macOS/Linux con `Permission decorum:allow-show-snap-overlay not found`).
-- Esquinas redondeadas: `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` (`lib.rs:810`) — una ventana frameless es cuadrada por defecto.
+- Esquinas redondeadas: `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` (`lib.rs:457`) — una ventana frameless es cuadrada por defecto.
 - **Banda con alto fijo (no quitar `shrink-0`):** `header.tsx:29` clava la titlebar de Win/Linux en `h-11` (44px) + `shrink-0` — el alto al que el flex-column la comprimía antes, y la misma banda compacta que usa Edge. Sin `shrink-0` el flex-column del shell comprimía el header hasta su altura min-content, así que el alto de la titlebar cambiaba con la longitud del contenido de cada página. El arrastre mide el header en runtime (`native-chrome.ts:14`, fallback 52 macOS / 44 Win-Linux) en vez de duplicar su alto, así la banda y la zona de arrastre no pueden desincronizarse.
 - Los controles del header (idioma / tema) comparten un único token de hover, `hover:bg-black/10 dark:hover:bg-white/15` (`header.tsx:18`), aplicado a **las dos** ramas, shadcn y glass, y mantienen `hover:scale-100` en la variante glass. Los valores por defecto no se leían sobre la banda de la titlebar: `bg-muted` / `dark:bg-muted/50` desaparecen sobre la banda oscura translúcida, el `hover:bg-white/10` de glass se invierte a sólo 6 % de negro en tema claro (`globals.css:403`) y `hover:scale-105` hacía que la pastilla creciera fuera de la banda.
 - El arrastre sigue siendo propio: `data-tauri-drag-region` + `useWindowDragRegion` (`header.tsx:68`). Decorum además inyecta su propia titlebar fija de 32px con una capa de arrastre en `z-index:100`, que se pondría encima de nuestro header y se tragaría los clics de los botones — `globals.css:253` la oculta.
@@ -86,7 +88,7 @@ Lo que queda:
 
 `backdrop-blur` + `DMABUF` en WebKitGTK 4.1 (sobre todo NVIDIA/Wayland) dispara `AcceleratedSurfaceDMABuf was unable to construct a complete framebuffer` + `Error 71` + RAM al redimensionar (docs `linux-graphics` de Tauri, `wry#1747`).
 
-**Fix actual (veto):** en Linux se fuerza `glass OFF` — `glass-cards-provider.tsx` expone `supported: false` (`platform==='linux'`) y colapsa `enabled` a `false`, `GlassCardsToggle` deshabilitado con tooltip, y `globals.css:265` pone `html.linux .glass-card { backdrop-filter:none; background:var(--card) }`. `lib.rs:749` fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder`.
+**Fix actual (veto):** en Linux se fuerza `glass OFF` — `glass-cards-provider.tsx` expone `supported: false` (`platform==='linux'`) y colapsa `enabled` a `false`, `GlassCardsToggle` deshabilitado con tooltip, y `globals.css:265` pone `html.linux .glass-card { backdrop-filter:none; background:var(--card) }`. `lib.rs:394` fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes del `Builder`.
 
 **Plan A (glass degradado sin blur — no implementado):** renderizar `GlassCard` sin `backdrop-blur` en Linux — solo `bg-white/[0.06] + border` translúcido + `box-shadow` sutil. Ver `README.md` para el sketch.
 

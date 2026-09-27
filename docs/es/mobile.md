@@ -1,5 +1,7 @@
 # Móvil — iOS y Android
 
+> **Audiencia:** devs iOS/Android — target Xcode unificado, configs, emulador.
+
 La plantilla es **multiplataforma**: escritorio (macOS, Windows, Linux) **y** móvil (iOS, Android). Cualquier cambio debe probarse cross-platform.
 
 ## Fuente de verdad vs generado
@@ -34,18 +36,18 @@ Qué hace:
 
 Detalles en `scripts/README.md:22`.
 
-### Comandos iOS (usa siempre el CLI parcheado)
+### Comandos iOS (qué CLI usar)
 
-El `cargo tauri` instalado puede ser un build modificado de Prestly (`com.yanxstudio.prestly`). Usa el **CLI stock**:
+Aquí hay dos CLIs — elige por flujo:
 
 ```bash
 pnpm dlx @tauri-apps/cli@2.12.0 ios build --target aarch64-sim --debug
 pnpm dlx @tauri-apps/cli@2.12.0 android build --debug --target aarch64
-make dev:ios            # iOS simulator (cargo tauri parcheado + simctl, sin EBADARCH)
+make dev:ios            # simulador iOS (cargo tauri + simctl, sin EBADARCH)
 make dev-ios-physical   # iPhone por USB (necesita --host 169.254.x.x)
 ```
 
-`Makefile:34` — `dev:ios` usa `pnpm tauri ios dev "$(IOS_DEVICE)"` (ruta sim). `dev-ios-physical` usa `cargo tauri ios dev "$(IOS_DEVICE)" --host $(IOS_DEV_HOST)` (device físico por IP link-local USB).
+`Makefile:37` — `dev:ios` usa `pnpm tauri ios dev "$(IOS_DEVICE)"` (ruta sim, el Node CLI stock vale). `dev-ios-physical` usa `cargo tauri ios dev "$(IOS_DEVICE)" --host $(IOS_DEV_HOST)` (binario local con los retoques `_Apple` — necesario para el target unificado).
 
 ### Parche Xcode 26 — `cargo-mobile2` vendoreado
 
@@ -63,7 +65,7 @@ make install-tauri-cli   # compila vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
 cargo tauri ios dev "iPhone 17"
 ```
 
-`pnpm tauri ios dev` (CLI de Node) sigue usando la copia sin parche del registry — para iOS usa `cargo tauri`.
+`pnpm tauri ios dev` (Node CLI 2.12.0) es stock — vale para flujos de sim, pero le faltan los retoques `_Apple`/standalone, así que los flujos de dispositivo y Xcode usan `cargo tauri`.
 
 > `cargo-mobile2 0.22.5` salió el 17-08-2026 con el fix de Xcode 27, así que el vendor ahora es un rebase del `tauri-cli 2.12.0` stock (que pide `cargo-mobile2 ^0.22.5`) más los 3 cambios locales de arriba — sin copia parcheada de mobile2 ni sección `[patch]`.
 

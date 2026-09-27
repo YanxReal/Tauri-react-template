@@ -12,7 +12,7 @@
 
 > 🌐 **Idioma:** **Español** | [English](README.md)
 
-[Resumen](#-resumen) • [Características](#-características) • [Requisitos](#-requisitos) • [Inicio rápido](#-inicio-rápido) • [Modelo de ventana](#-modelo-de-ventana) • [Configuración](#-configuración) • [Targets Make](#-targets-make) • [Verificación](#-verificación) • [Seguridad](#-seguridad) • [Solución de problemas](#-solución-de-problemas) • [Roadmap](#-roadmap) • [Docs](docs/es/README.md)
+[Resumen](#-resumen) • [Características](#-características) • [Requisitos](#-requisitos) • [Inicio rápido](#-inicio-rápido) • [Modelo de ventana](#-modelo-de-ventana) • [Configuración](#-configuración) • [Targets Make](#-targets-make) • [Verificación](#-verificación) • [Seguridad](#-seguridad) • [Solución de problemas](#-solución-de-problemas) • [Roadmap](#-roadmap) • [Documentación](#-documentación) • [Docs](docs/es/README.md)
 
 ---
 
@@ -32,10 +32,11 @@
 12. [Seguridad](#-seguridad)
 13. [Solución de problemas](#-solución-de-problemas)
 14. [Roadmap](#-roadmap)
-15. [Contribuir](#-contribuir)
-16. [Licencia](#-licencia)
-17. [Agradecimientos](#-agradecimientos)
-18. [Enlaces](#-enlaces)
+15. [Documentación](#-documentación)
+16. [Contribuir](#-contribuir)
+17. [Licencia](#-licencia)
+18. [Agradecimientos](#-agradecimientos)
+19. [Enlaces](#-enlaces)
 
 ---
 
@@ -230,7 +231,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-Y testear **scroll + click + no-zoom** en un bundle real por SO (`pnpm tauri:build`, `scripts/build-linux.sh`, `scripts/build-windows.sh`). CI corre matriz Frontend + Rust (ubuntu/windows/macos) en cada PR.
+Y testear **scroll + click + no-zoom** en un bundle real por SO (`pnpm tauri:build`, `scripts/build-linux.sh`, `scripts/build-windows.sh`) — matriz completa: [`docs/es/testing.md`](docs/es/testing.md). CI corre matriz Frontend + Rust (ubuntu/windows/macos) en cada PR.
 
 ---
 
@@ -285,6 +286,30 @@ Tabla completa: [`docs/es/troubleshooting.md`](docs/es/troubleshooting.md)
 - [ ] Pipeline de iPhone físico end-to-end (Team ID + iPhone USB)
 - [ ] Bundle release Android + ruta de metadatos de tienda
 - [ ] Plan A de glass degradado en Linux (especificado en native-feel, no implementado)
+
+---
+
+## 📚 Documentación
+
+Las guías completas están en [`docs/es/`](docs/es/README.md) (espejo: [`docs/en/`](docs/en/README.md)) — mismas páginas, mismo orden, ambos idiomas:
+
+| Doc | Audiencia | Contenido |
+|---|---|---|
+| [Primeros pasos](docs/es/getting-started.md) | Todos | Requisitos, instalación, primera ejecución, builds |
+| [Arquitectura](docs/es/architecture.md) | Nuevos contribuidores | Mapa del monorepo, entry points, capas de config |
+| [Frontend](docs/es/frontend.md) | Devs web | App shell, providers, shadcn, convenciones |
+| [Backend Tauri](docs/es/tauri.md) | Devs Rust | Comandos, setup por SO, plugins |
+| [Estilos](docs/es/styling.md) | Devs web | Tokens, modo oscuro, shell, sistema glass |
+| [i18n](docs/es/i18n.md) | Devs web | Locales, toggle, añadir idiomas |
+| [Móvil](docs/es/mobile.md) | Devs iOS/Android | Target Xcode, configs, emulador |
+| [Sensación nativa](docs/es/native-feel.md) | Trabajo de ventana | Chrome por SO, guards, vibrancy, scrollbars |
+| [Scripts](docs/es/scripts.md) | Todos | `package.json`, Makefile, scripts de build, CI |
+| [Testing](docs/es/testing.md) | Todos | Unitarios, Rust, matriz manual por SO |
+| [Solución de problemas](docs/es/troubleshooting.md) | ¿Atascado? | Tablas síntoma → arreglo |
+| [Contribuir](docs/es/contributing.md) | Contribuidores | Convenciones, paridad, gates |
+| [Changelog](docs/es/changelog.md) | Curiosos | Evolución completa, commit a commit |
+
+Regla de paridad: cada página `es/` tiene su espejo `en/` idéntico en estructura (`AGENTS.md` §3).
 
 ---
 

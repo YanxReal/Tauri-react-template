@@ -66,7 +66,7 @@ apps/web/src/main.tsx           Providers + native guards (drag, zoom, opener) �
 apps/web/src/i18n/config.ts     i18next init (en/es, localStorage cache) — see config.ts:14
 apps/web/vite.config.ts         Vite + Tailwind + alias + host:true + vitest — see vite.config.ts:8
 packages/ui/src/styles/globals.css  Single source of truth for theme/tokens/shell — see globals.css:11
-src-tauri/src/lib.rs            Commands + vibrancy + macOS traffic lights + Windows overlay (decorum) — see lib.rs:125, lib.rs:185, lib.rs:814
+src-tauri/src/lib.rs            Commands + vibrancy + macOS traffic lights + Windows overlay (decorum) — see lib.rs:125, lib.rs:185, lib.rs:461
 src-tauri/tauri.conf.json       Base Tauri config (merged with tauri.{os}.conf.json)
 src-tauri/Info.plist            Template source for macOS+iOS Info.plist (gen/ is autogen)
 scripts/Xcode/apple-xcode.sh    Regeneration of src-tauri/gen/apple (xcodegen) — never edit gen/
@@ -87,8 +87,8 @@ gets compiled, run and looked at. Current box: [Ubuntu-arm-docker](https://githu
 Legacy minimal box: `./scripts/linux-box.sh up`, then `./scripts/linux-box.sh build --debug --run`,
 watch at http://localhost:6080/vnc.html (password `dev`). It does not start with Docker (`--restart=no`).
 
-It has already earned its keep: `find_webview` (`lib.rs:619`) used `type_().name()` as if it
-returned an `Option`, which only fails on Linux and was caught by the first box build.
+It has already earned its keep: `find_webview` used `type_().name()` as if it
+returned an `Option`, which only fails on Linux and was caught by the first box build (before the CSD frame code was removed 2026-09-27).
 `docs/en/scripts.md` § "Making GNOME work in a container" documents the whole session recipe
 with the measured symptom for every wrong value — read it before touching the entrypoint.
 
@@ -101,7 +101,7 @@ with the measured symptom for every wrong value — read it before touching the 
 | iOS Info.plist | `src-tauri/Info.plist` (template, feeds both macOS+iOS) | `src-tauri/gen/apple/**/Info.plist` |
 | macOS traffic lights | `src-tauri/src/lib.rs:185` (`traffic_lights_target_y`) / `lib.rs:205` (snap) — targets X `17.5/39.5/61.5` (`lib.rs:160`) | AppKit internals elsewhere |
 | Linux titlebar (app-drawn, frameless) | `apps/web/src/components/layout/header.tsx` + `window-controls.tsx` (band + caption buttons); `window.show()` after `center()` in `src-tauri/src/lib.rs` `setup()` | `src-tauri/gen/` |
-| Windows overlay titlebar (decorum) | `src-tauri/tauri.windows.conf.json:12` (`decorations: false`) + `src-tauri/src/lib.rs:814`/`lib.rs:810` + `apps/web/src/components/layout/window-controls.tsx` | `src-tauri/gen/` |
+| Windows overlay titlebar (decorum) | `src-tauri/tauri.windows.conf.json:12` (`decorations: false`) + `src-tauri/src/lib.rs:461`/`lib.rs:457` + `apps/web/src/components/layout/window-controls.tsx` | `src-tauri/gen/` |
 
 ---
 
@@ -196,12 +196,12 @@ These invariants were earned through painful commits (see §1 table). Removing a
 | `dragDropEnabled:false` + `zoomHotkeysEnabled:false` in **every** desktop `windows[]` entry (base + macOS/Windows/Linux overlays; the iOS/Android configs define no window) | `src-tauri/tauri.conf.json:21`, `tauri.macos.conf.json:16`, `tauri.windows.conf.json:15`, `tauri.linux.conf.json:14` | `c9ae1a4` | Drag-and-drop of files into the webview, pinch/keyboard zoom re-enabled. |
 | `viewport user-scalable=no, maximum-scale=1.0` + `touch-action: pan-x pan-y` + `user-select:none` | `apps/web/index.html:5`, `globals.css:137`, `globals.css:148` | `c9ae1a4`, `ae5be97` | Zoom on double-tap, text selection everywhere, scroll jank. Mobile breaks first. |
 | `window_effects_set` stays **sync** (main thread) | `src-tauri/src/lib.rs:125` | `f997723` | `window-vibrancy` panics/off-thread failure. The command MUST NOT become `async`. |
-| `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` | `src-tauri/src/lib.rs:749` | `93657d3`, `9da8602` | Yellow `backdrop-blur` glitches + RAM blow-up on Linux/NVIDIA/Wayland. |
+| `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` | `src-tauri/src/lib.rs:394` | `93657d3`, `9da8602` | Yellow `backdrop-blur` glitches + RAM blow-up on Linux/NVIDIA/Wayland. |
 | `titleBarStyle: Overlay` + `hiddenTitle` + live-resize fix (3 mechanisms) | `tauri.macos.conf.json`, `lib.rs:205` | `938f89a` | macOS traffic lights flicker/jump during resize (wry#1747, tauri#13044). |
 | Traffic-light `y` comes from the button **superview** (`isFlipped()` + container height), never from the window height nor a raw `26 - size/2` | `src-tauri/src/lib.rs:185` | measured on macOS 26 (2026-09-19): the titlebar container is **not flipped** (32px tall) | Writing the “distance from the top” as an absolute `y` moves the dots ~9px **up** instead of centring them; the target must be `MACOS_HEADER_BAND / 2` = 26px (`lib.rs:166`). |
 | Linux = **app-drawn titlebar on a frameless opaque window** (square system corners, deliberate 2026-09-27): the app header IS the 44px titlebar (`header.tsx:222` + `WindowControls`); `tauri.linux.conf.json:11-13` → `decorations:false` + `transparent:false` + `visible:false`, and `setup()` centers then calls `window.show()`. **Resize:** no WM handles on frameless, so the inner 6px webview edge (`useWindowResizeEdges` + `start_window_resize`, `lib.rs:88`) drives GTK's `begin_resize_drag`. Windows = **frameless** (`decorations:false`) + `tauri-plugin-decorum` + React caption buttons + `DWMWCP_ROUND`. Both keep app header drag (`data-tauri-drag-region` + `useWindowDragRegion`) and fixed band height with `shrink-0` (`header.tsx:29`) | `tauri.linux.conf.json:11-13`, `apps/web/src/components/layout/header.tsx:222`, `native-chrome.ts`, `globals.css`, Windows configs/permissions | Frameless Linux window + app-drawn titlebar + app-edge resize; Windows decorum overlay | On Linux, removing the inner resize hook removes content-edge resize (frameless gets none from the WM); re-adding radius CSS or a GTK provider to round corners reopens the removed CSD arc (transparent tips at the extremes). On Windows, dropping decorum/caption buttons/permissions or the `[data-tauri-decorum-tb]` hide rule removes controls or overlays a 32px bar. Both platforms need the app drag region and fixed header band.
 | **Scroll container = content only** (`.app-shell` clips with `overflow:hidden`, `.app-scroll` owns `overflow-y:auto` and wraps `main` + `Footer`) and **overlay scrollbars come from the OS, never from CSS** (Windows `scrollBarStyle: "fluentOverlay"`, macOS native overlay, Linux `gtk-overlay-scrolling`) | `globals.css:215`/`globals.css:231`, `apps/web/src/App.tsx:52`, `tauri.windows.conf.json:13` | `010342b` follow-up (classic Windows bar with arrows used to belong to the shell and ate ~12px of the header) | Scrollbar CSS (`::-webkit-scrollbar`, `scrollbar-width`, `scrollbar-color`) forces the classic non-overlay bar back, kills macOS auto-hide and overrides `fluentOverlay`; making `.app-shell` the scroller again puts the bar over/next to the header and hides part of the caption buttons. |
-| `prevent-default` with `Flags::debug()` (blocks in release, keeps in debug) | `lib.rs:758` | `c9ae1a4`, `f23a894` | Context menu / Reload leaks into release builds, or devtools lost in debug. |
+| `prevent-default` with `Flags::debug()` (blocks in release, keeps in debug) | `lib.rs:403` | `c9ae1a4`, `f23a894` | Context menu / Reload leaks into release builds, or devtools lost in debug. |
 | `host: true` in `vite.config.ts` | `apps/web/vite.config.ts:25` | `10a74e4` | `tauri ios dev` health-check on LAN IP fails, hot-reload never connects. |
 
 **Checklist before pushing any UI/Rust change:**
@@ -273,6 +273,7 @@ If any check fails, fix it before marking the task done. Do not batch completion
 | Mobile | `docs/en/mobile.md` | `docs/es/mobile.md` |
 | Native Feel | `docs/en/native-feel.md` | `docs/es/native-feel.md` |
 | Scripts | `docs/en/scripts.md` | `docs/es/scripts.md` |
+| Testing | `docs/en/testing.md` | `docs/es/testing.md` |
 | Troubleshooting | `docs/en/troubleshooting.md` | `docs/es/troubleshooting.md` |
 | Contributing | `docs/en/contributing.md` | `docs/es/contributing.md` |
 | Changelog | `docs/en/changelog.md` | `docs/es/changelog.md` |

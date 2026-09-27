@@ -1,5 +1,7 @@
 # Solución de problemas
 
+> **Audiencia:** ¿atascado? Busca tu síntoma → arreglo. Si no está, abre un [bug report](../../.github/ISSUE_TEMPLATE/bug_report.md).
+
 ## Terminal rota: `35;22;36M` / `?1000h`
 
 **Causa:** `pnpm dev` (= `turbo dev`) activa el modo ratón TUI de Turbo. `tauri dev` lo mata con `SIGTERM` dejando la terminal en ese modo.
@@ -25,7 +27,7 @@ Las esquinas son cuadradas por diseño — ver `native-feel.md` §0. No re-añad
 
 ## Windows: no aparecen los caption buttons / no hay Snap Layouts
 
-Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y la titlebar es de la app: `header.tsx:224` renderiza `window-controls.tsx` y `lib.rs:814` llama a `create_overlay_titlebar()`. Si los botones no salen, comprueba que `platform === 'windows'` resolvió (comando Rust `platform_info`) y que `capabilities/default.json:6` sigue listando `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:15`), más `capabilities/windows.json:7` para `decorum:allow-show-snap-overlay` (capability solo-Windows; déjala fuera de `default.json` o `cargo check` falla en macOS/Linux). Los Snap Layouts solo se abren con el hover de 620 ms sobre maximizar (`window-controls.tsx:8` → `show_snap_overlay`), que es el equivalente Win+Z de decorum — tao no puede responder `WM_NCHITTEST` con `HTMAXBUTTON`, así que no hay flyout nativo real de hover. Si alguna vez aparece la barra de 32px que inyecta el plugin encima del header, es que se quitó la regla `[data-tauri-decorum-tb]` (`globals.css:253`).
+Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y la titlebar es de la app: `header.tsx:224` renderiza `window-controls.tsx` y `lib.rs:461` llama a `create_overlay_titlebar()`. Si los botones no salen, comprueba que `platform === 'windows'` resolvió (comando Rust `platform_info`) y que `capabilities/default.json:6` sigue listando `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:15`), más `capabilities/windows.json:7` para `decorum:allow-show-snap-overlay` (capability solo-Windows; déjala fuera de `default.json` o `cargo check` falla en macOS/Linux). Los Snap Layouts solo se abren con el hover de 620 ms sobre maximizar (`window-controls.tsx:8` → `show_snap_overlay`), que es el equivalente Win+Z de decorum — tao no puede responder `WM_NCHITTEST` con `HTMAXBUTTON`, así que no hay flyout nativo real de hover. Si alguna vez aparece la barra de 32px que inyecta el plugin encima del header, es que se quitó la regla `[data-tauri-decorum-tb]` (`globals.css:253`).
 
 ## Scrollbar con flechas / el header no llega al borde derecho
 
@@ -49,7 +51,7 @@ Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y l
 
 **Solución:** lanza la app de la forma normal, como el usuario del escritorio que tiene sesión iniciada (acceso directo / `pnpm tauri:dev`). Para fijar la carpeta explícitamente, define `WEBVIEW2_USER_DATA_FOLDER=C:\alguna\carpeta\escribible` antes de arrancar (ojo con el gotcha de cmd: `set VAR=valor && app.exe` se queda con el espacio final, así que entrecomilla: `set "VAR=valor" && app.exe`). Truco de depuración: `scripts/build-windows.sh` + `PsExec64 -i 1 -s` reproduce el fallo, así que no sirve para revisar la UI — copia el exe a una sesión real y haz doble clic.
 
-Desactiva glass — Linux fuerza `glass OFF` por diseño (`glass-cards-provider.tsx` + `globals.css:265`). Mantén `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` en `lib.rs:749`. Ver Plan A degradado en `native-feel.md`.
+Desactiva glass — Linux fuerza `glass OFF` por diseño (`glass-cards-provider.tsx` + `globals.css:265`). Mantén `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` en `lib.rs:394`. Ver Plan A degradado en `native-feel.md`.
 
 ## `pnpm install` falla / mismatch Node
 

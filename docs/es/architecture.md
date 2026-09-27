@@ -1,90 +1,83 @@
 # Arquitectura
 
-## Estructura del monorepo
+> **Audiencia:** nuevos contribuidores — dónde vive cada cosa y cómo se conecta.
+
+```
+┌────────────────────────────── Host ──────────────────────────────┐
+│  apps/web (React 19 + Vite :1420)                                │
+│    │ invoke("greet" | "platform_info" │ "start_window_resize"     │
+│    │         │ "window_effects_set")                             │
+│    ▼                                                             │
+│  src-tauri (Rust: comandos + setup por SO)                       │
+│    ├── tauri.conf.json (base) + tauri.{macos,windows,linux}.     │
+│    │       conf.json (overlays de ventana por SO)                │
+│    ├── capabilities/ (default.json + windows.json)               │
+│    └── plantilla Info.plist → macOS + iOS                        │
+│                                                                  │
+│  packages/ui (shadcn + glass-*) ← importado como @workspace/ui   │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+## Layout del monorepo
 
 ```
 .
-├── apps/
-│   └── web/                  # App Vite React (puerto 1420)
-│       ├── index.html        # SEO, OG, theme-color, viewport-fit
-│       ├── vite.config.ts    # alias @, host:true, hmr, vitest
-│       └── src/
-│           ├── App.tsx       # header/main/section/footer + i18n + greet
-│           ├── main.tsx      # providers + guards de sensación nativa
-│           ├── i18n/         # config.ts + locales/en.json, es.json
-│           ├── components/
-│           │   ├── layout/   # header, hero, features, footer, title-bar
-│           │   ├── glass-cards-provider.tsx
-│           │   ├── vibrancy-provider.tsx
-│           │   └── theme-provider.tsx
-│           ├── hooks/
-│           └── test/
-├── packages/
-│   └── ui/                   # design system (shadcn)
-│       ├── src/components/   # button, dialog, glass-card, etc.
-│       ├── src/lib/          # utils (cn, etc.)
-│       └── src/styles/globals.css  # Tailwind v4 + OKLCH + overrides nativos
-├── src-tauri/                # Backend Tauri v2 (Rust)
-│   ├── Cargo.toml            # window-vibrancy, tauri-plugin-prevent-default
-│   ├── build.rs              # tauri_build + actool + embedding de env
-│   ├── tauri.conf.json       # base (devUrl, frontendDist, windows)
+├── apps/web                 # App Vite React (puerto 1420)
+│   ├── index.html           # SEO, OG, theme-color, viewport-fit
+│   ├── vite.config.ts       # alias @, host:true, hmr, vitest
+│   └── src/
+│       ├── App.tsx          # header/main/section/footer + i18n + greet
+│       ├── main.tsx         # providers + guards native-feel
+│       ├── i18n/            # config.ts + locales/en.json, es.json
+│       ├── components/layout/  # header, hero, features, footer, title-bar
+│       ├── *-{provider}.tsx # providers theme, vibrancy, glass-cards
+│       ├── hooks/ && test/
+├── packages/ui              # design system (shadcn)
+│   └── src/{components,lib,styles/globals.css}
+├── src-tauri/               # Backend Tauri v2 (Rust)
+│   ├── Cargo.toml           # window-vibrancy, prevent-default, gtk (linux)
+│   ├── build.rs             # tauri_build + actool + env embedding
+│   ├── tauri.conf.json      # base (devUrl, frontendDist, windows)
 │   ├── tauri.{macos,windows,linux,ios,android}.conf.json
-│   ├── capabilities/         # permisos Tauri v2
-│   ├── src/lib.rs            # comandos, vibrancy, traffic lights, sombra Linux
-│   ├── src/main.rs
-│   ├── src/platform/         # current_platform()
-│   ├── Info.plist            # plantilla (fuente de verdad para macOS+iOS)
-│   └── vendor/               # cargo-mobile2 + tauri-cli vendoreados (parche Xcode 26)
-├── scripts/
-│   ├── Xcode/apple-xcode.sh  # regenera gen/apple (xcodegen)
-│   └── README.md
-├── biome.json
-├── turbo.json
-├── pnpm-workspace.yaml
-└── Makefile
+│   ├── capabilities/        # permisos Tauri v2
+│   ├── src/{lib.rs,main.rs,platform/}
+│   ├── Info.plist           # plantilla (fuente macOS + iOS)
+│   └── vendor/              # tauri-cli 2.12.0 + templates (ver MODS.md)
+├── scripts/                 # build-*.sh, linux-box.sh, Xcode/
+├── docker/linux-gnome/      # imagen de la caja Linux
+└── biome.json · turbo.json · pnpm-workspace.yaml · Makefile · AGENTS.md
 ```
 
 ## Workspace y build
 
-- `pnpm-workspace.yaml:1` — `packages: ["apps/*", "packages/*"]`
-- `turbo.json:1` — tareas `build`, `lint`, `format`, `typecheck`, `test`, `dev` (`cache:false`, `persistent:true`, `outputs: ["dist/**"]`).
-- Alias de paths:
-  - `@` → `apps/web/src` (`apps/web/vite.config.ts:11`, `tsconfig.json`)
-  - `@workspace/ui/*` → `packages/ui/src/*` (`packages/ui/package.json:73` exports).
+- `pnpm-workspace.yaml:1` — `packages: ["apps/*", "packages/*"]`.
+- `turbo.json:1` — tareas `build`, `lint`, `format`, `typecheck`, `test`, `dev` (`cache:false`, `persistent:true`).
+- Alias: `@` → `apps/web/src`, `@workspace/ui/*` → `packages/ui/src/*`.
 
-## Frontera frontend → backend
+## Frontera Frontend → Backend
 
-- El frontend llama a Rust vía `invoke` (`@tauri-apps/api`) — ver `apps/web/src/App.tsx:32`.
-- Comandos registrados en `src-tauri/src/lib.rs:774`:
-  `tauri::generate_handler![greet, platform_info, window_effects_set]`
-- Plugins: `tauri_plugin_opener`, `tauri_plugin_prevent_default` (con `Flags::debug()` — ver `native-feel.md`).
+- El frontend llama a Rust vía `invoke` (`App.tsx:35`).
+- Comandos registrados en `lib.rs:422`: `greet`, `platform_info`, `start_window_resize`, `window_effects_set`.
+- Plugins: `tauri_plugin_opener`, `tauri_plugin_prevent_default` (`Flags::debug()` — ver [Sensación nativa](./native-feel.md)).
 
-## Capas de configuración (Tauri)
+## Capas de config (Tauri)
 
-El base `src-tauri/tauri.conf.json:1` contiene `build`, `app.windows` comunes y `bundle`.
-Los overlays por OS lo extienden (Tauri los mezcla en el build):
+La base `tauri.conf.json:1` tiene `build`, ventanas comunes y bundle. Los overlays por SO se fusionan al compilar — ver tabla en [Backend Tauri](./tauri.md#configuración). Todas las configs desktop mantienen `dragDropEnabled:false` / `zoomHotkeysEnabled:false` sincronizados.
 
-- `tauri.macos.conf.json` — `titleBarStyle: Overlay`, `hiddenTitle`, `transparent`, `decorations`, `dragDropEnabled:false`.
-- `tauri.windows.conf.json` — mismos guards de drag/zoom + titlebar overlay frameless (`decorations: false`, plugin decorum, caption buttons dibujados por la app).
-- `tauri.linux.conf.json` — mismos guards de drag/zoom + ventana **frameless** (`decorations: false`, `transparent: false`, ventana oculta hasta que `setup()` la muestra centrada): la titlebar la dibuja la app (header + `WindowControls`), esquinas cuadradas del sistema por diseño.
-- `tauri.ios.conf.json` / `tauri.android.conf.json` — bundling móvil.
+## Entry points
 
-Los 4 configs de escritorio deben mantenerse sincronizados en `dragDropEnabled` / `zoomHotkeysEnabled` / guards de viewport.
+| Plataforma | Entrada |
+|---|---|
+| Desktop | `main.rs` → `run()` en `lib.rs` |
+| macOS (Xcode) | `main.mm` → `start_app()` (FFI, `#[no_mangle]`) |
+| Móvil | `#[cfg_attr(mobile, tauri::mobile_entry_point)]` sobre `run()` |
 
-## CSS y theming
+## Quality gates
 
-`packages/ui/src/styles/globals.css:1` es la única fuente de verdad para tokens de diseño (OKLCH), `@theme inline` de Tailwind v4, dark mode `.dark`, translucidez vibrancy, shell de ventana frameless (`.app-shell`) y sombras en Linux. Se importa una vez en `apps/web/src/main.tsx:5` vía `@workspace/ui/globals.css`.
-
-## i18n
-
-`apps/web/src/i18n/config.ts:1` + `locales/en.json|es.json` + `LanguageDetector` (localStorage → navigator → htmlTag). El toggle está en `Header` y sincroniza `document.documentElement.lang`.
-
-## Puertas de calidad
-
-- **JS/TS:** Biome (`biome.json:1`) — formatter (2 espacios, 80 cols, semis `asNeeded`) + linter (recommended, `useImportType:error`). Sin ESLint/Prettier.
-- **Rust:** `cargo fmt` + `clippy` con `await_holding_lock: deny` (`Cargo.toml:66`).
-- **Tests:** Vitest `4` + jsdom + Testing Library — `apps/web/vite.config.ts:37` y `packages/ui`.
-- **Git:** Husky + lint-staged (`package.json:25` — `biome check --write` en `*.{ts,tsx,js,jsx,json,jsonc,css}`).
-- **CI:** `.github/workflows/frontend.yml` (typecheck+lint+test+build) + `rust.yml` (cargo check + fmt).
+- **JS/TS:** Biome — 2 espacios, 80 cols, semis `asNeeded`, `useImportType:error`. Sin ESLint/Prettier.
+- **Rust:** `cargo fmt` + `clippy` (`await_holding_lock: deny`, `Cargo.toml:76`).
+- **Tests:** Vitest + Testing Library — ver [Testing](./testing.md).
+- **Git:** Husky + lint-staged (`biome check --write` en ficheros de código).
+- **CI:** `frontend.yml` (typecheck+lint+test+build) + `rust.yml` (matriz ubuntu/windows/macos: check + fmt + clippy + test).
 
 Siguiente: [Frontend →](./frontend.md)

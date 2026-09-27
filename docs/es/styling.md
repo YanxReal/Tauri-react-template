@@ -1,5 +1,7 @@
 # Estilos y theming
 
+> **Audiencia:** devs web — tokens, modo oscuro, shell, sistema glass.
+
 Única fuente de verdad: `packages/ui/src/styles/globals.css:1`. Se importa una vez en `apps/web/src/main.tsx:5` como `@workspace/ui/globals.css`.
 
 ## Stack
@@ -22,7 +24,7 @@ Usa `bg-background`, `text-foreground`, `border-border`, etc. Nunca hardcodees h
 
 - Provider: `apps/web/src/components/theme-provider.tsx` (añade `html.dark` / `html.light`, sincroniza con `prefers-color-scheme`, persiste en localStorage).
 - `globals.css:89` overrides de `.dark`.
-- Overrides glass: `html.light.glass-cards` invierte `bg-white/10`, `text-white`, etc. a tinta oscura para glass en modo claro (`globals.css:344`).
+- Overrides glass: `html.light.glass-cards` invierte `bg-white/10`, `text-white`, etc. a tinta oscura para glass en modo claro (`globals.css:363`).
 
 ## Shell de layout
 

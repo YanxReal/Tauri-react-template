@@ -1,5 +1,7 @@
 # Mobile — iOS & Android
 
+> **Audience:** iOS/Android devs — unified Xcode target, configs, emulator.
+
 Template is **multi-platform**: desktop (macOS, Windows, Linux) **and** mobile (iOS, Android). All changes must be tested cross-platform.
 
 ## Source of truth vs generated
@@ -34,18 +36,18 @@ What it does:
 
 Details in `scripts/README.md:22`.
 
-### iOS commands (always use patched CLI)
+### iOS commands (which CLI to use)
 
-The stock `cargo tauri` may be a modified Prestly build (`com.yanxstudio.prestly`). Use the **stock CLI**:
+Two CLIs exist here — pick per flow:
 
 ```bash
 pnpm dlx @tauri-apps/cli@2.12.0 ios build --target aarch64-sim --debug
 pnpm dlx @tauri-apps/cli@2.12.0 android build --debug --target aarch64
-make dev:ios            # iOS simulator (patched cargo tauri + simctl, no EBADARCH)
+make dev:ios            # iOS simulator (cargo tauri + simctl, no EBADARCH)
 make dev-ios-physical   # iPhone over USB (needs --host 169.254.x.x)
 ```
 
-`Makefile:34` — `dev:ios` uses `pnpm tauri ios dev "$(IOS_DEVICE)"` (sim path). `dev-ios-physical` uses `cargo tauri ios dev "$(IOS_DEVICE)" --host $(IOS_DEV_HOST)` (physical device over USB link-local IP).
+`Makefile:37` — `dev:ios` uses `pnpm tauri ios dev "$(IOS_DEVICE)"` (sim path, stock Node CLI is fine). `dev-ios-physical` uses `cargo tauri ios dev "$(IOS_DEVICE)" --host $(IOS_DEV_HOST)` (local binary with the `_Apple` tweaks — required for the unified target).
 
 ### Xcode 26 patch — vendored `cargo-mobile2`
 
@@ -63,7 +65,7 @@ make install-tauri-cli   # builds vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
 cargo tauri ios dev "iPhone 17"
 ```
 
-`pnpm tauri ios dev` (Node CLI) still uses the unpatched registry copy — for iOS use `cargo tauri`.
+`pnpm tauri ios dev` (Node CLI 2.12.0) is stock — fine for sim flows, but it lacks the local `_Apple`/standalone tweaks, so device and Xcode-driven flows use `cargo tauri`.
 
 > `cargo-mobile2 0.22.5` shipped on 2026-08-17 with the Xcode 27 fix, so the vendor is now a rebase of stock `tauri-cli 2.12.0` (which requires `cargo-mobile2 ^0.22.5`) plus the 3 local changes above — no patched mobile2 copy, no `[patch]` section.
 
