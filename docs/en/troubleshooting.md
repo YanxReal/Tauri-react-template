@@ -65,11 +65,11 @@ Requires `rust-toolchain.toml` targets installed (`rustup show`). Without Xcode,
 
 ## `tauri ios dev` EBADARCH / MIInstallerErrorDomain 15
 
-Xcode 26 lists simulators via `devicectl` — unpatched `cargo-mobile2 0.22.4` installs with `-sdk iphoneos` → arch mismatch.
+Xcode lists simulators via `devicectl` — `cargo-mobile2` before 0.22.5 installed them with `-sdk iphoneos` → arch mismatch. The vendored CLI 2.12.0 already requires `cargo-mobile2 ^0.22.5` (official Xcode 27 fix).
 
 ```bash
 make install-tauri-cli
-cargo tauri ios dev "iPhone 17"   # not pnpm tauri
+cargo tauri ios dev "iPhone 17"   # not pnpm tauri (local binary has the _Apple tweaks)
 ```
 
 For physical device use `make dev-ios-physical` (needs `--host 169.254.x.x`).

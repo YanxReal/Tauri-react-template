@@ -118,7 +118,7 @@ This repository has **two mirrored documentation trees**:
 1. **Every docs change touches BOTH trees.** If you edit `docs/en/foo.md`, you **MUST** edit `docs/es/foo.md` in the **same commit/PR**, and vice-versa. A PR that touches only one side is incomplete and must be rejected or fixed.
 2. **Same file tree.** `docs/en/X.md` ↔ `docs/es/X.md` — **identical filenames**, identical section order. Translation, not rewrite. If you add `docs/en/changelog.md`, you must add `docs/es/changelog.md`.
 3. **Same structure.** Headings (`#`, `##`, `###`), tables, code blocks, admonitions, and cross-links must **mirror 1:1**. `en/` pages link only to `en/` peers, `es/` pages only to `es/` peers.
-4. **Bilingual routers stay bilingual.** `docs/README.md` and root `README.md` have two columns (EN | ES). Keep them that way.
+4. **Bilingual routers stay bilingual.** `docs/README.md` and root `CHANGELOG.md` have two columns (EN | ES). The root entry points are split by language — `README.md` (EN) + `README.es.md` (ES) with identical structure — instead of one mixed file. Keep them that way.
 5. **Self-heal on sight.** If you detect a divergence (missing file, outdated section, untranslated addition, link pointing to the wrong tree), **fix it immediately** — do not leave the trees out of sync for the next agent.
 6. **Review gate.** In code review, the first check is parity. If parity is broken, request changes before reviewing content.
 
