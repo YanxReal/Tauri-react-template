@@ -243,7 +243,8 @@ Then test **scroll + click + no-zoom** in a real bundle per OS (`pnpm tauri:buil
 | `node_modules/`, `dist/` | build (gitignored) | deps + bundles |
 | `dist-linux/` | fetched (gitignored) | bundles copied back from the Linux box |
 | `scripts/.team-id` | local (gitignored) | persistent Apple Team ID |
-| `tauri-*` Docker volumes | named volumes | cargo/pnpm caches of the Linux box |
+| `tauri-*` Docker volumes | named volumes | cargo/pnpm caches of the minimal Linux box |
+| [Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) | separate repo | current Linux box (Ubuntu 26.04 + GNOME 50, Tauri toolchain) — project at `/workspace/tauri-react-template` |
 
 `make destroy`-style wipes: only `scripts/linux-box.sh destroy` removes box volumes; the repo itself has no destroy target.
 

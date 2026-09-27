@@ -69,12 +69,28 @@ Because the box keeps `node_modules` and `target/` on disk, rebuilds are increme
 (seconds) and `--dev` gives Vite + hot reload; a container-per-build backend was dropped
 in favour of this, as it could never run the app for testing.
 
-## The Linux box (`docker/linux-gnome` + `scripts/linux-box.sh`)
+## The Linux box
 
-The build box the `--remote` backend talks to is a **container you start yourself**:
-Ubuntu 24.04 (GNOME 46 / mutter / GTK3 / WebKitGTK 4.1 — the exact stack the window-frame
-work was verified against), the **Ubuntu GNOME session** on Xvfb, and noVNC so you can
-*see* the window.
+The current box is **[Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)** (separate repo): Ubuntu 26.04 + GNOME 50 (Wayland) desktop in Docker for arm64, with noVNC, native VNC, SSH and a ready Tauri v2 toolchain. That is where the app is compiled and looked at now.
+
+| | |
+|---|---|
+| Repo | [YanxReal/Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) (`make install`) |
+| noVNC / VNC / SSH | `http://localhost:6080/vnc.html` · `localhost:5902` · `ssh ubuntu-arm` (`~/.ssh/config` alias, user `admin`, key auth) |
+| Project path | `/workspace/tauri-react-template` (bind-mounted `./workspace`) |
+| Launch GUI apps | `dev <cmd>` wrapper (injects `WAYLAND_DISPLAY` + session bus) |
+
+Target it with this repo's script (sync + build). Note `--run`/`--dev` assume an X11 `DISPLAY`, so on this Wayland box launch via `dev` instead:
+
+```bash
+LINUX_BUILD_DIR=/workspace/tauri-react-template ./scripts/build-linux.sh --remote ubuntu-arm --debug
+# then in the box (no GPU — software rendering):
+WEBKIT_DISABLE_COMPOSITING_MODE=1 LIBGL_ALWAYS_SOFTWARE=1 dev ./src-tauri/target/debug/tauri-react-template
+```
+
+### Minimal in-repo box (`docker/linux-gnome` + `scripts/linux-box.sh`)
+
+A lighter X11 (Xvfb) alternative that lives in this repo: Ubuntu 24.04 (GNOME 46 / mutter / GTK3 / WebKitGTK 4.1 — the exact stack the window-frame work was verified against), the **Ubuntu GNOME session** on Xvfb, and noVNC so you can *see* the window.
 
 ```bash
 ./scripts/linux-box.sh up        # build the image (first time) + create + start

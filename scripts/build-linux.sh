@@ -6,9 +6,12 @@
 #
 #   --remote [HOST]  push the sources over SSH to a Linux dev box and build
 #                    there. Default host: $LINUX_BUILD_REMOTE or `ubuntu-vnc`
-#                    (the ubuntu-arm-vnc container, which ships Rust + Node 24
-#                    + WebKitGTK dev headers). Full featured: build, run, dev,
-#                    logs, stop. This is the path for macOS.
+#                    (the minimal in-repo box). For Ubuntu-arm-docker
+#                    (https://github.com/YanxReal/Ubuntu-arm-docker) use
+#                    `--remote ubuntu-arm` with
+#                    `LINUX_BUILD_DIR=/workspace/tauri-react-template`.
+#                    Full featured: build, run, dev, logs, stop. This is the
+#                    path for macOS.
 #   --native         build on this machine (must be Linux).
 #
 # With no mode flag: native on Linux, remote when the dev box answers. If the

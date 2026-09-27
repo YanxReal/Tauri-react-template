@@ -82,9 +82,10 @@ AGENTS.md                       This file — agent contract (you are here)
 
 `cfg(target_os = "linux")` code in `lib.rs` (`start_window_resize`, DMABUF env vars — the CSD frame code was removed 2026-09-27) **never compiles
 on macOS**, so `cargo check` here cannot catch a type error in it. The box is where that code
-gets compiled, run and looked at: `./scripts/linux-box.sh up`, then
-`./scripts/linux-box.sh build --debug --run`, and watch it at http://localhost:6080/vnc.html
-(password `dev`). It does not start with Docker (`--restart=no`).
+gets compiled, run and looked at. Current box: [Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)
+(`ssh ubuntu-arm`, project at `/workspace/tauri-react-template`, launch GUI with `dev`).
+Legacy minimal box: `./scripts/linux-box.sh up`, then `./scripts/linux-box.sh build --debug --run`,
+watch at http://localhost:6080/vnc.html (password `dev`). It does not start with Docker (`--restart=no`).
 
 It has already earned its keep: `find_webview` (`lib.rs:619`) used `type_().name()` as if it
 returned an `Option`, which only fails on Linux and was caught by the first box build.

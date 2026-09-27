@@ -69,12 +69,28 @@ Como la caja mantiene `node_modules` y `target/` en disco, los rebuilds son incr
 (segundos) y `--dev` da Vite + hot reload; se descartó un backend de contenedor por build
 porque nunca podría ejecutar la app para probarla.
 
-## La caja Linux (`docker/linux-gnome` + `scripts/linux-box.sh`)
+## La caja Linux
 
-La caja de build con la que habla el backend `--remote` es un **contenedor que arrancas
-tú**: Ubuntu 24.04 (GNOME 46 / mutter / GTK3 / WebKitGTK 4.1 — el stack exacto contra el
-que se verificó el trabajo del marco de ventana), la **sesión GNOME de Ubuntu** sobre Xvfb,
-y noVNC para que puedas *ver* la ventana.
+La caja actual es **[Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)** (repo aparte): escritorio Ubuntu 26.04 + GNOME 50 (Wayland) en Docker para arm64, con noVNC, VNC nativo, SSH y toolchain Tauri v2 lista. Ahí es donde se compila y se mira la app ahora.
+
+| | |
+|---|---|
+| Repo | [YanxReal/Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) (`make install`) |
+| noVNC / VNC / SSH | `http://localhost:6080/vnc.html` · `localhost:5902` · `ssh ubuntu-arm` (alias en `~/.ssh/config`, usuario `admin`, clave) |
+| Ruta del proyecto | `/workspace/tauri-react-template` (bind `./workspace`) |
+| Lanzar apps GUI | wrapper `dev <cmd>` (inyecta `WAYLAND_DISPLAY` + bus de sesión) |
+
+Apúntala con el script de este repo (sync + build). Ojo: `--run`/`--dev` asumen un `DISPLAY` X11, así que en esta caja Wayland lanza vía `dev`:
+
+```bash
+LINUX_BUILD_DIR=/workspace/tauri-react-template ./scripts/build-linux.sh --remote ubuntu-arm --debug
+# luego en la caja (sin GPU — render por software):
+WEBKIT_DISABLE_COMPOSITING_MODE=1 LIBGL_ALWAYS_SOFTWARE=1 dev ./src-tauri/target/debug/tauri-react-template
+```
+
+### Caja mínima del repo (`docker/linux-gnome` + `scripts/linux-box.sh`)
+
+Alternativa ligera X11 (Xvfb) que vive en este repo: Ubuntu 24.04 (GNOME 46 / mutter / GTK3 / WebKitGTK 4.1 — el stack exacto contra el que se verificó el trabajo del marco de ventana), la **sesión GNOME de Ubuntu** sobre Xvfb, y noVNC para que puedas *ver* la ventana.
 
 ```bash
 ./scripts/linux-box.sh up        # compila la imagen (primera vez) + crea + arranca
