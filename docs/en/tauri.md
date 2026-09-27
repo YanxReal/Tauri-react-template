@@ -1,10 +1,10 @@
 # Tauri Backend (`src-tauri`)
 
-Rust + Tauri v2. Entry: `src-tauri/src/lib.rs:584` (`run()`) and `src-tauri/src/main.rs`.
+Rust + Tauri v2. Entry: `src-tauri/src/lib.rs:737` (`run()`) and `src-tauri/src/main.rs`.
 
 ## Commands
 
-Registered in `lib.rs:624`:
+Registered in `lib.rs:774`:
 
 ```rust
 tauri::generate_handler![greet, platform_info, window_effects_set]
@@ -23,7 +23,7 @@ import { invoke } from "@tauri-apps/api/core"
 await invoke<string>("greet", { name: "Tauri" })
 ```
 
-`window_effects_set` is **sync** (runs on the main thread) — required by `window-vibrancy` which must execute on the main thread (`lib.rs:26` comment). Never make it `async`.
+`window_effects_set` is **sync** (runs on the main thread) — required by `window-vibrancy` which must execute on the main thread (`lib.rs:31` comment). Never make it `async`.
 
 Platform dispatch for `set_window_effect` (`lib.rs:31`):
 
@@ -82,29 +82,27 @@ Background and fix documented in `docs/en/native-feel.md`. Implementation in `li
 - `needs_traffic_lights_update` + `ensure_traffic_lights_observer` (`NSWindowDidResizeNotification`/`DidMove`) + **60 fps polling** (`NSTimer` in `NSRunLoopCommonModes`) during `NSEventTrackingRunLoopMode` (live-resize).
 - `setAutoresizingMask(0)` prevents AppKit from re-resetting.
 
-## Linux window frame — native CSD + app-drawn titlebar
+## Linux window frame — frameless + app-drawn titlebar
 
-`tauri.linux.conf.json:11` → `decorations: true` + `transparent: true` + `visible: false` (`:12`). `install_linux_frame` (`lib.rs:527`) latches CSD with an empty hidden `GtkHeaderBar` (`set_no_show_all(true)`, required because tao uses `show_all()`). GTK draws the native CSD background and shadow with a real alpha channel; the app draws its titlebar as one 44px header with drag region and caption buttons (`header.tsx:222`).
+`tauri.linux.conf.json:11` → `decorations: false` + `transparent: false` + `visible: false` (`:12-13`). The window is frameless and opaque: square system corners, no alpha channel — accepted deliberately, see [Native Feel](./native-feel.md#0-linux--frameless-window-square-system-corners-deliberate). The app draws its titlebar as one fixed 44px header with drag region and caption buttons (`header.tsx:222` + `WindowControls`).
 
-The window has the GTK CSS class `tauri-app` (`APP_FRAME_CLASS`, `lib.rs:385`), following Chromium's GTK style-class convention. An application CSS provider styles both GTK nodes (`lib.rs:548`): `window.background.tauri-app { border-radius: 16px }` — the window background painted square and showed through at the tips — and `window.background.tauri-app decoration { border-radius: 16px; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5) }`, a single shadow. `.app-shell` uses the same radius (`globals.css:247`). GTK themes/user GTK CSS can target `window.background.tauri-app`.
+`setup()` centers the window and then calls `window.show()`: born hidden, shown already centered, no flash.
 
-**Resize:** `install_linux_resize_grip` (`lib.rs:441`) captures presses in the CSD shadow margin and delegates resize to GTK's `begin_resize_drag`; the inner 6px webview edge uses `useWindowResizeEdges` + `start_window_resize` (`lib.rs:88`).
-
-`transparent: true` gives the window a real alpha channel: tao installs the RGBA visual before realize, so the compositor blends the 16px arc and the desktop shows through the corners. Full rationale and Chromium source comparison: [Native Feel](./native-feel.md#0-linux--gtk-csd-frame--app-drawn-titlebar-chromium-inspired).
+**Resize:** a frameless window gets no WM resize handles, so the inner 6px webview edge uses `useWindowResizeEdges` + `start_window_resize` (`lib.rs:88`), which drives GTK's `begin_resize_drag`.
 
 ## Windows — frameless overlay titlebar (`tauri-plugin-decorum`)
 
-`tauri.windows.conf.json:12` → `decorations: false`: the window is frameless and the app draws the titlebar (Edge / VS Code model). `setup()` calls `create_overlay_titlebar()` (`lib.rs:651`) from the community plugin [decorum](https://github.com/clearlysid/tauri-plugin-decorum), registered only on Windows (`lib.rs:621`). `transparent: true` is kept so Mica / `window_effects_set` still shows through.
+`tauri.windows.conf.json:12` → `decorations: false`: the window is frameless and the app draws the titlebar (Edge / VS Code model). `setup()` calls `create_overlay_titlebar()` (`lib.rs:814`) from the community plugin [decorum](https://github.com/clearlysid/tauri-plugin-decorum), registered only on Windows (`lib.rs:774`). `transparent: true` is kept so Mica / `window_effects_set` still shows through.
 
 The caption buttons are React (`apps/web/src/components/layout/window-controls.tsx:61`, rendered by `header.tsx:224`); hovering maximize for 620 ms invokes `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`) to open the Windows 11 Snap Layouts flyout. Permissions: `capabilities/default.json:6` (`allow-minimize` / `allow-close` / `allow-is-maximized`) + `capabilities/default.json:15` (`allow-set-focus`, required by the `setFocus().then(invoke(...))` chain) + `capabilities/windows.json:7` (`decorum:allow-show-snap-overlay`, `platforms: ["windows"]` — the plugin is a `cfg(windows)` dep, so a macOS/Linux `cargo check` would reject the permission if it lived in `default.json`).
 
 `tauri.windows.conf.json:13` → `scrollBarStyle: "fluentOverlay"`: WebView2 draws the **overlay** scrollbar (thin pill, auto-hides, floats over the content) instead of the classic bar with a gutter and arrow buttons. It needs WebView2 Runtime >= 125.0.2535.41 and is a no-op elsewhere. Required companion change: the scroll container is `.app-scroll` (content only) so the bar never steals width from the header — see `native-feel.md`.
 
-`lib.rs:655` — `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` on Windows 11 (only in `target_os = "windows"` deps — `Cargo.toml:57`): a frameless window is square by default, so this call is what keeps the rounded corners. Full rationale in `docs/en/native-feel.md`.
+`lib.rs:810` — `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND)` on Windows 11 (only in `target_os = "windows"` deps — `Cargo.toml:57`): a frameless window is square by default, so this call is what keeps the rounded corners. Full rationale in `docs/en/native-feel.md`.
 
 ## Desktop vs mobile entry
 
-- Desktop: `run()` via `main.rs` → `lib.rs:584`.
+- Desktop: `run()` via `main.rs` → `lib.rs:737`.
 - iOS/macOS unified Xcode target: `start_app()` (`lib.rs:149`, `#[no_mangle] extern "C"`) called from `main.mm` in the generated Xcode project. Required for `cargo check --target aarch64-apple-ios`.
 - Mobile entry point `#[cfg_attr(mobile, tauri::mobile_entry_point)]` wraps `run()`.
 

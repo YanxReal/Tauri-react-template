@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Regenera src-tauri/gen/apple (Xcode project unificado iOS+macOS) desde el
-# template durable en src-tauri/vendor/tauri-cli-2.11.4/templates/mobile/ios/.
+# template durable en src-tauri/vendor/tauri-cli-2.12.0/templates/mobile/ios/.
 # gen/ está gitignored — el template es la fuente de verdad: editar SIEMPRE
 # el template, NUNCA el .xcodeproj generado (no persiste).
 #
@@ -11,10 +11,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-TPL="$ROOT/src-tauri/vendor/tauri-cli-2.11.4/templates/mobile/ios"
+TPL="$ROOT/src-tauri/vendor/tauri-cli-2.12.0/templates/mobile/ios"
 GEN="$ROOT/src-tauri/gen/apple"
 XCODEGEN="${XCODEGEN:-xcodegen}"
-TAURI_CLI="${TAURI_CLI:-@tauri-apps/cli@2.11.4}"
+TAURI_CLI="${TAURI_CLI:-@tauri-apps/cli@2.12.0}"
 
 if [ ! -d "$TPL" ]; then
   echo "Template no encontrado: $TPL" >&2

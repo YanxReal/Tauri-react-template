@@ -48,13 +48,11 @@ function CaptionButton({
 /**
  * Caption buttons (minimize / maximize-restore / close).
  *
- * Windows is **frameless** (`decorations:false`) with `tauri-plugin-decorum`
- * providing the overlay, and Linux uses a **latched CSD** frame
- * (`install_linux_frame`) whose native GTK titlebar is hidden — both draw their
- * own titlebar, so this component provides the controls and the fixed 44px
- * header stays the fusioned draggable band (`data-tauri-drag-region` +
- * `useWindowDragRegion`). macOS keeps the native traffic lights, hence `Header`
- * renders this only for Win/Linux.
+ * Windows (`decorations:false` + decorum overlay) y Linux (`decorations:false`,
+ * frameless) dibujan su propia titlebar, así que este componente aporta los
+ * controles y la banda fija de 44px del header queda como franja arrastrable
+ * fusionada (`data-tauri-drag-region` + `useWindowDragRegion`). macOS conserva
+ * los traffic lights nativos, por eso `Header` solo lo renderiza en Win/Linux.
  *
  * Hovering *maximize* opens the Windows 11 Snap Layouts flyout through
  * decorum's `show_snap_overlay` (Win+Z) — Windows only: the plugin is a

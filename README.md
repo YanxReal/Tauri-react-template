@@ -103,13 +103,13 @@ resetea a `12px` nativos en cada pase de layout (`setContentView:`, webview load
 - `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (macOS 26+ más fiable que `WindowEvent`).
 - Polling live-resize a `60fps` (`NSTimer` en `NSRunLoopCommonModes` + `needs_update` `±0.6px`) mientras `inLiveResize` — dispara durante `NSEventTrackingRunLoopMode`, no solo al soltar.
 
-Posición final: `Close 22.5 / Mini 44.5 / Zoom 66.5` (22px centros, `15px` con `grow 3`, `lower 8`, `shift_right 16` + `extra_gap 0/2/4`, `pl-[96px] sm:pl-[108px]` en header). `setAutoresizingMask(0)` evita que AppKit los vuelva a autoresize entre frames. Ver `lib.rs:adjust_macos_traffic_lights` + `ensure_traffic_lights_observer`.
+Posición final: `Close 17.5 / Mini 39.5 / Zoom 61.5` (`TRAFFIC_LIGHTS_X`, `lib.rs:160`; centros 26px desde arriba = mitad de la banda de 52px). AppKit resetea a 12px en cada layout, asi que `adjust_macos_traffic_lights` los vuelve a colocar con snap absoluto e histeresis de ±0.6px; `grow 3` solo la primera vez, `shift_right 16` + `extra_gap 0/2/4`, `pl-[96px] sm:pl-[108px]` en header). `setAutoresizingMask(0)` evita que AppKit los vuelva a autoresize entre frames. Ver `lib.rs:adjust_macos_traffic_lights` + `ensure_traffic_lights_observer`.
 
 - `dragDropEnabled: false` + `zoomHotkeysEnabled: false` en TODAS las ventanas (`tauri.conf.json`
   + `tauri.{macos,windows,linux}.conf.json` — las 4 configs, no solo macOS).
 - Viewport `user-scalable=no`, `maximum-scale=1.0` (desactiva el zoom del webview).
 - `globals.css`: `user-select:none` / `-webkit-user-drag:none` (excepto inputs/textarea/contenteditable),
-  `touch-action: manipulation` en `html,body` (scroll nativo conservado y fluido en WebKit).
+  `touch-action: pan-x pan-y` en `html,body` (scroll 100% nativo, sin pinch/zoom; `manipulation` se probo y se descarto, ver `ae5be97`).
 - `main.tsx`: bloqueo de `dragstart`, de zoom con rueda Ctrl/⌘, y links externos → `plugin-opener`.
 - `tauri-plugin-prevent-default` registrado con `Flags::debug()`: en **release** bloquea los
   defaults del webview (context menu, devtools, reload); en **debug** lo conserva. El plugin
@@ -136,9 +136,9 @@ build real de cada plataforma.
 
 ### Linux — limitaciones conocidas / Known issues
 
-**0. Marco Linux — CSD GTK + titlebar propia (inspirado en Chromium/VS Code):** `tauri.linux.conf.json` → `decorations: true`, `transparent: true`, `visible: false`. `install_linux_frame` (`src-tauri/src/lib.rs:527`) engancha CSD con una `GtkHeaderBar` vacía y oculta (`set_no_show_all(true)`); GTK dibuja fondo y sombra con canal alfa real. La ventana recibe la clase GTK `tauri-app`; un `GtkCssProvider` aplica radio de 16px a `window.background` y al nodo `decoration` (con una sola `box-shadow`) (`lib.rs:548`) y `.app-shell` coincide (`globals.css:247`). Los temas GTK pueden seleccionar `window.background.tauri-app`. La titlebar visible la dibuja la app: banda fija de 44px (`data-tauri-drag-region` + `useWindowDragRegion`) con `WindowControls`, como en Windows.
+**0. Marco Linux — frameless + titlebar propia (como Windows):** `tauri.linux.conf.json` → `decorations: false`, `transparent: false`, `visible: false`. Sin marco del SO: esquinas cuadradas del sistema, aceptadas deliberadamente (27-09-2026) tras varias iteraciones de CSD redondeado cuyas puntas transparentes seguían viéndose. La titlebar visible la dibuja la app: banda fija de 44px (`data-tauri-drag-region` + `useWindowDragRegion`) con `WindowControls`. `setup()` centra y llama a `window.show()`: nace oculta y se muestra ya centrada.
 
-**Resize:** GTK CSD no entregaba de forma fiable el agarre de resize a tao. `install_linux_resize_grip` extiende la región de entrada al margen de sombra y llama a `gtk_window_begin_resize_drag`; `useWindowResizeEdges` + `start_window_resize` cubren el borde interior de 6px. Verificado en los 8 bordes/esquinas y el margen CSD. `transparent: true` da el canal alfa que mezcla las esquinas. Ver [Native Feel](docs/en/native-feel.md#0-linux--gtk-csd-frame--app-drawn-titlebar-chromium--vs-code-pattern).
+**Resize:** la frameless no recibe agarres del WM; `useWindowResizeEdges` + `start_window_resize` cubren el borde interior de 6px y lanzan `begin_resize_drag` de GTK. Ver [Native Feel](docs/en/native-feel.md#0-linux--frameless-window-square-system-corners-deliberate).
 
 **1. Glass cards + WebKitGTK → glitches amarillos y RAM desbocada (`a2.png`):** `backdrop-blur` + `DMABUF` en WebKitGTK 4.1 (sobre todo NVIDIA/Wayland) dispara `AcceleratedSurfaceDMABuf was unable to construct a complete framebuffer` y `Error 71` + RAM al redimensionar (Tauri `linux-graphics` docs, `wry#1747`). **Solución actual (veto):** en Linux se fuerza `glass OFF` — `glass-cards-provider.tsx` `useGlassCards()` devuelve `enabled:false` + `supported:false` si `platform==='linux'`, `GlassCardsToggle` deshabilitado con tooltip, y `globals.css` `html.linux .glass-card/backdrop-blur { backdrop-filter:none; background:var(--card) }`. Además `src-tauri/src/lib.rs` fija `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes de `Builder` y `html.linux { backdrop-filter:none }` para header/shell.
 
@@ -151,7 +151,7 @@ Se deja el **veto** como está; si quieres vidrio en Linux, implementamos el Pla
 ## Mobile — iOS/macOS (Xcode) y Android
 
 - `src-tauri/gen/` está gitignored (autogen). La fuente de verdad del proyecto Xcode es el
-  template `src-tauri/vendor/tauri-cli-2.11.4/templates/mobile/ios/` (target único
+  template `src-tauri/vendor/tauri-cli-2.12.0/templates/mobile/ios/` (target único
   `tauri-react-template_Apple`, destinos **iOS + macOS** vía `apple.xcconfig` y la phase
   "Build Rust Code"). Regenera y compila con:
 
@@ -164,8 +164,8 @@ Se deja el **veto** como está; si quieres vidrio en Linux, implementamos el Pla
 - Usa SIEMPRE el CLI stock (el `cargo tauri` instalado puede ser un build modificado):
 
   ```bash
-  pnpm dlx @tauri-apps/cli@2.11.4 ios build --target aarch64-sim --debug
-  pnpm dlx @tauri-apps/cli@2.11.4 android build --debug --target aarch64
+  pnpm dlx @tauri-apps/cli@2.12.0 ios build --target aarch64-sim --debug
+  pnpm dlx @tauri-apps/cli@2.12.0 android build --debug --target aarch64
   make dev:ios            # iOS simulator (cargo tauri parcheado + simctl, sin EBADARCH)
   make dev-ios-physical   # iPhone físico (cargo tauri parcheado + --host 169.254.x.x)
   make dev-android-emulator   # APK debug → emulador
@@ -178,18 +178,18 @@ Se deja el **veto** como está; si quieres vidrio en Linux, implementamos el Pla
 
 Xcode 26 hace que `xcrun devicectl list devices --json-output` liste también los **simuladores** (`reality: "simulated"`). El `cargo-mobile2` del registry (0.22.4) no los filtraba y `tauri ios dev` los trataba como físico → `aarch64-apple-ios`/`-sdk iphoneos`/`devicectl install` sobre un simulador → `MIInstallerErrorDomain 15 / EBADARCH [iOS,arm64] vs [iOS-simulator]`.
 
-**Fix en plantilla (no en `gen`, nunca tocar `gen`):**
-- `src-tauri/vendor/cargo-mobile2-0.22.4/src/apple/device/devicectl/device_list.rs` añade `reality: Option<String>` y filtro `reality != "simulated"` (ver `Prestly`).
-- `src-tauri/vendor/tauri-cli-2.11.4/Cargo.toml` parchea `[patch.crates-io] cargo-mobile2 = { path = "../cargo-mobile2-0.22.4" }`.
+**Base y retoques (no en `gen`, nunca tocar `gen`):**
+- Base `tauri-cli 2.12.0` oficial, que ya trae `cargo-mobile2 0.22.5` con el fix de Xcode 27 (`ee65fb1`) — sin `[patch.crates-io]`.
+- 3 retoques locales en `src-tauri/vendor/tauri-cli-2.12.0/src/mobile/`: `fallback_options()` (Xcode standalone sin CLI padre), target `_iOS` → `_Apple` y reemplazo simplificado de `{{app.name}}` en `project.rs`.
 
 Instálalo una vez por clon:
 ```bash
 make install-tauri-cli # compila vendor/tauri-cli y lo instala en ~/.cargo/bin/cargo-tauri
 cargo tauri ios dev "iPhone 17" # usa el binario parcheado → Starting simulator ... -sdk iphonesimulator → simctl
 ```
-`pnpm tauri ios dev` (Node CLI) sigue usando el `cargo-mobile2` del registry sin parche — para iOS usa `cargo tauri`.
+`pnpm tauri ios dev` (Node CLI 2.12.0) ya trae el fix vía `cargo-mobile2 0.22.5` — pero para iOS físico usa `cargo tauri` (binario local compilado del vendor con los retoques).
 
-> **Al actualizar `cargo-mobile2`:** el fix ya está en `cargo-mobile2` `0.22.5` (dev, commit `ee65fb1` — *Fixed iOS simulators being listed as connected physical devices on Xcode 27*) pero aún no está publicado en crates.io (último publicado `0.22.4` del 29 Apr 2025). **Esperamos al release oficial** y dejamos el vendor parcheado tal cual. Cuando `0.22.5` salga y `tauri-cli` lo pida, se borrará el vendor y el `[patch]`. Si actualizas manualmente antes, re-vendorea la nueva versión y reaplica el filtro `reality`, o el bug vuelve.
+> **Actualizado a `cargo-mobile2 0.22.5` (17-08-2026):** el fix oficial de Xcode 27 ya está en crates.io y `tauri-cli 2.12.0` lo pide (`^0.22.5`). Se borró la copia parcheada de mobile2 y el `[patch]`; el vendor ahora es rebase del 2.12.0 stock + 3 retoques locales (ver arriba).
 
 ### Info.plist — plantilla vs autogen
 

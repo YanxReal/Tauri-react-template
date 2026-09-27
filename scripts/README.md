@@ -17,7 +17,7 @@
 
 La fuente de verdad del proyecto Xcode es el template:
 
-    src-tauri/vendor/tauri-cli-2.11.4/templates/mobile/ios/
+    src-tauri/vendor/tauri-cli-2.12.0/templates/mobile/ios/
 
 `src-tauri/gen/apple` se regenera **completo** desde ahí (está gitignored y NO persiste):
 
@@ -124,8 +124,8 @@ El `cargo-tauri` instalado en esta máquina es un build modificado de Prestly (g
 proyectos Prestly-branded: `com.yanxstudio.prestly`, `web-app`, `yarn`). Para ESTE template
 usar SIEMPRE el CLI stock (mismo código Rust que la versión npm):
 
-    pnpm dlx @tauri-apps/cli@2.11.4 ios build --target aarch64-sim --debug
-    pnpm dlx @tauri-apps/cli@2.11.4 android build --debug --target aarch64
+    pnpm dlx @tauri-apps/cli@2.12.0 ios build --target aarch64-sim --debug
+    pnpm dlx @tauri-apps/cli@2.12.0 android build --debug --target aarch64
 
 ### Hot reload (full IPC) — `tauri ios dev`
 
@@ -148,5 +148,5 @@ host y debe poder consultar el server en esa IP.
 
 ## Sin Xcode (Linux/Windows/macOS sin Xcode)
 
-Todo compila en desktop (`pnpm dev`, `pnpm dlx @tauri-apps/cli@2.11.4 dev`, `make dev`).
+Todo compila en desktop (`pnpm dev`, `pnpm dlx @tauri-apps/cli@2.12.0 dev`, `make dev`).
 iOS/Android solo con Xcode / Android SDK.

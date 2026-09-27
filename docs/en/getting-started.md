@@ -63,7 +63,7 @@ make dev              # alias — also centers the window and handles signing id
 }
 ```
 
-Why `pnpm --filter web dev` and not `turbo dev`? Turbo enables its TUI (`?1000h` mouse mode). When `tauri dev` kills it with `SIGTERM` the terminal is left in mouse mode and prints `35;22;36M`. Direct Vite avoids that — see `docs/en/native-feel.md` and `src-tauri/src/lib.rs:612`.
+Why `pnpm --filter web dev` and not `turbo dev`? Turbo enables its TUI (`?1000h` mouse mode). When `tauri dev` kills it with `SIGTERM` the terminal is left in mouse mode and prints `35;22;36M`. Direct Vite avoids that — see `docs/en/native-feel.md` and `src-tauri/src/lib.rs:758`.
 
 ### Environment variables
 

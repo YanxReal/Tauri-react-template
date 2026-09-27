@@ -1,6 +1,6 @@
 # Changelog
 
-> Evolución completa de esta plantilla — 20 commits desde `455897d` hasta `9da8602`. Cada entrada explica **el motivo detrás del código no obvio**. Léelo antes de eliminar cualquier línea marcada `// Prestly pattern` o `// HuLa fix`.
+> Evolución completa de esta plantilla — 52 commits desde `455897d` (inicial) hasta HEAD. La tabla de hitos de `AGENTS.md` §1 cubre los 20 primeros; el resto es el arco del marco de ventana Windows/Linux documentado abajo. Cada entrada explica **el motivo detrás del código no obvio**. Léelo antes de eliminar cualquier línea marcada `// Prestly pattern` o `// HuLa fix`.
 
 ## 2026-08-30 — Base
 
@@ -30,7 +30,7 @@
 - **El commit grande de sensación nativa:**
   - `dragDropEnabled:false` + `zoomHotkeysEnabled:false` en **las 4** ventanas `tauri.*.conf.json`.
   - Viewport `user-scalable=no, maximum-scale=1.0` (`index.html:5`), CSS `user-select:none` + `-webkit-user-drag:none` + `touch-action: pan-x pan-y` (`globals.css:137`), guards JS `dragstart` + `wheel` (`main.tsx:21`).
-  - `tauri-plugin-prevent-default` con `Flags::debug()` (`lib.rs:612`) — bloquea menú/context/reload/devtools en release, los mantiene en debug.
+  - `tauri-plugin-prevent-default` con `Flags::debug()` (`lib.rs:758`) — bloquea menú/context/reload/devtools en release, los mantiene en debug.
 - Por qué `touch-action: pan-x pan-y` y no `manipulation`/`none`: conserva scroll nativo; bloquea pinch-zoom sin matar gestos. Ver `ae5be97`.
 
 ### `ae5be97` `fix: restore normal scrolling in WebKit — touch-action manipulation instead of pan-x pan-y` (superseded)
@@ -42,13 +42,13 @@
 ## 2026-08-30 — Crystal / glass
 
 ### `f997723` `feat: efecto cristal — toggle de translucidez nativa (window-vibrancy)`
-- Crate `window-vibrancy 0.8`, comando **sync** `window_effects_set {enabled, dark?}` (`lib.rs:26`, `lib.rs:125`) — `NSVisualEffectView` en macOS (`HudWindow`/`UnderWindowBackground`), Mica en Windows 11; `unsupported` en resto. `VibrancyProvider` (`vibrancy-provider.tsx`) + `localStorage: vibrancy` + `html.vibrancy` → `globals.css:177` body transparente.
+- Crate `window-vibrancy 0.8`, comando **sync** `window_effects_set {enabled, dark?}` (`lib.rs:31`, `lib.rs:125`) — `NSVisualEffectView` en macOS (`HudWindow`/`UnderWindowBackground`), Mica en Windows 11; `unsupported` en resto. `VibrancyProvider` (`vibrancy-provider.tsx`) + `localStorage: vibrancy` + `html.vibrancy` → `globals.css:177` body transparente.
 
 ### `efc552c` `feat: el efecto cristal sigue el tema de la app`
 - `VibrancyProvider` observa `html.dark` vía `MutationObserver` y re-aplica material al cambiar de tema. macOS elige material según `dark` (el cristal sigue el tema de la app, no el del sistema).
 
 ### `5fb6077` `feat: ventana nativa - esquinas redondeadas, arrastre y cristal por tema`
-- Corrige `window-vibrancy` bajo `[target.'cfg(windows)']` — lo mueve a `[dependencies]` principal para que macOS lo enlace. Añade crate `windows = "0.61"` DWM (`Cargo.toml:57`). `DwmSetWindowAttribute(DWMWCP_ROUND)` para frameless Windows 11 (`lib.rs:655`). Nuevo `native-chrome.ts` (`usePlatform`, `useMacDragRegion`), header con botones nativos (`header.tsx`).
+- Corrige `window-vibrancy` bajo `[target.'cfg(windows)']` — lo mueve a `[dependencies]` principal para que macOS lo enlace. Añade crate `windows = "0.61"` DWM (`Cargo.toml:57`). `DwmSetWindowAttribute(DWMWCP_ROUND)` para frameless Windows 11 (`lib.rs:810`). Nuevo `native-chrome.ts` (`usePlatform`, `useMacDragRegion`), header con botones nativos (`header.tsx`).
 
 ### `73d445a` `fix: ventana nativa — arrastre con banda reservada y cristal de fondo`
 - Reserva **banda de 36px** (`--native-titlebar-height`) para drag, padding `app-shell`, header sticky en `top:36px`. Cristal de ventana completa: `color-mix(var(--background) 62%, transparent)` para que la translucidez siga el tema.
@@ -63,9 +63,9 @@
 
 ### `938f89a` `fix: traffic lights live-resize sin flicker + header alineado + windows NSIS/Wix`
 - **Fix HuLa 3-mecanismos para traffic lights de macOS** (`lib.rs:160`):
-  1. `WindowEvent::Focused/Resized/ScaleFactorChanged` (`lib.rs:675`)
+  1. `WindowEvent::Focused/Resized/ScaleFactorChanged` (`lib.rs:838`)
   2. `NSNotificationCenter` `NSWindowDidResizeNotification` + `DidMove` (`lib.rs:331`)
-  3. **Polling a 60 fps** (`NSTimer` en `NSRunLoopCommonModes` + `needs_update` `±0.6px`, `lib.rs:702`) — dispara durante `NSEventTrackingRunLoopMode`
+  3. **Polling a 60 fps** (`NSTimer` en `NSRunLoopCommonModes` + `needs_update` `±0.6px`, `lib.rs:865`) — dispara durante `NSEventTrackingRunLoopMode`
   - Targets `Close 22.5 / Mini 44.5 / Zoom 66.5`, `grow 3`, `lower 8`, `shift 16` + `extra_gap`, `setAutoresizingMask(0)`, header `pl-[96px] sm:pl-[108px]`.
 - También: assets instalador Windows NSIS/Wix (`nsis-header.bmp`, `wix-banner.bmp`), `LICENSE.rtf`, iconos multi-tamaño `src-tauri/icons/`.
 - Verificación: `pnpm build` + `cargo check` en macOS + Linux (docker `webkit2gtk-4.1`).
@@ -73,7 +73,7 @@
 ## 2026-09-02 — Glass y curvas en Linux
 
 ### `93657d3` `fix: linux glass veto + curvas ventana + toggle combinado`
-- **Glitches amarillos Linux** (`a2.png`) — WebKitGTK 4.1 + DMABUF + NVIDIA/Wayland + `backdrop-blur` → `AcceleratedSurfaceDMABuf was unable to…` + `Error 71` + RAM. Fix: `GlassCardsProvider` retorna `false` si `platform==='linux'`, `GlassEffectToggle` deshabilitado, `globals.css:237` quita `backdrop-filter` → `var(--card)`, `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes de `Builder` (`lib.rs:596`). `html.linux .app-shell {border-radius:10px}` corrige ventana plana (`a1.png`). Nuevo `scripts/build-linux.sh`.
+- **Glitches amarillos Linux** (`a2.png`) — WebKitGTK 4.1 + DMABUF + NVIDIA/Wayland + `backdrop-blur` → `AcceleratedSurfaceDMABuf was unable to…` + `Error 71` + RAM. Fix: `GlassCardsProvider` retorna `false` si `platform==='linux'`, `GlassEffectToggle` deshabilitado, `globals.css:237` quita `backdrop-filter` → `var(--card)`, `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` antes de `Builder` (`lib.rs:749`). `html.linux .app-shell {border-radius:10px}` corrige ventana plana (`a1.png`). Nuevo `scripts/build-linux.sh`.
 
 ## 2026-09-05 — Sombra en Linux
 
@@ -106,12 +106,12 @@ La ventana usaba la barra de scroll por defecto del OS en las tres plataformas �
 
 ## 2026-09-19 — Windows: titlebar overlay con decorum (estilo Edge)
 
-Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: false`, `transparent: true` se mantiene por Mica) y la titlebar la dibuja la app: el plugin de la comunidad [decorum](https://github.com/clearlysid/tauri-plugin-decorum) (deps solo para el target Windows en `Cargo.toml`; `lib.rs:621`) más `create_overlay_titlebar()` en `setup()` (`lib.rs:651`). Es el modelo Edge / VS Code — una sola banda fija de 44px en vez del marco del OS encima del header.
+Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: false`, `transparent: true` se mantiene por Mica) y la titlebar la dibuja la app: el plugin de la comunidad [decorum](https://github.com/clearlysid/tauri-plugin-decorum) (deps solo para el target Windows en `Cargo.toml`; `lib.rs:774`) más `create_overlay_titlebar()` en `setup()` (`lib.rs:814`). Es el modelo Edge / VS Code — una sola banda fija de 44px en vez del marco del OS encima del header.
 
 - `apps/web/src/components/layout/window-controls.tsx:61` pinta minimizar / maximizar-restaurar / cerrar (iconos lucide, zona de 46px, hover rojo en cerrar), montado por `header.tsx:224` solo si `platform === 'windows'`.
 - Los botones quedan **pegados al borde derecho** (`window-controls.tsx:120`, sin `pr-2`): el botón de cerrar de 46px termina exactamente en el borde del cliente, así que su hover rojo llega a la esquina y DWM lo recorta con el radio de la ventana. Misma geometría que Edge/Chromium (46px de ancho, icono a ~23px del borde).
 - Snap Layouts: hover de 620 ms sobre maximizar (`window-controls.tsx:8`) enfoca la ventana e invoca `plugin:decorum|show_snap_overlay` (`window-controls.tsx:104`) — decorum pulsa Win+Z y luego Alt para ocultar los números. Chromium responde `WM_NCHITTEST` con `HTMAXBUTTON` para el flyout real de hover; tao no expone ese hook, así que este es el equivalente más cercano. Verificado en una VM Windows 11 build 26200: minimizar / maximizar / restaurar / cerrar funcionan, arrastrar por el header mueve la ventana, `DwmGetWindowAttribute` devuelve `corner = 2` (`DWMWCP_ROUND`), `WS_THICKFRAME` sigue puesto (redimensionable) y el flyout abre tras el hover — ver `troubleshooting.md` para el gotcha de la ventana negra cuando la app se lanza desde un contexto de servicio.
-- `globals.css:230` oculta la titlebar de 32px que inyecta decorum (`[data-tauri-decorum-tb]`), que taparía el header y se tragaría los clics de los botones; la banda de arrastre sigue siendo nuestra (`data-tauri-drag-region` + `useWindowDragRegion`, `header.tsx:68`). El resize sigue funcionando (tao hace hit-test de los cantos en ventanas undecorated redimensionables) y `DWMWCP_ROUND` (`lib.rs:655`) mantiene las esquinas redondeadas.
+- `globals.css:230` oculta la titlebar de 32px que inyecta decorum (`[data-tauri-decorum-tb]`), que taparía el header y se tragaría los clics de los botones; la banda de arrastre sigue siendo nuestra (`data-tauri-drag-region` + `useWindowDragRegion`, `header.tsx:68`). El resize sigue funcionando (tao hace hit-test de los cantos en ventanas undecorated redimensionables) y `DWMWCP_ROUND` (`lib.rs:810`) mantiene las esquinas redondeadas.
 - Permisos: `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` de vuelta en `capabilities/default.json:6` (el último está en `capabilities/default.json:15`; sin él `setFocus()` se rechaza y el `catch` de `window-controls.tsx` se lo traga, así que el flyout de Snap Layouts nunca abre en silencio), y `decorum:allow-show-snap-overlay` en su propia `capabilities/windows.json:7` con `platforms: ["windows"]` — el plugin es dep `cfg(windows)`, así que tener el permiso en `default.json` hacía fallar cualquier `cargo check` en macOS/Linux con `Permission decorum:allow-show-snap-overlay not found`. Linux mantiene la decoración nativa completa; macOS intacto.
 
 ## 2026-09-19 — Titlebar: banda fija de 44px + hover legible en los controles
@@ -162,9 +162,9 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 ## 2026-09-23 — Linux: titlebar propia sobre un marco CSD "latched" (superseded)
 
 - Dos bugs del diseño del 2026-09-22, ambos comprobados en GNOME 46: (1) las esquinas de **abajo** salían cuadradas — el CSD de GTK redondea el fondo de la ventana, pero el webview lo tapa (las de arriba solo se veían bien porque las cubría la headerbar de GTK); (2) la `GtkHeaderBar` **no era arrastrable** — tao crea la ventana en modo SSD, así que GTK nunca cablea el arrastre de CSD (el arrastre del header de la app **sí** funcionaba).
-- El arreglo sigue el patrón "custom frame" de Edge / VS Code / Chromium, o sea el mismo modelo que Windows: la **titlebar la dibuja la app** (banda de 44px de `header.tsx` + `WindowControls` para Win/Linux, `header.tsx:222`) e `install_linux_frame` (`lib.rs:527`) engancha CSD con una `GtkHeaderBar` vacía y oculta más el fondo de ventana de GTK transparente, así que GTK aporta solo su **sombra nativa**.
+- El arreglo sigue el patrón "custom frame" de Edge / VS Code / Chromium, o sea el mismo modelo que Windows: la **titlebar la dibuja la app** (banda de 44px de `header.tsx` + `WindowControls` para Win/Linux, `header.tsx:222`) e `install_linux_frame` (`lib.rs:672`) engancha CSD con una `GtkHeaderBar` vacía y oculta más el fondo de ventana de GTK transparente, así que GTK aporta solo su **sombra nativa**.
 - `set_no_show_all(true)` es crítico: tao muestra la ventana con `window.show_all()` (`vendor/tao-0.35.3/src/platform_impl/linux/event_loop.rs:308`), que re-mostraba la barra oculta y se comía 43px arriba.
-- `globals.css:247` → `html.linux .app-shell { border-radius: 10px }`: con el marco transparente la forma la define el shell.
+- `globals.css:245` → `html.linux .app-shell { border-radius: 10px }`: con el marco transparente la forma la define el shell.
 - **`transparent: true`** (`tauri.linux.conf.json:13`) es lo que hace que las esquinas *se vean* curvas. Con `transparent: false` el radio se aplicaba y las esquinas eran transparentes en el DOM, pero el **fondo del propio webview** seguía opaco (el *base* de Adwaita, `#1e1e1e`) y rellenaba el área fuera del radio, así que se leían como cuadradas. tao instala el visual RGBA **antes del realize** y solo para ventanas transparentes, y wry solo limpia el fondo del webview si la ventana es transparente — la pieza que al viejo `apply_linux_window_shadow` le faltaba. Verificado con un barrido de píxeles por fila en la esquina: con `transparent: false` el borde del contenido es una recta (`inset=0` en todas las filas); con `transparent: true` sigue el arco (`inset 8 → 4 → 2 → 1 → 0`) y los píxeles de la esquina son el escritorio.
 - Verificado en la caja Ubuntu ARM: arrastre (`80,80 → 179,180`), minimizar (`_NET_WM_STATE_HIDDEN`), maximizar (`MAXIMIZED_HORZ/VERT` + icono de restaurar), doble click para restaurar, las 4 esquinas redondeadas con sombra, en claro y oscuro.
 
@@ -181,7 +181,7 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 ## 2026-09-24 — Linux: decoración CSD nativa, sin overrides (superseded)
 
 - Simplifica el marco después de medir las alternativas. `transparent: true` + un override del radio del `decoration` + un clip de forma X11 sobre el webview sí redondeaban las 4 esquinas, pero el clip se pierde cada vez que WebKit recrea su ventana de render (una recarga de página), y con `transparent: false` la superficie del webview sigue opaca, así que el clip era lo único que daba forma a las esquinas.
-- Diseño final: GTK conserva su decoración **nativa** intacta. `install_linux_frame` (`lib.rs:527`) solo engancha CSD con una `GtkHeaderBar` vacía y oculta; `transparent: false`; `.app-shell` lleva `border-top-left/right-radius: 8px` (el `$window_radius` de Adwaita) para que el contenido no tape el redondeo de arriba de GTK. GTK3 solo redondea arriba (`decoration { border-radius: r r 0 0 }`), así que las esquinas de abajo son rectas — GTK3 nativo.
+- Diseño final: GTK conserva su decoración **nativa** intacta. `install_linux_frame` (`lib.rs:672`) solo engancha CSD con una `GtkHeaderBar` vacía y oculta; `transparent: false`; `.app-shell` lleva `border-top-left/right-radius: 8px` (el `$window_radius` de Adwaita) para que el contenido no tape el redondeo de arriba de GTK. GTK3 solo redondea arriba (`decoration { border-radius: r r 0 0 }`), así que las esquinas de abajo son rectas — GTK3 nativo.
 - La titlebar sigue siendo de la app (header de 44px + `WindowControls`), que es el objetivo: la SSD de mutter no puede seguir al tema de la app (`_GTK_THEME_VARIANT` se lee una vez, `LOAD_INIT`) y su titlebar no es arrastrable con tao.
 - Medido con barrido de píxeles en la esquina superior-izquierda: el arco de 8px está, relleno con el fondo del webview (`#1e1e1e` oscuro / blanco claro) — con tema oscuro se lee como un borde redondeado algo más claro, el color del marco nativo. Arrastre, minimizar, maximizar y restaurar verificados.
 
@@ -190,8 +190,8 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 ## 2026-09-24 — Linux: clase GTK del marco + CSD nativo redondeado + agarre resize
 
 - **Clase de marco GTK (patrón de integración de temas Chromium):** `install_linux_frame` asigna `tauri-app` al nodo `window.background` de GtkWindow (`APP_FRAME_CLASS`, `lib.rs:385`); el provider de la app selecciona `window.background.tauri-app decoration`. Verificado en runtime: la clase aparece junto a `background` y `csd`, y un borde GTK temporal limitado a la clase estila el nodo real del marco. Se quitó el estilo de prueba; los temas/hojas GTK del usuario pueden usar el mismo selector.
-- **CSD nativo redondeado:** Adwaita GTK3 redondea arriba por defecto. El provider de la app fija explícitamente `border-radius: 16px` en el nodo `decoration` (`lib.rs:548`), y `.app-shell` coincide (`globals.css:247`), así GTK dibuja sombra/marco con las cuatro esquinas curvas y la ventana sigue con `transparent: false`.
-- **Resize desde el margen de sombra CSD:** GTK documenta la sombra `.csd` como agarre de resize normal, pero tao no entregaba esos eventos de borde de forma fiable. `install_linux_resize_grip` (`lib.rs:441`) incluye el margen en la región de entrada GTK (los 8px exteriores quedan click-through), pone el cursor direccional y llama a `gtk_window_begin_resize_drag`. La región se reaplica en realize/map/size-allocate. `useWindowResizeEdges` / `start_window_resize` (`lib.rs:88`) manejan el borde interior de 6px del webview. Verificado en los ocho bordes/esquinas; arrastres repetidos a la derecha 1100 → 1220px.
+- **CSD nativo redondeado:** Adwaita GTK3 redondea arriba por defecto. El provider de la app fija explícitamente `border-radius: 16px` en el nodo `decoration` (`lib.rs:697`), y `.app-shell` coincide (`globals.css:245`), así GTK dibuja sombra/marco con las cuatro esquinas curvas y la ventana sigue con `transparent: false`.
+- **Resize desde el margen de sombra CSD:** GTK documenta la sombra `.csd` como agarre de resize normal, pero tao no entregaba esos eventos de borde de forma fiable. `install_linux_resize_grip` (`lib.rs:537`) incluye el margen en la región de entrada GTK (los 8px exteriores quedan click-through), pone el cursor direccional y llama a `gtk_window_begin_resize_drag`. La región se reaplica en realize/map/size-allocate. `useWindowResizeEdges` / `start_window_resize` (`lib.rs:88`) manejan el borde interior de 6px del webview. Verificado en los ocho bordes/esquinas; arrastres repetidos a la derecha 1100 → 1220px.
 - **Comparación con Chromium:** el `BrowserFrameViewLinux` actual dibuja un marco Views propio con sombra/hit-testing y usa radios solo arriba. Esta app mantiene deliberadamente la decoración y sombra CSD nativas de GTK; toma de Chromium la clase GTK con nombre propio para integrar temas.
 - Verificado en Ubuntu ARM GTK3: clase de tema, decoración GTK de 16px en las cuatro esquinas, resize en margen y borde interior, arrastre, minimizar/maximizar/restaurar, con `transparent: true`.
 
@@ -207,18 +207,26 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 
 ## 2026-09-25 — Linux: radio en ambos nodos GTK + sombra única arregla las puntas
 
-- Las capturas ampliadas aún mostraban un pequeño cuadrado opaco en la punta extrema de cada esquina, más allá del arco redondeado del contenido. Probado con un verde temporal: era el nodo `window.background` pintando en cuadrado — el radio solo estaba en el hijo `decoration`. Arreglo: `window.background.tauri-app { border-radius: 16px }` más `window.background.tauri-app decoration { border-radius: 16px; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5) }` (`lib.rs:548`).
+- Las capturas ampliadas aún mostraban un pequeño cuadrado opaco en la punta extrema de cada esquina, más allá del arco redondeado del contenido. Probado con un verde temporal: era el nodo `window.background` pintando en cuadrado — el radio solo estaba en el hijo `decoration`. Arreglo: `window.background.tauri-app { border-radius: 16px }` más `window.background.tauri-app decoration { border-radius: 16px; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5) }` (`lib.rs:697`).
 - La sombra única importa: una revisión anterior estilaba la sombra en ambos nodos y las sombras superpuestas dejaban un parche denso en las puntas.
 - Verificado a 6x en las cuatro esquinas: arcos limpios con antialiasing, sombra suave, sin nubs — con `transparent: true`.
 
 ---
+
+---
+
+## 27-09-2026 — Linux: frameless + opaco, esquinas cuadradas aceptadas (sustituye al arco CSD de arriba)
+
+- Las esquinas CSD redondeadas funcionaban, pero las puntas transparentes seguían viéndose en los extremos y la maquinaria nunca compensó: provider CSS de GTK (clase `tauri-app`, radio de 16px en ambos nodos), agarre con input shape (`apply_grip_input_shape`, `install_linux_resize_grip`, `find_webview`), dos rutas de resize, `allow-set-theme` + `useNativeTheme`. Decisión deliberada: `tauri.linux.conf.json` → `decorations: false` + `transparent: false`, esquinas cuadradas del sistema como parte de la plataforma.
+- Eliminado: `install_linux_frame`, `install_linux_resize_grip`, `apply_grip_input_shape`, `find_webview`, `edge_from_position`/`edge_cursor_name` (+ sus tests en `lib.rs`), `useNativeTheme`, el permiso `core:window:allow-set-theme` y la sonda de input shape (`scripts/probe-input-shape.sh`, que había medido `GDK_REGION_SET` = replace). Conservado: `start_window_resize` (una frameless no recibe agarres del WM — el borde interior de 6px sigue lanzando `begin_resize_drag`), `WEBKIT_DISABLE_DMABUF_RENDERER=1`, el veto de glass.
+- `setup()` centra la ventana y llama a `window.show()`: nace oculta (`visible: false`) y se muestra ya centrada. Verificado: `cargo check` + `cargo fmt` + `pnpm typecheck` + `lint` + `test` en verde.
 
 ## Lecciones para futuros cambios
 
 - Si ves `// Prestly pattern` o `// HuLa fix`, esa línea sobrevivió a múltiples bugs de plataforma. Lee el commit antes de tocarla.
 - `backdrop-blur` en Linux está vetado por motivo — cualquier re-activación debe manejar DMABUF + NVIDIA + Wayland y mantener RAM plana al redimensionar.
 - Traffic lights: nunca elimines uno de los tres mecanismos — cada uno cubre un timing distinto (general, macOS 26, live-drag).
-- Titlebar de Linux: mutter lee `_GTK_THEME_VARIANT` **solo** al gestionar la ventana (`LOAD_INIT`), y una `GtkHeaderBar` no es arrastrable cuando tao crea la ventana en modo SSD — así que la titlebar la dibuja la app (`header.tsx` + `WindowControls`) sobre un marco CSD "latched" (`install_linux_frame`, `lib.rs:527`). Ese marco necesita el override del radio en el nodo `decoration` (GTK3 solo redondea arriba por defecto) más `transparent: true` para que el compositor mezcle el arco. Nunca "arregles" un desajuste de tema escribiendo esa propiedad o remapeando la ventana.
-- `src-tauri/gen/` siempre es desechable — la fuente real de Xcode es `vendor/tauri-cli-*/templates/mobile/ios/`.
+- Titlebar de Linux: la ventana es frameless + opaca (`decorations: false`, `transparent: false`), esquinas cuadradas del sistema por diseño — el arco CSD (`GtkHeaderBar` enganchada, clase `tauri-app`, input shape) se eliminó deliberadamente el 27-09-2026. La app sigue dibujando su titlebar (`header.tsx` + `WindowControls`) y el borde interior de 6px sigue lanzando `begin_resize_drag` (`start_window_resize`). Nunca re-añadas radio CSS ni un provider GTK para redondear las esquinas.
+- `src-tauri/gen/` siempre es desechable — la fuente real de Xcode es `vendor/tauri-cli-*/templates/mobile/ios/` (ahora rebase del 2.12.0 stock + retoques; el `[patch]` de mobile2 sobra desde que 0.22.5 trajo el fix de Xcode 27).
 
 Siguiente: [Contribuir →](./contributing.md) · [Sensación nativa →](./native-feel.md)

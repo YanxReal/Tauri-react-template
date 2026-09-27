@@ -15,8 +15,23 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Una matriz por SO de escritorio, NO un solo runner: el crate tiene bloques
+  # `#[cfg(target_os = ...)]` grandes y exclusivos (gtk/mutter en Linux, decorum
+  # + DWM en Windows, objc2/traffic lights/vibrancy en macOS). Con un unico
+  # runner los otros dos nunca se compilan, asi que un error de tipado en ellos
+  # llega directo a release.
+  #
+  # - `cargo check` no enlaza el binario final, asi que no hace falta target
+  #   cruzado ni toolchain extra: cada job compila NATIVO de su SO.
+  # - Linux es el que mas codigo nativo lleva (install_linux_frame,
+  #   install_linux_resize_grip, apply_grip_input_shape, start_window_resize).
   cargo-check:
-    runs-on: ubuntu-latest
+    name: cargo check (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -25,5 +40,35 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-      - run: cargo check --manifest-path src-tauri/Cargo.toml
+      # En Linux hacen falta los headers de WebKitGTK/GTK3 que usa el crate gtk.
+      - name: Deps de WebKitGTK (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-dev libxdo-dev libssl-dev patchelf pkg-config
+      - run: cargo check --manifest-path src-tauri/Cargo.toml --all-targets
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+      # `await_holding_lock = "deny"` vive en Cargo.toml [lints.clippy]; clippy se
+      # instalaba como component pero nunca se ejecutaba.
+      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+
+  # Las funciones puras que deciden el resize tienen tests; corren solo en Linux
+  # (las de `lib.rs` estan tras `#[cfg(target_os = "linux")]`).
+  cargo-test:
+    name: cargo test (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Deps de WebKitGTK (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-dev libxdo-dev libssl-dev patchelf pkg-config
+      - run: cargo test --manifest-path src-tauri/Cargo.toml

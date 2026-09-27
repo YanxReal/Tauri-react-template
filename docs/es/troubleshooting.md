@@ -14,20 +14,18 @@ Asegúrate de que `lib.rs:205` `adjust_macos_traffic_lights` + `lib.rs:331` `ens
 
 Si los dots quedan demasiado **arriba** (o desaparecen), revisa `traffic_lights_target_y` (`lib.rs:185`): el frame pertenece al superview del botón, así que la `y` debe salir de `isFlipped()` + la altura del contenedor — no de la altura de la ventana ni del `26 - size/2` a pelo.
 
-## Titlebar / resize / esquinas redondeadas de Linux
+## Titlebar / resize / esquinas cuadradas de Linux
 
-La app es dueña de la titlebar; GTK es dueño del marco y la sombra CSD. `install_linux_frame` (`lib.rs:527`) engancha CSD con una `GtkHeaderBar` vacía y oculta, asigna la clase GTK `tauri-app` y aplica radio a ambos nodos GTK (`lib.rs:548`). `.app-shell` usa el mismo radio (`globals.css:247`).
+La app es dueña de la titlebar y la ventana es frameless (`decorations: false`, `transparent: false`): esquinas cuadradas del sistema, sin marco GTK. `setup()` centra la ventana y llama a `window.show()` — nace oculta (`visible: false`) y se muestra ya centrada.
 
-- **No aparece el cursor/arrastre de resize en el margen de sombra:** `install_linux_resize_grip` (`lib.rs:441`) lo maneja; comprueba que la región de entrada GTK se aplique en `realize`, `map` y `size-allocate`. El borde interior de 6px del webview usa `useWindowResizeEdges` / `start_window_resize` (`native-chrome.ts`, `lib.rs:88`). El agarre está dentro de las extents del marco GTK, no en el píxel exterior de la sombra.
-- **Un tema GTK no estila el marco:** usa el selector `window.background.tauri-app decoration`. La clase se asigna en `lib.rs:559`; el selector de prueba se verificó sobre el nodo de decoración.
-- **La titlebar ignora el toggle de tema de la app:** comprueba `useNativeTheme` en `title-bar.tsx:20` y `core:window:allow-set-theme` en `capabilities/default.json:16`.
+- **No aparece el cursor/arrastre de resize en los bordes:** la ventana frameless no recibe agarres del WM; el borde interior de 6px del webview usa `useWindowResizeEdges` / `start_window_resize` (`native-chrome.ts`, `lib.rs:88`), que lanza `begin_resize_drag` de GTK.
 - **Los caption buttons no hacen nada:** revisa `core:window:allow-minimize` / `allow-toggle-maximize` / `allow-close` en `capabilities/default.json:6`.
 
-La app usa `transparent: true` para que el compositor mezcle el arco de 16px; GTK es dueño del fondo y la sombra CSD nativos. El provider GTK aplica un radio de 16px a la decoración y al shell del webview para alinear las curvas.
+Las esquinas son cuadradas por diseño — ver `native-feel.md` §0. No re-añadas radio CSS ni un provider GTK para redondearlas; ese camino (CSD enganchado, clase `tauri-app`, input shape) se eliminó deliberadamente.
 
 ## Windows: no aparecen los caption buttons / no hay Snap Layouts
 
-Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y la titlebar es de la app: `header.tsx:224` renderiza `window-controls.tsx` y `lib.rs:651` llama a `create_overlay_titlebar()`. Si los botones no salen, comprueba que `platform === 'windows'` resolvió (comando Rust `platform_info`) y que `capabilities/default.json:6` sigue listando `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:15`), más `capabilities/windows.json:7` para `decorum:allow-show-snap-overlay` (capability solo-Windows; déjala fuera de `default.json` o `cargo check` falla en macOS/Linux). Los Snap Layouts solo se abren con el hover de 620 ms sobre maximizar (`window-controls.tsx:8` → `show_snap_overlay`), que es el equivalente Win+Z de decorum — tao no puede responder `WM_NCHITTEST` con `HTMAXBUTTON`, así que no hay flyout nativo real de hover. Si alguna vez aparece la barra de 32px que inyecta el plugin encima del header, es que se quitó la regla `[data-tauri-decorum-tb]` (`globals.css:247`).
+Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y la titlebar es de la app: `header.tsx:224` renderiza `window-controls.tsx` y `lib.rs:814` llama a `create_overlay_titlebar()`. Si los botones no salen, comprueba que `platform === 'windows'` resolvió (comando Rust `platform_info`) y que `capabilities/default.json:6` sigue listando `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:15`), más `capabilities/windows.json:7` para `decorum:allow-show-snap-overlay` (capability solo-Windows; déjala fuera de `default.json` o `cargo check` falla en macOS/Linux). Los Snap Layouts solo se abren con el hover de 620 ms sobre maximizar (`window-controls.tsx:8` → `show_snap_overlay`), que es el equivalente Win+Z de decorum — tao no puede responder `WM_NCHITTEST` con `HTMAXBUTTON`, así que no hay flyout nativo real de hover. Si alguna vez aparece la barra de 32px que inyecta el plugin encima del header, es que se quitó la regla `[data-tauri-decorum-tb]` (`globals.css:253`).
 
 ## Scrollbar con flechas / el header no llega al borde derecho
 
@@ -51,7 +49,7 @@ Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y l
 
 **Solución:** lanza la app de la forma normal, como el usuario del escritorio que tiene sesión iniciada (acceso directo / `pnpm tauri:dev`). Para fijar la carpeta explícitamente, define `WEBVIEW2_USER_DATA_FOLDER=C:\alguna\carpeta\escribible` antes de arrancar (ojo con el gotcha de cmd: `set VAR=valor && app.exe` se queda con el espacio final, así que entrecomilla: `set "VAR=valor" && app.exe`). Truco de depuración: `scripts/build-windows.sh` + `PsExec64 -i 1 -s` reproduce el fallo, así que no sirve para revisar la UI — copia el exe a una sesión real y haz doble clic.
 
-Desactiva glass — Linux fuerza `glass OFF` por diseño (`glass-cards-provider.tsx` + `globals.css:247`). Mantén `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` en `lib.rs:596`. Ver Plan A degradado en `native-feel.md`.
+Desactiva glass — Linux fuerza `glass OFF` por diseño (`glass-cards-provider.tsx` + `globals.css:265`). Mantén `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` en `lib.rs:749`. Ver Plan A degradado en `native-feel.md`.
 
 ## `pnpm install` falla / mismatch Node
 

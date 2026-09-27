@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Keep launcher adaptive icon from resource shrinking (AGP 8.x) -->
-<resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@mipmap/ic_launcher,@mipmap/ic_launcher_round,@mipmap/ic_launcher_foreground,@mipmap/ic_launcher_monochrome,@mipmap/ic_launcher_background,@color/ic_launcher_background" />

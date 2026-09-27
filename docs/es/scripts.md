@@ -25,7 +25,7 @@
 | `make dev:ios` | `pnpm tauri ios dev "iPhone 17"` (sim, usa `IOS_DEVICE`) |
 | `make dev-ios-physical` | `cargo tauri ios dev "iPhone 17" --host $(IOS_DEV_HOST)` (necesita `make install-tauri-cli`) |
 | `make dev-android-emulator` | APK debug → emulator |
-| `make install-tauri-cli` | Compila `src-tauri/vendor/tauri-cli-2.11.4` → `~/.cargo/bin/cargo-tauri` (parche Xcode 26) |
+| `make install-tauri-cli` | Compila `src-tauri/vendor/tauri-cli-2.12.0` (2.12.0 stock + 3 retoques: fallback standalone, target `_Apple`) → `~/.cargo/bin/cargo-tauri` |
 | `make lint` / `make build` | alias |
 
 Shells por OS: `scripts/build-linux.sh`, `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`.
@@ -68,6 +68,73 @@ si no.
 Como la caja mantiene `node_modules` y `target/` en disco, los rebuilds son incrementales
 (segundos) y `--dev` da Vite + hot reload; se descartó un backend de contenedor por build
 porque nunca podría ejecutar la app para probarla.
+
+## La caja Linux (`docker/linux-gnome` + `scripts/linux-box.sh`)
+
+La caja de build con la que habla el backend `--remote` es un **contenedor que arrancas
+tú**: Ubuntu 24.04 (GNOME 46 / mutter / GTK3 / WebKitGTK 4.1 — el stack exacto contra el
+que se verificó el trabajo del marco de ventana), la **sesión GNOME de Ubuntu** sobre Xvfb,
+y noVNC para que puedas *ver* la ventana.
+
+```bash
+./scripts/linux-box.sh up        # compila la imagen (primera vez) + crea + arranca
+./scripts/linux-box.sh status    # display, WM, VNC, ssh, política de restart
+./scripts/linux-box.sh down      # la para, CONSERVA el contenedor (caches siguen)
+./scripts/linux-box.sh destroy   # la borra (--volumes: pierde caches de cargo/pnpm)
+./scripts/linux-box.sh wait      # espera a que display + WM + ssh respondan
+./scripts/linux-box.sh ssh       # shell en la caja
+./scripts/linux-box.sh build …   # atajo de build-linux.sh --remote
+./scripts/linux-box.sh app [--opaque]   # compila + lanza la app en :1
+./scripts/linux-box.sh novnc     # imprime la URL de noVNC
+```
+
+**No arranca solo.** El contenedor se crea con `--restart=no`, así que Docker Desktop
+puede arrancar con la caja parada; la levantas cuando la necesites. `down` conserva el
+contenedor (y su `target/`, para que el próximo build sea incremental); solo `destroy`
+lo borra.
+
+| Pieza | Dónde | Notas |
+|-------|-------|-------|
+| Imagen | `docker/linux-gnome/Dockerfile` | Ubuntu 24.04 + dev de WebKitGTK 4.1 + Node 24 + pnpm 10.34.5 + Rust estable + `ubuntu-session` + mutter + x11vnc/TightVNC/noVNC + openssh |
+| PID 1 | `docker/linux-gnome/entrypoint.sh` | Xvfb → dbus → sesión → x11vnc → TightVNC → noVNC → sshd, y luego supervisa cada rol |
+| Control | `scripts/linux-box.sh` | up/down/destroy/status/wait/ssh/novnc/logs/build/app |
+| SSH | `~/.ssh/config`, alias `ubuntu-vnc` | `127.0.0.1:2222`, usuario `dev` (nunca root: gnome-shell aborta como root) |
+| Puertos | `2222` ssh, `6080` noVNC, `5901` TightVNC | ligados a `127.0.0.1`; el x11vnc crudo (5900) se queda dentro del contenedor |
+| Contraseña | `dev` | una sola para las dos puertas: noVNC (que la reenvía a x11vnc) y TightVNC |
+| Caches | volúmenes con nombre | `tauri-cargo-registry`, `tauri-cargo-git`, `tauri-pnpm-store` |
+
+Abre **http://localhost:6080/vnc.html** para ver y controlar el escritorio (contraseña
+`dev`). Para un cliente nativo usa TightVNC contra `127.0.0.1:5901`, misma contraseña.
+`DISPLAY=:1` queda exportado en toda sesión (vía `/etc/environment`, así que un
+`ssh host 'cmd'` a secas también lo recibe), y hay `scrot` / `xdotool` / `wmctrl` /
+`xrandr` para capturas y comprobaciones guionizadas.
+
+### Hacer que GNOME funcione en un contenedor (medido, no supuesto)
+
+Poner en pie una sesión GNOME real bajo Xvfb llevó varias rondas de medición a nivel de
+píxel. Cada punto de abajo se verificó comparando capturas (`standard_deviation` por fila:
+una pantalla congelada da `0` en todas); también queda registrado el valor equivocado, para
+que nadie lo reintroduzca.
+
+| Síntoma | Causa | Arreglo |
+|---------|-------|---------|
+| `Failed to get session bus: The connection is closed`; la sesión cae a mutter a pelo | el bus de sesión lo arrancaba **root**; `dbus-daemon --session` solo deja conectar al usuario que lo creó | arrancarlo como el usuario de la sesión (`setpriv --reuid=dev …`) |
+| El shell vive y responde por D-Bus, pero la pantalla se **congela** en un color y abrir una ventana cambia 0 px | el bus se arrancaba dentro de `$(…)`: el daemon heredaba la tubería de la sustitución, se bloqueaba escribiendo en ella y se **colgaba** (socket y proceso vivos, sin respuestas) | `--address=` fijo + salida redirigida a un **fichero**, nunca a una tubería |
+| `gnome-shell` muere con **signal 11** al arrancar (`background.js` → `loginManager.js`) | `misc/loginManager.js` elige `LoginManagerSystemd` si existe `/run/systemd/seats`; sin logind la llamada lanza excepción y `main.js` aborta | `rm -rf /run/systemd` (systemd no corre en el contenedor) |
+| `gnome-session` muestra su diálogo de fallo; no encuentra la sesión `ubuntu` | sin el paquete `ubuntu-session` solo existe `gnome.session`, y el único modo del shell es `ubuntu.json` | instalar `ubuntu-session` + `ubuntu-settings` |
+| La sesión arranca pero la pantalla queda plana | `GNOME_SHELL_SESSION_MODE=x11` — **ese modo no existe** (válidos: `ubuntu`, `gnome`); `gnome-shell --x11` es un flag, no un modo | `GNOME_SHELL_SESSION_MODE=ubuntu` + el entorno de Ubuntu (`XDG_CURRENT_DESKTOP=ubuntu:GNOME`, `DESKTOP_SESSION=ubuntu`, `XDG_CONFIG_DIRS=/etc/xdg/xdg-ubuntu:/etc/xdg`) |
+| **Toda la pantalla tapada por "Oh no! Something has gone wrong" y los clics no hacen nada** | muere un componente listado en `RequiredComponents` de `ubuntu.session`: `org.gnome.SettingsDaemon.Power` (necesita **logind**) y `org.gnome.SettingsDaemon.ScreensaverProxy` (necesita `org.gnome.ScreenSaver`), más `UsbProtection`, que hace SIGSEGV por lo mismo. `gnome-session` entonces declara la sesión fallida y `gnome-session-failed` dibuja esa pantalla a pantalla completa (una ventana de 1600x1000 — se ve en `xwininfo -root -tree`) | el entrypoint escribe `box.session` en `/usr/local/share/gnome-session/sessions/` quitando esos componentes de portátil de `RequiredComponents`, y corre `gnome-session --session=box`. Se comprueba con `grep -c gnome-session-failed` sobre el árbol de ventanas: tiene que dar **0** |
+| El escritorio renderiza una vez y luego se congela para siempre | `GSK_RENDERER=cairo` fuerza GTK4 a Cairo y GNOME Shell 46 necesita GL para su compositor | no ponerlo — llvmpipe ya es software, lo que el shell quiere es GL |
+| El mismo congelado, introducido "arreglando" el overview | `MESA_GL_VERSION_OVERRIDE=4.5` / `MESA_GLSL_VERSION_OVERRIDE=450` | no ponerlos; `glxinfo -B` ya informa `Max core profile version: 4.5` |
+| `dbus-send`/las apps no alcanzan el bus de accesibilidad | falta `at-spi2-core` (y se puso `NO_AT_BRIDGE=1`) | instalar `at-spi2-core`, no desactivar el bridge |
+| `x11vnc` sale con `BadAccess` en `X_ShmAttach` | MIT-SHM no puede attach dentro del contenedor | `-noshm` (el flag **no** es `-noshmem`, que aborta como opción desconocida) |
+| `tightvncserver` aborta: `The USER environment variable is not set` | `setpriv` no define `USER` | pasar `USER=dev` |
+| La sesión funciona pero **no hay dock**, ni iconos de bandeja, ni iconos de escritorio | el modo `ubuntu` del shell pide `ubuntu-dock@ubuntu.com`, `ubuntu-appindicators@ubuntu.com` y `ding@rastersoft.com` en `/usr/share/gnome-shell/modes/ubuntu.json`, pero `--no-install-recommends` se saltó los tres paquetes | instalar `gnome-shell-extension-ubuntu-dock`, `gnome-shell-extension-appindicator`, `gnome-shell-extension-desktop-icons-ng`. El dock se comprueba con `convert shot.png -crop 1x1000+40+0` → `standard_deviation` ~17 en vez de ~5 |
+
+Merece la pena repetir lo de `GSK_RENDERER` y los overrides de Mesa: los dos se añadieron
+como arreglos y los dos **causaron** el congelado que pretendían curar. La regla que salió
+de ahí es medir antes y después con la `standard_deviation` por fila, en vez de fiarse de
+una variable que suena plausible.
 
 ## Cross-compile Windows (`cargo-xwin`)
 

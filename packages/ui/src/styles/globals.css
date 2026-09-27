@@ -208,10 +208,10 @@ html.light.vibrancy body {
 
   /* .app-shell: recorta TODO (header incluido) y no scrollea — el scroll vive
      en `.app-scroll` (ver abajo). Solo macOS necesita border-radius CSS
-     (ventana transparente Overlay); Linux usa un `GtkHeaderBar` CSD
-     (`decorations:true`) y Windows va frameless (`decorations:false`) con
-     redondeo de DWM, así que en ambos sin radius para no dejar esquinitas sin
-     colorear en header/footer. */
+     (ventana transparente Overlay); Linux y Windows van frameless
+     (`decorations:false`, esquinas cuadradas del sistema) con redondeo de
+     DWM solo en Windows, así que en ambos sin radius para no dejar
+     esquinitas sin colorear en header/footer. */
   html.titlebar .app-shell {
     height: 100dvh;
     /* El scroll NO vive aquí: el header es la barra de título y tiene que
@@ -239,11 +239,11 @@ html.light.vibrancy body {
   html.titlebar-win .app-shell {
     border-radius: 0;
   }
-  /* Linux: GTK dibuja el marco CSD y su sombra. El provider Rust redondea el nodo
-     GTK `decoration` en 16px; el shell debe compartir el radio para no tapar su
-     arco. Ver docs/native-feel.md §0. */
+  /* Linux: ventana frameless (`decorations:false`) — esquinas cuadradas del
+     sistema, decisión consciente. Sin radio CSS para no dejar esquinitas sin
+     colorear (el shell es opaco: `transparent:false`). */
   html.linux .app-shell {
-    border-radius: 16px;
+    border-radius: 0;
   }
   /* Windows + decorum: el plugin inyecta su propia barra de título fija
      (32px, z-index 100) con un `data-tauri-drag-region`. Este template ya

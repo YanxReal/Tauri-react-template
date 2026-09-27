@@ -4,7 +4,7 @@ La plantilla es **multiplataforma**: escritorio (macOS, Windows, Linux) **y** m�
 
 ## Fuente de verdad vs generado
 
-- **Plantilla (edita aquí):** `src-tauri/vendor/tauri-cli-2.11.4/templates/mobile/ios/` — `project.yml`, `apple.xcconfig`, entitlements, `Assets.xcassets`. Es la fuente del proyecto Xcode.
+- **Plantilla (edita aquí):** `src-tauri/vendor/tauri-cli-2.12.0/templates/mobile/ios/` — `project.yml`, `apple.xcconfig`, entitlements, `Assets.xcassets`. Es la fuente del proyecto Xcode.
 - **Generado (nunca editar):** `src-tauri/gen/apple/` y `src-tauri/gen/android/` — gitignored, se regenera en cada `scripts/Xcode/apple-xcode.sh` o `tauri ios init`.
 
 Regla: **nunca toques `src-tauri/gen/`** — cualquier edición manual se pierde al regenerar.
@@ -39,8 +39,8 @@ Detalles en `scripts/README.md:22`.
 El `cargo tauri` instalado puede ser un build modificado de Prestly (`com.yanxstudio.prestly`). Usa el **CLI stock**:
 
 ```bash
-pnpm dlx @tauri-apps/cli@2.11.4 ios build --target aarch64-sim --debug
-pnpm dlx @tauri-apps/cli@2.11.4 android build --debug --target aarch64
+pnpm dlx @tauri-apps/cli@2.12.0 ios build --target aarch64-sim --debug
+pnpm dlx @tauri-apps/cli@2.12.0 android build --debug --target aarch64
 make dev:ios            # iOS simulator (cargo tauri parcheado + simctl, sin EBADARCH)
 make dev-ios-physical   # iPhone por USB (necesita --host 169.254.x.x)
 ```
@@ -53,8 +53,8 @@ Xcode 26 lista **simuladores** como devices en `xcrun devicectl list devices --j
 
 **Fix en esta plantilla** (no en `gen`):
 
-- `src-tauri/vendor/cargo-mobile2-0.22.4/src/apple/device/devicectl/device_list.rs` añade `reality: Option<String>` + filtro `reality != "simulated"`.
-- `src-tauri/vendor/tauri-cli-2.11.4/Cargo.toml` parchea `[patch.crates-io] cargo-mobile2 = { path = "../cargo-mobile2-0.22.4" }`.
+- `cargo-mobile2 0.22.5` (crates.io, 17-08-2026) ya trae el fix de Xcode 27 oficial (`ee65fb1`: filtro de simuladores por `visibility_class` + diccionario `properties` + arranque por Device Hub) — ya no hay `[patch.crates-io]`.
+- `src-tauri/vendor/tauri-cli-2.12.0/src/mobile/` conserva 3 cambios locales sobre el 2.12.0 stock (ver `MODS.md` en la raíz del repo para el porqué + checklist de rebase): `fallback_options()` (builds standalone de Xcode sin proceso CLI padre), búsqueda del target `_iOS` → `_Apple` y el reemplazo simplificado de `{{app.name}}` en `project.rs`. `scripts/patch-tauri-cli.sh` los aplica sobre una copia stock (rechaza versiones que no conoce).
 
 Instálalo una vez por clon:
 
@@ -65,7 +65,7 @@ cargo tauri ios dev "iPhone 17"
 
 `pnpm tauri ios dev` (CLI de Node) sigue usando la copia sin parche del registry — para iOS usa `cargo tauri`.
 
-> **Cuando salga `cargo-mobile2 0.22.5`** (ya en dev `ee65fb1`, aún no en crates.io al 29 Apr 2025) se podrá quitar el parche. Al actualizar, re-vendorea y reaplica o elimina el patch.
+> `cargo-mobile2 0.22.5` salió el 17-08-2026 con el fix de Xcode 27, así que el vendor ahora es un rebase del `tauri-cli 2.12.0` stock (que pide `cargo-mobile2 ^0.22.5`) más los 3 cambios locales de arriba — sin copia parcheada de mobile2 ni sección `[patch]`.
 
 ### Info.plist
 
@@ -96,7 +96,7 @@ Necesario para `tauri ios dev|build`; no necesario para builds de Xcode sobre **
 
 ```bash
 make dev-android-emulator   # APK debug → emulator (aarch64)
-pnpm dlx @tauri-apps/cli@2.11.4 android build --debug --target aarch64
+pnpm dlx @tauri-apps/cli@2.12.0 android build --debug --target aarch64
 ```
 
 `ANDROID_AVD` / `ANDROID_TARGET` son vars del Makefile (`Resizable_Experimental` / `aarch64`).

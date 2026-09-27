@@ -8,9 +8,9 @@
         "minWidth": 375,
         "minHeight": 600,
         "center": true,
-        "decorations": true,
+        "decorations": false,
         "visible": false,
-        "transparent": true,
+        "transparent": false,
         "disableInputAccessoryView": true,
         "dragDropEnabled": false,
         "zoomHotkeysEnabled": false

@@ -1,7 +1,8 @@
 # Tauri React Template — desarrollo multi-plataforma
-# La CLI parcheada para iOS vive en src-tauri/vendor/tauri-cli-2.11.4
-# y usa el cargo-mobile2 vendoreado con el fix de Xcode 26 (reality != simulated).
-# Ver src-tauri/vendor/tauri-cli-2.11.4/Cargo.toml [patch.crates-io].
+# La CLI para iOS es la oficial tauri-cli 2.12.0 (trae cargo-mobile2 0.22.5 con
+# el fix de Xcode 27). El vendor solo conserva los templates customizados +
+# 3 retoques locales (fallback standalone + target _Apple); ver
+# src-tauri/vendor/tauri-cli-2.12.0/templates/mobile/ios/project.yml.
 
 TAURI := pnpm tauri
 CARGO_TAURI := cargo tauri
@@ -41,8 +42,9 @@ dev-ios-physical:
 	$(CARGO_TAURI) ios dev "$(IOS_DEVICE)" --host $(IOS_DEV_HOST)
 
 install-tauri-cli:
-	@echo "Construyendo cargo-tauri parcheado (Xcode 26 fix) ..."
-	cd src-tauri/vendor/tauri-cli-2.11.4 && CARGO_TARGET_DIR=$(CURDIR)/src-tauri/target/tauri-cli cargo build --release
+	@echo "Construyendo cargo-tauri 2.12.0 + retoques locales (fallback standalone, target _Apple) ..."
+	cd src-tauri/vendor/tauri-cli-2.12.0 && CARGO_TARGET_DIR=$(CURDIR)/src-tauri/target/tauri-cli cargo build --release
+	mkdir -p ~/.cargo/bin
 	install -m 755 src-tauri/target/tauri-cli/release/cargo-tauri ~/.cargo/bin/cargo-tauri
 	@echo "Instalado ~/.cargo/bin/cargo-tauri — usa 'cargo tauri ios dev' para iOS físico"
 

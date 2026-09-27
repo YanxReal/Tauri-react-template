@@ -8,4 +8,4 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 export PATH="$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 HOST=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo)
-exec pnpm dlx @tauri-apps/cli@2.11.4 ios dev --open ${HOST:+--host $HOST}
+exec pnpm dlx @tauri-apps/cli@2.12.0 ios dev --open ${HOST:+--host $HOST}

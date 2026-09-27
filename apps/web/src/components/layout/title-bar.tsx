@@ -2,7 +2,6 @@ import { useEffect } from "react"
 
 import {
   useMacDragRegion,
-  useNativeTheme,
   usePlatform,
   useWindowResizeEdges,
 } from "./native-chrome"
@@ -11,9 +10,7 @@ const DESKTOP_PLATFORMS = new Set(["macos", "windows", "linux"])
 
 /**
  * Titlebar side-effects only — Prestly pattern para macOS Overlay.
- * Aquí solo se monta la clase `.titlebar` (alto de banda + estilos del shell) y,
- * en Linux, se sincroniza la variante de GTK (`useNativeTheme`): esa ventana usa
- * un marco CSD "latched" y la titlebar visible la dibuja la app.
+ * Aquí solo se monta la clase `.titlebar` (alto de banda + estilos del shell).
  */
 export function TitleBar() {
   const platform = usePlatform()
@@ -22,8 +19,7 @@ export function TitleBar() {
   const isLinux = platform === "linux"
 
   useMacDragRegion(visible && isMac)
-  useNativeTheme(visible && isLinux)
-  // Linux CSD no trae agarres de resize: los pone la app.
+  // Linux frameless no trae agarres de resize: los pone la app.
   useWindowResizeEdges(visible && isLinux)
 
   useEffect(() => {

@@ -81,9 +81,9 @@ function useMacDragRegion(enabled: boolean): void {
 }
 
 /**
- * Win/Linux: la ventana lleva su propia barra (decorum en Windows, un
- * `GtkHeaderBar` CSD en Linux — ver `useNativeTheme`), pero el header de la app
- * sigue siendo la zona de arrastre personalizada (Prestly).
+ * Win/Linux: la ventana es frameless (decorum en Windows, `decorations:false`
+ * en Linux) pero el header de la app sigue siendo la zona de arrastre
+ * personalizada (Prestly).
  * WebKitGTK y WebView2 a veces no respetan `data-tauri-drag-region` en hijos
  * (solo en el elemento directo) y en Linux el CSS `app-region:drag` no siempre
  * funciona, así que el JS rescata el arrastre limitándolo a la altura real del
@@ -110,49 +110,6 @@ function useWindowDragRegion(enabled: boolean): void {
   }, [enabled])
 }
 
-/**
- * Linux: la ventana usa un marco CSD "latched" (`install_linux_frame` en Rust):
- * una `GtkHeaderBar` oculta deja a GTK en modo cliente-decorado para que siga
- * dibujando su **sombra nativa**, con el fondo transparente para que la forma
- * la defina `.app-shell`. La titlebar visible la dibuja la app (header +
- * `WindowControls`), así que el tema del chrome lo controla el CSS.
- *
- * Aun así sincronizamos la variante de GTK: en Linux `window.setTheme()` acaba
- * en `gtk-application-prefer-dark-theme` (tao), y eso mantiene el marco y
- * cualquier superficie GTK (p. ej. el fondo de ventana si la regla transparente
- * no cargase) en el mismo claro/oscuro que la app.
- *
- * ¿Por qué no la titlebar nativa de mutter? Su variante clara/oscura se lee una
- * sola vez, al gestionar la ventana (`_GTK_THEME_VARIANT` con `LOAD_INIT` en
- * `mutter/src/x11/window-props.c`), y no cambia en runtime — ni con `set_theme`,
- * ni escribiendo la propiedad con `xprop`, ni remapeando la ventana (los tres
- * comprobados en GNOME 46).
- *
- * Solo Linux: en macOS `set_theme` cambia la apariencia de NSApp (vibrancy +
- * traffic lights) y en Windows el modo oscuro de toda la app; el chrome de
- * ambos ya sigue al tema por otras vías (vibrancy-provider / caption buttons).
- */
-function useNativeTheme(enabled: boolean): void {
-  useEffect(() => {
-    if (!enabled || !isTauriRuntime()) return
-    const appWindow = getCurrentWindow()
-    // Se observa la clase de <html> (no el contexto de tema) para cubrir
-    // también el caso "system": si el OS cambia de claro a oscuro,
-    // ThemeProvider reescribe `.dark` y el HeaderBar tiene que seguirlo.
-    const apply = () => {
-      const dark = document.documentElement.classList.contains("dark")
-      void appWindow.setTheme(dark ? "dark" : "light").catch(() => {})
-    }
-    apply()
-    const observer = new MutationObserver(apply)
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    })
-    return () => observer.disconnect()
-  }, [enabled])
-}
-
 type ResizeEdge =
   | "North"
   | "South"
@@ -173,6 +130,14 @@ const RESIZE_CURSOR: Record<ResizeEdge, string> = {
   NorthEast: "nesw-resize",
   SouthWest: "nesw-resize",
 }
+
+/**
+ * Ancho de la banda de agarre del borde interior, en px CSS.
+ *
+ * 6 da margen al ratón sin comerse la UI. Exportado para poder testear
+ * `resizeEdgeAt` sin replicar el número.
+ */
+const RESIZE_BAND = 6
 
 /** Borde bajo el puntero, o null si está lejos de los cantos. */
 function resizeEdgeAt(x: number, y: number, band: number): ResizeEdge | null {
@@ -195,21 +160,18 @@ function resizeEdgeAt(x: number, y: number, band: number): ResizeEdge | null {
 }
 
 /**
- * Linux: la ventana CSD **no trae agarres de resize**. GTK delega el borde en
- * el gestor de ventanas, pero una ventana cliente-decorada no lleva marco del
- * WM, así que no hay nada que arrastrar (comprobado también con una ventana CSD
- * de referencia: tampoco redimensiona). Tauri 2.11 tampoco expone un
- * `startResizing`, así que el borde lo detecta la app y lo ejecuta Rust con el
- * mismo `gtk_window_begin_resize_drag` que usaría GTK (`start_window_resize`).
+ * Linux: la ventana frameless **no trae agarres de resize** (el WM no decora
+ * una ventana sin marco). Tauri 2.12 tampoco expone un `startResizing`, así
+ * que el borde lo detecta la app y lo ejecuta Rust con
+ * `gtk_window_begin_resize_drag` (`start_window_resize`).
  *
- * El cursor del borde también es cosa nuestra: con CSD lo pondría GTK y aquí no
- * hay zona del WM que lo active.
+ * El cursor del borde también es cosa nuestra: sin marco del WM no hay zona
+ * que lo active.
  */
 function useWindowResizeEdges(enabled: boolean): void {
   useEffect(() => {
     if (!enabled || !isTauriRuntime()) return
-    // Banda de agarre, en px CSS. 6 da margen al ratón sin comerse la UI.
-    const BAND = 6
+    const BAND = RESIZE_BAND
 
     const onMouseDown = (event: MouseEvent) => {
       if (event.button !== 0) return
@@ -236,8 +198,10 @@ function useWindowResizeEdges(enabled: boolean): void {
 
 export {
   isTauriRuntime,
+  RESIZE_BAND,
+  type ResizeEdge,
+  resizeEdgeAt,
   useMacDragRegion,
-  useNativeTheme,
   usePlatform,
   useWindowDragRegion,
   useWindowResizeEdges,

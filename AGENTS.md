@@ -27,7 +27,7 @@ If a user instruction conflicts with §3 or §4, **explain the conflict and prop
 | **Monorepo** | `apps/web` (Vite app, port `1420`, alias `@` → `src`) + `packages/ui` (shadcn design system, exports `@workspace/ui/*`) + `src-tauri` (Rust backend, per-OS Tauri configs). |
 | **Docs** | `docs/en/` and `docs/es/` — **mirrored, must stay in parity** (see §3). `docs/README.md` is the bilingual router. |
 | **Quality** | `biome.json` (formatter + linter, 2 spaces / 80 cols / `asNeeded`), Husky + lint-staged, `cargo fmt` + `clippy` (`await_holding_lock: deny`), CI `frontend.yml` + `rust.yml`. |
-| **Reference** | The original evolution is recorded in `git log` — 20 commits from `455897d` (initial) to `9da8602` (Linux shadow). Read it before large refactors. |
+| **Reference** | The original evolution is recorded in `git log` — 52 commits from `455897d` (initial) to HEAD. The milestone table below covers the first 20 (up to `9da8602`, the Linux shadow); everything after is the Windows/Linux window-frame arc, documented in `docs/en/changelog.md` and summarised in the invariants table of §4.3. Read it before large refactors. |
 
 ### Why git history matters (read it)
 
@@ -52,7 +52,7 @@ Key milestones you must know (chronological):
 | `9177b88` | `fix: ventana arrastrable y esquinas redondeadas en las 3 plataformas` | Permissions `core:window:allow-start-dragging`, `app-shell` as scroll container with `border-radius`. |
 | `938f89a` | `fix: traffic lights live-resize sin flicker + header alineado + windows NSIS/Wix` | **HuLa 3-mecanismo** for macOS traffic lights (WindowEvent + NSNotificationCenter + 60fps NSTimer), positions `19.5/41.5/63.5`. |
 | `93657d3` | `fix: linux glass veto + curvas ventana + toggle combinado` | Linux glass OFF (yellow DMABUF glitches + RAM), `WEBKIT_DISABLE_DMABUF_RENDERER`, combined toggle, `build-linux.sh`. |
-| `9da8602` | `fix: sombra de ventana nativa en Linux via GTK CssProvider + fallback webview` | GTK `CssProvider` restores `decoration { box-shadow }`, fallback `app-shell` shadow, `gtk-shadow` class. → superseded by Wayland-safe `StyleContext::add_provider`, and finally **removed**: Linux used full native decorations (no GTK code, no CSS frame). Windows later moved to a **frameless overlay titlebar** (`tauri-plugin-decorum`, 2026-09-19) and Linux to an **app-drawn titlebar over a GTK CSD frame** (Chromium-inspired class/hit-test integration, 2026-09-22 → 2026-09-24). |
+| `9da8602` | `fix: sombra de ventana nativa en Linux via GTK CssProvider + fallback webview` | GTK `CssProvider` restores `decoration { box-shadow }`, fallback `app-shell` shadow, `gtk-shadow` class. → superseded by Wayland-safe `StyleContext::add_provider`, and finally **removed**: Linux used full native decorations (no GTK code, no CSS frame). Windows later moved to a **frameless overlay titlebar** (`tauri-plugin-decorum`, 2026-09-19) and Linux to an **app-drawn titlebar over a GTK CSD frame** (Chromium-inspired class/hit-test integration, 2026-09-22 → 2026-09-24), and finally to **frameless + opaque with square system corners** (2026-09-27, deliberate). |
 
 > **Rule of thumb:** if you see `// Prestly pattern` or `// HuLa fix` in comments, that line is load-bearing. Don't remove it without re-reading the commit that added it. See `docs/en/native-feel.md` and `docs/en/mobile.md` for the long-form explanations.
 
@@ -66,14 +66,30 @@ apps/web/src/main.tsx           Providers + native guards (drag, zoom, opener) �
 apps/web/src/i18n/config.ts     i18next init (en/es, localStorage cache) — see config.ts:14
 apps/web/vite.config.ts         Vite + Tailwind + alias + host:true + vitest — see vite.config.ts:8
 packages/ui/src/styles/globals.css  Single source of truth for theme/tokens/shell — see globals.css:11
-src-tauri/src/lib.rs            Commands + vibrancy + macOS traffic lights + Windows overlay (decorum) — see lib.rs:125, lib.rs:185, lib.rs:651
+src-tauri/src/lib.rs            Commands + vibrancy + macOS traffic lights + Windows overlay (decorum) — see lib.rs:125, lib.rs:185, lib.rs:814
 src-tauri/tauri.conf.json       Base Tauri config (merged with tauri.{os}.conf.json)
 src-tauri/Info.plist            Template source for macOS+iOS Info.plist (gen/ is autogen)
 scripts/Xcode/apple-xcode.sh    Regeneration of src-tauri/gen/apple (xcodegen) — never edit gen/
+scripts/build-linux.sh          Linux build over SSH (--remote) — the box below
+scripts/linux-box.sh            Control the Linux box (up/down/status/ssh/build/app/novnc)
+docker/linux-gnome/             The box image: Ubuntu 24.04 + GNOME session + noVNC + TightVNC
 Makefile                        Desktop/iOS/Android shortcuts + install-tauri-cli
 docs/                           Bilingual docs (en/ + es/) — see docs/README.md
 AGENTS.md                       This file — agent contract (you are here)
 ```
+
+### The Linux box (why it exists)
+
+`cfg(target_os = "linux")` code in `lib.rs` (`start_window_resize`, DMABUF env vars — the CSD frame code was removed 2026-09-27) **never compiles
+on macOS**, so `cargo check` here cannot catch a type error in it. The box is where that code
+gets compiled, run and looked at: `./scripts/linux-box.sh up`, then
+`./scripts/linux-box.sh build --debug --run`, and watch it at http://localhost:6080/vnc.html
+(password `dev`). It does not start with Docker (`--restart=no`).
+
+It has already earned its keep: `find_webview` (`lib.rs:619`) used `type_().name()` as if it
+returned an `Option`, which only fails on Linux and was caught by the first box build.
+`docs/en/scripts.md` § "Making GNOME work in a container" documents the whole session recipe
+with the measured symptom for every wrong value — read it before touching the entrypoint.
 
 ### File ownership
 
@@ -83,8 +99,8 @@ AGENTS.md                       This file — agent contract (you are here)
 | App icons | `src-tauri/icons/` + `Assets.xcassets` | `src-tauri/gen/apple/Assets.*` |
 | iOS Info.plist | `src-tauri/Info.plist` (template, feeds both macOS+iOS) | `src-tauri/gen/apple/**/Info.plist` |
 | macOS traffic lights | `src-tauri/src/lib.rs:185` (`traffic_lights_target_y`) / `lib.rs:205` (snap) — targets X `17.5/39.5/61.5` (`lib.rs:160`) | AppKit internals elsewhere |
-| Linux titlebar (app-drawn) | `apps/web/src/components/layout/header.tsx` + `window-controls.tsx` (band + caption buttons); frame latch in `src-tauri/src/lib.rs` (`install_linux_frame`) | `src-tauri/gen/` |
-| Windows overlay titlebar (decorum) | `src-tauri/tauri.windows.conf.json:12` (`decorations: false`) + `src-tauri/src/lib.rs:651`/`lib.rs:655` + `apps/web/src/components/layout/window-controls.tsx` | `src-tauri/gen/` |
+| Linux titlebar (app-drawn, frameless) | `apps/web/src/components/layout/header.tsx` + `window-controls.tsx` (band + caption buttons); `window.show()` after `center()` in `src-tauri/src/lib.rs` `setup()` | `src-tauri/gen/` |
+| Windows overlay titlebar (decorum) | `src-tauri/tauri.windows.conf.json:12` (`decorations: false`) + `src-tauri/src/lib.rs:814`/`lib.rs:810` + `apps/web/src/components/layout/window-controls.tsx` | `src-tauri/gen/` |
 
 ---
 
@@ -179,12 +195,12 @@ These invariants were earned through painful commits (see §1 table). Removing a
 | `dragDropEnabled:false` + `zoomHotkeysEnabled:false` in **every** desktop `windows[]` entry (base + macOS/Windows/Linux overlays; the iOS/Android configs define no window) | `src-tauri/tauri.conf.json:21`, `tauri.macos.conf.json:16`, `tauri.windows.conf.json:15`, `tauri.linux.conf.json:14` | `c9ae1a4` | Drag-and-drop of files into the webview, pinch/keyboard zoom re-enabled. |
 | `viewport user-scalable=no, maximum-scale=1.0` + `touch-action: pan-x pan-y` + `user-select:none` | `apps/web/index.html:5`, `globals.css:137`, `globals.css:148` | `c9ae1a4`, `ae5be97` | Zoom on double-tap, text selection everywhere, scroll jank. Mobile breaks first. |
 | `window_effects_set` stays **sync** (main thread) | `src-tauri/src/lib.rs:125` | `f997723` | `window-vibrancy` panics/off-thread failure. The command MUST NOT become `async`. |
-| `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` | `src-tauri/src/lib.rs:596` | `93657d3`, `9da8602` | Yellow `backdrop-blur` glitches + RAM blow-up on Linux/NVIDIA/Wayland. |
+| `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` | `src-tauri/src/lib.rs:749` | `93657d3`, `9da8602` | Yellow `backdrop-blur` glitches + RAM blow-up on Linux/NVIDIA/Wayland. |
 | `titleBarStyle: Overlay` + `hiddenTitle` + live-resize fix (3 mechanisms) | `tauri.macos.conf.json`, `lib.rs:205` | `938f89a` | macOS traffic lights flicker/jump during resize (wry#1747, tauri#13044). |
 | Traffic-light `y` comes from the button **superview** (`isFlipped()` + container height), never from the window height nor a raw `26 - size/2` | `src-tauri/src/lib.rs:185` | measured on macOS 26 (2026-09-19): the titlebar container is **not flipped** (32px tall) | Writing the “distance from the top” as an absolute `y` moves the dots ~9px **up** instead of centring them; the target must be `MACOS_HEADER_BAND / 2` = 26px (`lib.rs:166`). |
-| Linux = **app-drawn titlebar + GTK CSD frame with GTK-owned shadow and themeable radius** (Chromium-inspired; Chromium draws a custom Views frame): the app header IS the 44px titlebar (`header.tsx:222` + `WindowControls`); `install_linux_frame` (`lib.rs:527`) latches CSD with an empty hidden `GtkHeaderBar` (`set_no_show_all(true)`), adds GTK class `tauri-app` (`lib.rs:385`) and radii `window.background.tauri-app` + `decoration { border-radius: 16px }` with a single `box-shadow` (`lib.rs:548`). `.app-shell` matches (`globals.css:247`); `transparent:true` gives the alpha channel that blends the corners. **Resize:** `install_linux_resize_grip` (`lib.rs:441`) handles GTK shadow-margin input/cursor and starts GTK's `begin_resize_drag`; `useWindowResizeEdges` + `start_window_resize` (`lib.rs:88`) handle the inner 6px webview edge. Windows = **frameless** (`decorations:false`) + `tauri-plugin-decorum` + React caption buttons + `DWMWCP_ROUND`. Both keep app header drag (`data-tauri-drag-region` + `useWindowDragRegion`) and fixed band height with `shrink-0` (`header.tsx:29`) | `tauri.linux.conf.json:11-13`, `src-tauri/src/lib.rs:385`, `:441`, `:527`, `:548`, `apps/web/src/components/layout/header.tsx:222`, `native-chrome.ts:14`, `:135`, `title-bar.tsx:20`, `globals.css:247`, `capabilities/default.json:16`, Windows configs/permissions | GTK CSD titlebar replacement + frame style class + native shadow-margin resize; Windows decorum overlay | On Linux, dropping `set_no_show_all(true)` re-shows the hidden GTK headerbar (tao uses `show_all()`) and consumes 43px; dropping the `tauri-app` class/provider loses theme integration; changing either 16px radius independently misaligns web content and GTK decoration. Dropping `transparent:true` removes the alpha channel, so corners read as square again. Dropping `install_linux_resize_grip` removes shadow-margin resize; dropping the inner resize hook removes content-edge resize. On Windows, dropping decorum/caption buttons/permissions or the `[data-tauri-decorum-tb]` hide rule removes controls or overlays a 32px bar. Both platforms need the app drag region and fixed header band.
+| Linux = **app-drawn titlebar on a frameless opaque window** (square system corners, deliberate 2026-09-27): the app header IS the 44px titlebar (`header.tsx:222` + `WindowControls`); `tauri.linux.conf.json:11-13` → `decorations:false` + `transparent:false` + `visible:false`, and `setup()` centers then calls `window.show()`. **Resize:** no WM handles on frameless, so the inner 6px webview edge (`useWindowResizeEdges` + `start_window_resize`, `lib.rs:88`) drives GTK's `begin_resize_drag`. Windows = **frameless** (`decorations:false`) + `tauri-plugin-decorum` + React caption buttons + `DWMWCP_ROUND`. Both keep app header drag (`data-tauri-drag-region` + `useWindowDragRegion`) and fixed band height with `shrink-0` (`header.tsx:29`) | `tauri.linux.conf.json:11-13`, `apps/web/src/components/layout/header.tsx:222`, `native-chrome.ts`, `globals.css`, Windows configs/permissions | Frameless Linux window + app-drawn titlebar + app-edge resize; Windows decorum overlay | On Linux, removing the inner resize hook removes content-edge resize (frameless gets none from the WM); re-adding radius CSS or a GTK provider to round corners reopens the removed CSD arc (transparent tips at the extremes). On Windows, dropping decorum/caption buttons/permissions or the `[data-tauri-decorum-tb]` hide rule removes controls or overlays a 32px bar. Both platforms need the app drag region and fixed header band.
 | **Scroll container = content only** (`.app-shell` clips with `overflow:hidden`, `.app-scroll` owns `overflow-y:auto` and wraps `main` + `Footer`) and **overlay scrollbars come from the OS, never from CSS** (Windows `scrollBarStyle: "fluentOverlay"`, macOS native overlay, Linux `gtk-overlay-scrolling`) | `globals.css:215`/`globals.css:231`, `apps/web/src/App.tsx:52`, `tauri.windows.conf.json:13` | `010342b` follow-up (classic Windows bar with arrows used to belong to the shell and ate ~12px of the header) | Scrollbar CSS (`::-webkit-scrollbar`, `scrollbar-width`, `scrollbar-color`) forces the classic non-overlay bar back, kills macOS auto-hide and overrides `fluentOverlay`; making `.app-shell` the scroller again puts the bar over/next to the header and hides part of the caption buttons. |
-| `prevent-default` with `Flags::debug()` (blocks in release, keeps in debug) | `lib.rs:612` | `c9ae1a4`, `f23a894` | Context menu / Reload leaks into release builds, or devtools lost in debug. |
+| `prevent-default` with `Flags::debug()` (blocks in release, keeps in debug) | `lib.rs:758` | `c9ae1a4`, `f23a894` | Context menu / Reload leaks into release builds, or devtools lost in debug. |
 | `host: true` in `vite.config.ts` | `apps/web/vite.config.ts:25` | `10a74e4` | `tauri ios dev` health-check on LAN IP fails, hot-reload never connects. |
 
 **Checklist before pushing any UI/Rust change:**
