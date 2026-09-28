@@ -12,7 +12,6 @@ ficheros de aquí los implementan.
 - [Firma / DEVELOPMENT_TEAM](#-firma--development_team-auto-inyección)
 - [CLI](#-cli)
 - [Hot reload (IPC completo)](#-hot-reload-ipc-completo--tauri-ios-dev)
-- [Sin Xcode](#-sin-xcode-linuxwindowsmacos-sin-xcode)
 
 Relacionado: [`docs/es/scripts.md`](../../docs/es/scripts.md) (referencia de flags),
 [`docs/es/mobile.md`](../../docs/es/mobile.md) (flujos iOS/Android),
@@ -32,7 +31,7 @@ Relacionado: [`docs/es/scripts.md`](../../docs/es/scripts.md) (referencia de fla
 
 Inputs de build de apoyo (no son scripts, pero parte del sistema):
 
-- `src-tauri/build.rs` compila `Assets.xcassets` vía `actool` solo si hay Xcode; sin Xcode cae a `icon.icns` con un `cargo:warning` (desktop funciona sin Xcode).
+- `src-tauri/build.rs` compila `Assets.xcassets` vía `actool` cuando el tooling de Xcode está presente; si no, cae a `icon.icns` con un `cargo:warning`.
 - `rust-toolchain.toml` fija `stable` + targets `aarch64-apple-ios*` y Android para `cargo check --target ...` y los builds móviles.
 - `src-tauri/Assets.xcassets` + `Info.plist` + `tauri.macos.conf.json` (`titleBarStyle Overlay`, `transparent`) replican la capa genérica macOS/Xcode.
 
@@ -196,8 +195,3 @@ host y debe poder consultar el server en esa IP.
   frontend hace HMR por Vite. El auto-reload de Rust en sim queda limitado por
   el CLI upstream; `debug` conserva el camino standalone sin CLI. (Arreglado
   oficialmente para el listado en `cargo-mobile2 0.22.5`; ver `MODS.md`.)
-
-## 🖥️ Sin Xcode (Linux/Windows/macOS sin Xcode)
-
-Todo compila en desktop (`pnpm dev`, `pnpm dlx @tauri-apps/cli@2.12.0 dev`, `make dev`).
-iOS/Android solo con Xcode / Android SDK.

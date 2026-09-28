@@ -12,7 +12,6 @@ files here implement them.
 - [Signing / DEVELOPMENT_TEAM](#-signing--development_team-auto-injection)
 - [CLI](#-cli)
 - [Hot reload (full IPC)](#-hot-reload-full-ipc--tauri-ios-dev)
-- [Without Xcode](#-without-xcode-linuxwindowsmacos-without-xcode)
 
 Related: [`docs/en/scripts.md`](../../docs/en/scripts.md) (flags reference),
 [`docs/en/mobile.md`](../../docs/en/mobile.md) (iOS/Android flows),
@@ -32,7 +31,7 @@ Related: [`docs/en/scripts.md`](../../docs/en/scripts.md) (flags reference),
 
 Supporting build inputs (not scripts, but part of the system):
 
-- `src-tauri/build.rs` compiles `Assets.xcassets` via `actool` only when Xcode exists; without Xcode it falls back to `icon.icns` with a `cargo:warning` (desktop works without Xcode).
+- `src-tauri/build.rs` compiles `Assets.xcassets` via `actool` when Xcode tooling is present; otherwise it falls back to `icon.icns` with a `cargo:warning`.
 - `rust-toolchain.toml` pins `stable` + `aarch64-apple-ios*` and Android targets for `cargo check --target ...` and mobile builds.
 - `src-tauri/Assets.xcassets` + `Info.plist` + `tauri.macos.conf.json` (`titleBarStyle Overlay`, `transparent`) replicate the generic macOS/Xcode layer.
 
@@ -195,8 +194,3 @@ must reach the server on that IP.
   HMR via Vite. Sim Rust auto-reload stays limited by upstream CLI; `debug`
   keeps the standalone no-CLI path. (Officially fixed for device listing in
   `cargo-mobile2 0.22.5`; see `MODS.md`.)
-
-## 🖥️ Without Xcode (Linux/Windows/macOS without Xcode)
-
-Everything desktop compiles (`pnpm dev`, `pnpm dlx @tauri-apps/cli@2.12.0 dev`, `make dev`).
-iOS/Android only with Xcode / Android SDK.
