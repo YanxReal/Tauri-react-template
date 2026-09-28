@@ -165,7 +165,17 @@ targets:
       # built frontend via tauri/custom-protocol); every other platform goes
       # through the cargo-mobile2 pipeline unchanged.
       - script: |
-          export PATH="$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+          # Prefer a cargo that carries the iOS cross targets: rustup's proxy
+          # (standard ~/.cargo/bin OR Homebrew's rustup keg). Prepended so it
+          # wins over a Homebrew-only cargo that lacks the iOS std.
+          CARGO_BIN=""
+          [ -x "$HOME/.cargo/bin/cargo" ] && CARGO_BIN="$HOME/.cargo/bin"
+          [ -z "$CARGO_BIN" ] && [ -x "/opt/homebrew/opt/rustup/bin/cargo" ] && CARGO_BIN="/opt/homebrew/opt/rustup/bin"
+          if [ -n "$CARGO_BIN" ]; then
+            export PATH="$CARGO_BIN:$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+          else
+            export PATH="$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+          fi
 
           if [ "$PLATFORM_NAME" = "macosx" ]; then
             if [ "$CONFIGURATION" = "release" ]; then

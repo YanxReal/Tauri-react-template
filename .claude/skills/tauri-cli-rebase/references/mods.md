@@ -74,6 +74,23 @@ proguard keep rule preserves its name for release (R8).
 vendor onto the new stock (same as the iOS `project.yml`). If upstream adds an
 equivalent, drop MOD-4.
 
+## MOD-5 — iOS "Build Rust Code" phase prefers rustup's cargo
+
+**Where:** `templates/mobile/ios/project.yml` (the `- script:` phase).
+
+Stock exports `PATH="$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"`
+and runs `cargo`. On hosts where `~/.cargo/bin` has no cargo proxy (Homebrew
+rust installed separately), the phase falls back to a Homebrew-only cargo that
+**lacks the iOS/Android cross targets** — build dies with `can't find crate
+for std` on `aarch64-apple-ios-sim`. Ours prepends the rustup proxy when
+present (`$HOME/.cargo/bin` or `/opt/homebrew/opt/rustup/bin`) so the right
+cargo runs.
+
+**Porting notes:** the phase is embedded in the CLI binary (`include_dir!`) —
+after editing the template, REBUILD it (`make install-tauri-cli`), clear
+DerivedData, then re-init (`scripts/Xcode/apple-xcode.sh`). If upstream carries
+the rustup fallback, drop MOD-5.
+
 ## Templates (not stock)
 
 Unified `project.yml` (single `_Apple` target, debug/hotreload/release configs,
