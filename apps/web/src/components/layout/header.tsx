@@ -27,7 +27,11 @@ const HEADER_CONTROL_HOVER = "hover:bg-black/10 dark:hover:bg-white/15"
 const HEADER_HEIGHT = {
   macos: "h-[52px]",
   desktop: "h-11",
-  mobile: "h-14",
+  // Mobile grows WITH the safe-area inset: a fixed h-14 + pt-[env(...)] with
+  // border-box makes the ~59px Dynamic Island padding eat the whole 56px box,
+  // so the border-b crossed through the middle of the logo/title. The calc
+  // keeps the content row at 56px BELOW the inset (Android/web inset = 0).
+  mobile: "h-[calc(3.5rem+env(safe-area-inset-top))]",
 } as const
 
 /**
