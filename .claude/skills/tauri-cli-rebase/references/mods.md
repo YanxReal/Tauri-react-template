@@ -56,16 +56,21 @@ now-unused `ffi::OsString` / `path::{Component, PathBuf}` imports go with it.
 
 ## MOD-4 — Android status-bar contrast for edge-to-edge
 
-**Where:** `templates/mobile/android/app/src/main/MainActivity.kt`.
+**Where:** `templates/mobile/android/app/src/main/MainActivity.kt` (+ `app/proguard-rules.pro`).
 
 Stock calls `enableEdgeToEdge()` and nothing else. Ours adds
-`applyStatusBarContrast()` (called from `onCreate` + `onResume`): reads the
-system night mode and sets `isAppearanceLightStatusBars` /
-`isAppearanceLightNavigationBars` accordingly. Without it, edge-to-edge leaves
-dark system icons (clock, signal, battery) invisible over a dark WebView — the
-user reports "not even the time shows" in dark mode.
+`applyStatusBarContrast(night, caller)` (called from `onCreate`/`onResume`/
+`onWindowFocusChanged`/`onConfigurationChanged` with the system night state)
+plus `setStatusBarDark(isDark)` — invoked from Rust over JNI with the
+frontend's RESOLVED theme (see `set_status_bar_style` in the app's `lib.rs`).
+Why both: the activity declares `uiMode` in `configChanges`, so a live system
+flip fires neither recreate nor `onResume` (flags would go stale); and the app
+has its own theme override (toggle/D key), so system-following flags alone
+paint invisible icons when app and system disagree. `setStatusBarDark` hops to
+the UI thread internally, so the Rust caller thread doesn't matter; the
+proguard keep rule preserves its name for release (R8).
 
-**Porting notes:** template file, not CLI source — overlay it from the old
+**Porting notes:** template files, not CLI source — overlay them from the old
 vendor onto the new stock (same as the iOS `project.yml`). If upstream adds an
 equivalent, drop MOD-4.
 

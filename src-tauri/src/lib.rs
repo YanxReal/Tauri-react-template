@@ -179,6 +179,127 @@ fn window_effects_set(
     result
 }
 
+/// Tells Android which status-bar icon style to use, driven by the frontend's
+/// RESOLVED theme (not the system one). The app has its own theme override
+/// (toggle/D key/localStorage), so the user can run a light app on a dark
+/// system and vice versa — the system-following native flags alone would then
+/// paint invisible icons. No-op everywhere else (desktop/iOS draw their own
+/// chrome), so the frontend calls it unconditionally.
+#[tauri::command]
+fn set_status_bar_style(dark: bool) -> Result<(), String> {
+    #[cfg(target_os = "android")]
+    {
+        set_android_status_bar_dark(dark)
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = dark;
+        Ok(())
+    }
+}
+
+/// Android impl: calls `MainActivity.setStatusBarDark(Z)V` over JNI (see the
+/// vendored android template + proguard keep rule). The activity is located
+/// via the app ClassLoader + a static `currentActivity` field (null when no
+/// activity is resumed → graceful `Err`), because `ndk_context` only hands us
+/// a plain `Context` (not necessarily the Activity). The Kotlin method hops to
+/// the UI thread itself via `runOnUiThread`, so the caller thread doesn't
+/// matter. Every failure degrades to `Err` (frontend swallows it) — never a
+/// crash: JNI exceptions are checked and cleared after each reflective step,
+/// and we use `attach_current_thread_permanently` so we never detach a thread
+/// we didn't attach.
+#[cfg(target_os = "android")]
+fn set_android_status_bar_dark(dark: bool) -> Result<(), String> {
+    use jni::objects::{JClass, JObject, JString, JValue};
+    // SAFETY: ndk-context is initialized by the activity before any command
+    // runs; both pointers stay valid for the process lifetime.
+    let ctx = ndk_context::android_context();
+    let vm =
+        unsafe { jni::JavaVM::from_raw(ctx.vm() as _) }.map_err(|e| format!("no JavaVM: {e}"))?;
+    // Prefer the existing env (UI thread is already attached); permanently
+    // attach otherwise — never detach on drop, the thread isn't ours.
+    let mut env = vm
+        .get_env()
+        .or_else(|_| vm.attach_current_thread_permanently())
+        .map_err(|e| format!("no JNIEnv: {e}"))?;
+    // SAFETY: same lifetime argument as above.
+    let context = unsafe { JObject::from_raw(ctx.context() as _) };
+    // A failed JNI call below leaves a pending exception; clear it so the
+    // error path itself stays safe, then report which step failed.
+    let fail = |env: &mut jni::JNIEnv<'_>, step: &str| {
+        if env.exception_check().unwrap_or(false) {
+            env.exception_describe().ok();
+            env.exception_clear().ok();
+        }
+        Err(format!("{step} failed"))
+    };
+
+    // Package name -> MainActivity class, resolved through the APP
+    // ClassLoader (FindClass from an attached native thread would use the
+    // boot loader and miss app classes).
+    let pkg_obj = env
+        .call_method(&context, "getPackageName", "()Ljava/lang/String;", &[])
+        .map_err(|_| "getPackageName failed".to_string())?;
+    if env.exception_check().unwrap_or(false) {
+        return fail(&mut env, "getPackageName threw");
+    }
+    let pkg: String = env
+        .get_string(&JString::from(
+            pkg_obj.l().map_err(|_| "pkg not an object".to_string())?,
+        ))
+        .map_err(|e| format!("pkg decode failed: {e}"))?
+        .into();
+    let loader = env
+        .call_method(&context, "getClassLoader", "()Ljava/lang/ClassLoader;", &[])
+        .map_err(|_| "getClassLoader failed".to_string())?
+        .l()
+        .map_err(|_| "loader not an object".to_string())?;
+    if env.exception_check().unwrap_or(false) {
+        return fail(&mut env, "getClassLoader threw");
+    }
+    let activity_cls_name = format!("{pkg}.MainActivity");
+    let activity_cls = env
+        .call_method(
+            &loader,
+            "loadClass",
+            "(Ljava/lang/String;)Ljava/lang/Class;",
+            &[JValue::from(
+                &env.new_string(activity_cls_name.as_str())
+                    .map_err(|e| format!("new_string failed: {e}"))?,
+            )],
+        )
+        .map_err(|_| "loadClass failed".to_string())?
+        .l()
+        .map_err(|_| "loaded not a class".to_string())?;
+    if env.exception_check().unwrap_or(false) {
+        return fail(&mut env, "loadClass threw");
+    }
+    let field_sig = format!("L{};", activity_cls_name.replace('.', "/"));
+    let activity = env
+        .get_static_field(JClass::from(activity_cls), "currentActivity", field_sig)
+        .map_err(|_| "currentActivity read failed".to_string())?
+        .l()
+        .map_err(|_| "currentActivity not an object".to_string())?;
+    if env.exception_check().unwrap_or(false) {
+        return fail(&mut env, "get_static_field threw");
+    }
+    if activity.is_null() {
+        return Err("no resumed activity yet".to_string());
+    }
+    env.call_method(
+        &activity,
+        "setStatusBarDark",
+        "(Z)V",
+        &[JValue::Bool(dark as u8)],
+    )
+    .map_err(|_| "setStatusBarDark call failed".to_string())?;
+    if env.exception_check().unwrap_or(false) {
+        return fail(&mut env, "setStatusBarDark threw");
+    }
+    log::info!("set_status_bar_style: dark={dark} ok");
+    Ok(())
+}
+
 /// Desktop-Apple shell entry for the unified `tauri-react-template_Apple`
 /// Xcode target (see `src-tauri/tauri.macos.conf.json` + `Assets.xcassets`).
 /// The Xcode project's `main.mm` calls `start_app()` via FFI. On iOS the
@@ -464,7 +585,8 @@ pub fn run() {
             greet,
             platform_info,
             start_window_resize,
-            window_effects_set
+            window_effects_set,
+            set_status_bar_style
         ])
         .setup(|app| {
             // Forced centering on desktop — `center:true` in tauri.conf is not

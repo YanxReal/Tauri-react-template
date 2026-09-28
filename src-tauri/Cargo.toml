@@ -72,6 +72,13 @@ windows = { version = "0.62", features = [
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
 
+# Android: `set_status_bar_style` talks to MainActivity over JNI (see the
+# `setStatusBarDark` method in the vendored android template). Versions match
+# what wry/tao already pull (Cargo.lock) so the lockfile barely moves.
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+ndk-context = "0.1"
+
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 

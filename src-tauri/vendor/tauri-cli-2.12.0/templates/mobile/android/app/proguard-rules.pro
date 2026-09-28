@@ -12,6 +12,15 @@
 #   public *;
 #}
 
+# Tauri-react-template: MainActivity.setStatusBarDark(boolean) + the static
+# currentActivity field are invoked/read from Rust over JNI
+# (`set_status_bar_style` command). Keep the names so release (R8) builds
+# don't rename them.
+-keepclassmembers class * extends android.app.Activity {
+  public void setStatusBarDark(boolean);
+  public static * currentActivity;
+}
+
 # Uncomment this to preserve the line number information for
 # debugging stack traces.
 #-keepattributes SourceFile,LineNumberTable

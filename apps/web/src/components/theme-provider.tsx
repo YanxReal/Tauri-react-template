@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core"
 import * as React from "react"
 
 type Theme = "dark" | "light" | "system"
@@ -28,6 +29,10 @@ function isTheme(value: string | null): value is Theme {
   }
 
   return THEME_VALUES.includes(value as Theme)
+}
+
+function isTauriRuntime() {
+  return "__TAURI_INTERNALS__" in window
 }
 
 function getSystemTheme(): ResolvedTheme {
@@ -111,6 +116,15 @@ export function ThemeProvider({
 
       root.classList.remove("light", "dark")
       root.classList.add(resolvedTheme)
+
+      // Keep Android status-bar icons in sync with the RESOLVED app theme
+      // (not the system one): the user can override via toggle/D key, running
+      // a light app on a dark system or vice versa. No-op off Android.
+      if (isTauriRuntime()) {
+        void invoke("set_status_bar_style", {
+          dark: resolvedTheme === "dark",
+        }).catch(() => {})
+      }
 
       if (restoreTransitions) {
         restoreTransitions()
