@@ -33,7 +33,7 @@
 | `make linux-logs` / `make linux-stop` | sigue / mata el dev server o la app en remoto |
 | `make box-shot` | `scripts/box-shot.sh` (captura VNC de la caja) |
 | `make install-tauri-cli` | Compila `src-tauri/vendor/tauri-cli-2.12.0` (2.12.0 stock + 3 retoques: fallback standalone, target `_Apple`) → `~/.cargo/bin/cargo-tauri` |
-| `make install-skills` | Instala todas las agent skills del proyecto |
+| `make install-skills` | Instala todas las agent skills del proyecto (macOS/Linux; en Windows corre `scripts\install-skills.cmd`) |
 | `make lint` / `make build` | alias |
 | `make help` / `make doctor` | lista comandos / revisa toolchain |
 

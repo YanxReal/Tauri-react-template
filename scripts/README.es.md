@@ -27,6 +27,7 @@ Relacionado: [`docs/es/scripts.md`](../../docs/es/scripts.md) (referencia de fla
 | Skill `.claude/skills/tauri-cli-rebase/` | Rebase del `tauri-cli` vendoreado — re-aplica los 3 retoques (MOD-1/2/3) semánticamente sobre una versión stock nueva (`.claude/skills/tauri-cli-rebase/references/mods.md`) |
 | `scripts/Xcode/apple-xcode.sh` | Regenera `src-tauri/gen/apple` (xcodegen); `--build` además compila sim iOS + host macOS |
 | `scripts/Xcode/xcode-dev.command` | Ayuda de hotreload unificada — `server` (Vite visible `:1420` + HMR, por defecto) o `parent` (`tauri ios dev --open` IPC completo) |
+| `scripts/install-skills.sh` (+ `.cmd`) | Instala todas las agent skills del proyecto; el `.cmd` es el launcher de Windows (corre el `.sh` vía Git Bash) |
 
 Inputs de build de apoyo (no son scripts, pero parte del sistema):
 

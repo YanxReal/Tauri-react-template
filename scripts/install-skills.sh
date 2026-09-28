@@ -20,12 +20,37 @@
 #   scripts/install-skills.sh --list         # show which skills are installed where
 #   scripts/install-skills.sh --verify       # check installs match source (no-op write)
 #   scripts/install-skills.sh --dry-run      # show what would be copied, change nothing
+#
+# Platforms:
+#   macOS / Linux  run the .sh directly (needs bash).
+#   Windows        run `scripts\install-skills.cmd` from cmd/PowerShell, or
+#                  run the .sh from a Git Bash / MSYS2 / Cygwin terminal.
 # ---------------------------------------------------------------------------
 set -euo pipefail
+
+# --- Platform detection ------------------------------------------------------
+# This is a bash script. On Windows it must run under a bash environment
+# (Git Bash / MSYS2 / Cygwin — all shipped with Git for Windows). We detect
+# those so we can (a) tell the user and (b) keep $HOME resolution correct
+# (Git Bash maps $HOME to the Windows user profile, which is exactly where
+# Claude Code / Codex / OpenCode read skills on Windows).
+OST="$(uname -s 2>/dev/null || echo unknown)"
+case "$OST" in
+  MINGW*|MSYS*|CYGWIN*) IS_WINDOWS=1 ;;
+  *) IS_WINDOWS=0 ;;
+esac
+if [[ "$IS_WINDOWS" == "1" ]]; then
+  # Bash detected under MSYS/Git Bash on Windows: paths via $HOME are correct,
+  # but chmod has no real effect here — just informational.
+  :
+fi
 
 SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$SELF/.." && pwd)"
 SRC="$REPO/.claude/skills"
+# Windows note: in Git Bash, $HOME already maps to the Windows user profile
+# (C:\Users\<user>), which is exactly where Claude Code / Codex / OpenCode
+# read skills on Windows — so the same paths below are correct on all OSes.
 CLAUDE_GLOBAL="$HOME/.claude/skills"
 OPENCODE_GLOBAL="$HOME/.config/opencode/skills"
 
