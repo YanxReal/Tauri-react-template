@@ -71,7 +71,9 @@ their own flow — see [Mobile](./mobile.md) and [Scripts](./scripts.md):
 ```bash
 make dev:ios                # iPhone simulator
 make dev-android-emulator   # boot AVD + android dev
-./scripts/linux-box.sh up   # start the Linux box
+# Linux box (separate repo):
+#   cd ../Ubuntu-arm-docker && make install   # Ubuntu 26.04 + GNOME 50 desktop
+#   ssh ubuntu-arm                             # admin, key auth
 ```
 
 ### Environment variables

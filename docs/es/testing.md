@@ -31,7 +31,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-CI lo espeja: `frontend.yml` (Node 24 + pnpm 10) y `rust.yml` (matriz ubuntu / windows / macos). Un CI en rojo bloquea el PR — sin excepciones.
+No hay CI — pásalos tú antes de cada push. Un gate en rojo bloquea el PR — sin excepciones.
 
 ## Matriz manual (por bundle real)
 

@@ -71,7 +71,9 @@ flujo propio — ver [Móvil](./mobile.md) y [Scripts](./scripts.md):
 ```bash
 make dev:ios                # simulador iPhone
 make dev-android-emulator   # arranca AVD + android dev
-./scripts/linux-box.sh up   # arranca la caja Linux
+# Caja Linux (repo aparte):
+#   cd ../Ubuntu-arm-docker && make install   # escritorio Ubuntu 26.04 + GNOME 50
+#   ssh ubuntu-arm                             # admin, clave
 ```
 
 ### Variables de entorno

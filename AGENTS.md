@@ -26,7 +26,7 @@ If a user instruction conflicts with §3 or §4, **explain the conflict and prop
 | **Stack** | Tauri v2.11 + React 19.2 + Vite 8.2 + Tailwind v4.3 (`@tailwindcss/vite`) + TypeScript 5.9 strict + Turborepo 2.10 + Biome 2.5 + Vitest 4 + i18next (EN/ES). Rust stable 1.85+, `window-vibrancy 0.8`, `tauri-plugin-prevent-default`, `plugin-opener`. |
 | **Monorepo** | `apps/web` (Vite app, port `1420`, alias `@` → `src`) + `packages/ui` (shadcn design system, exports `@workspace/ui/*`) + `src-tauri` (Rust backend, per-OS Tauri configs). |
 | **Docs** | `docs/en/` and `docs/es/` — **mirrored, must stay in parity** (see §3). `docs/README.md` is the bilingual router. |
-| **Quality** | `biome.json` (formatter + linter, 2 spaces / 80 cols / `asNeeded`), Husky + lint-staged, `cargo fmt` + `clippy` (`await_holding_lock: deny`), CI `frontend.yml` + `rust.yml`. |
+| **Quality** | `biome.json` (formatter + linter, 2 spaces / 80 cols / `asNeeded`), Husky + lint-staged, `cargo fmt` + `clippy` (`await_holding_lock: deny`). No CI — gates run locally (see Testing). |
 | **Reference** | The original evolution is recorded in `git log` — 52 commits from `455897d` (initial) to HEAD. The milestone table below covers the first 20 (up to `9da8602`, the Linux shadow); everything after is the Windows/Linux window-frame arc, documented in `docs/en/changelog.md` and summarised in the invariants table of §4.3. Read it before large refactors. |
 
 ### Why git history matters (read it)
@@ -71,8 +71,7 @@ src-tauri/tauri.conf.json       Base Tauri config (merged with tauri.{os}.conf.j
 src-tauri/Info.plist            Template source for macOS+iOS Info.plist (gen/ is autogen)
 scripts/Xcode/apple-xcode.sh    Regeneration of src-tauri/gen/apple (xcodegen) — never edit gen/
 scripts/build-linux.sh          Linux build over SSH (--remote) — the box below
-scripts/linux-box.sh            Control the Linux box (up/down/status/ssh/build/app/novnc)
-docker/linux-gnome/             The box image: Ubuntu 24.04 + GNOME session + noVNC + TightVNC
+scripts/box-shot.sh             Screenshot the Linux box over VNC (see `scripts/box-shot.sh` header)
 Makefile                        Desktop/iOS/Android shortcuts + install-tauri-cli
 docs/                           Bilingual docs (en/ + es/) — see docs/README.md
 AGENTS.md                       This file — agent contract (you are here)
@@ -84,8 +83,6 @@ AGENTS.md                       This file — agent contract (you are here)
 on macOS**, so `cargo check` here cannot catch a type error in it. The box is where that code
 gets compiled, run and looked at. Current box: [Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)
 (`ssh ubuntu-arm`, project at `/workspace/tauri-react-template`, launch GUI with `dev`).
-Legacy minimal box: `./scripts/linux-box.sh up`, then `./scripts/linux-box.sh build --debug --run`,
-watch at http://localhost:6080/vnc.html (password `dev`). It does not start with Docker (`--restart=no`).
 
 It has already earned its keep: `find_webview` used `type_().name()` as if it
 returned an `Option`, which only fails on Linux and was caught by the first box build (before the CSD frame code was removed 2026-09-27).

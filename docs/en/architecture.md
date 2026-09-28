@@ -43,8 +43,7 @@
 │   ├── src/{lib.rs,main.rs,platform/}
 │   ├── Info.plist           # template (macOS + iOS source of truth)
 │   └── vendor/              # tauri-cli 2.12.0 + templates (see MODS.md)
-├── scripts/                 # build-*.sh, linux-box.sh, Xcode/
-├── docker/linux-gnome/      # Linux box image
+├── scripts/                 # build-*.sh, box-shot.sh, Xcode/
 └── biome.json · turbo.json · pnpm-workspace.yaml · Makefile · AGENTS.md
 ```
 
@@ -78,6 +77,6 @@ Base `tauri.conf.json:1` holds `build`, common windows, bundle. Per-OS overlays 
 - **Rust:** `cargo fmt` + `clippy` (`await_holding_lock: deny`, `Cargo.toml:76`).
 - **Tests:** Vitest + Testing Library — see [Testing](./testing.md).
 - **Git:** Husky + lint-staged (`biome check --write` on code files).
-- **CI:** `frontend.yml` (typecheck+lint+test+build) + `rust.yml` (matrix ubuntu/windows/macos: check + fmt + clippy + test).
+- **Gates (local, no CI):** `pnpm typecheck/lint/test/build` + `cargo check/fmt/clippy/test` — see [Testing](./testing.md).
 
 Next: [Frontend →](./frontend.md)

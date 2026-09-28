@@ -196,16 +196,14 @@ biome check --write .   # directo
 - `.husky/pre-commit` → `lint-staged`
 - `lint-staged:25` — `*.{ts,tsx,js,jsx,json,jsonc,css}` → `biome check --write --no-errors-on-unmatched`
 
-## CI
+## CI (eliminado)
 
-`.github/workflows/frontend.yml:1` — en PR/push que toque `apps/web/**`, `packages/**`: `pnpm install` → `typecheck` → `lint` → `test` → `build` (Node 24, pnpm 10).
-
-`.github/workflows/rust.yml:1` — en PR/push que toque `src-tauri/**`, `rust-toolchain.toml`: `cargo check` + `cargo fmt --check` (stable + cache).
+Sin workflows de CI — solo consumían recursos de GitHub. Los mismos gates corren en local (ver [Testing](./testing.md)); Husky + lint-staged vigilan cada commit.
 
 ## Pines Node / pnpm
 
 - `.nvmrc` + `.node-version` — Node 24
 - `.npmrc` — ajustes pnpm
-- `pnpm-lock.yaml` frozen en CI (`--frozen-lockfile`)
+- `pnpm-lock.yaml` frozen al instalar (`--frozen-lockfile`)
 
 Siguiente: [Solución de problemas →](./troubleshooting.md)

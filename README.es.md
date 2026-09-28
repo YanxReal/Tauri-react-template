@@ -2,8 +2,6 @@
 
 **Starter multi-plataforma Tauri v2 + React 19** — un solo código, ventanas nativas en macOS, Windows, Linux, iOS y Android, con docs bilingües (EN/ES) y contrato para agentes.
 
-[![Frontend](https://github.com/YanxReal/tauri-react-template/actions/workflows/frontend.yml/badge.svg)](https://github.com/YanxReal/tauri-react-template/actions/workflows/frontend.yml)
-[![Rust](https://github.com/YanxReal/tauri-react-template/actions/workflows/rust.yml/badge.svg)](https://github.com/YanxReal/tauri-react-template/actions/workflows/rust.yml)
 [![Tauri 2](https://img.shields.io/badge/tauri-2-FFC131?logo=tauri&logoColor=white)](https://tauri.app)
 [![React 19](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Node 24](https://img.shields.io/badge/node-%3E%3D24-339933?logo=node.js&logoColor=white)](https://nodejs.org)
@@ -132,8 +130,7 @@ Los flujos iOS / Android / caja Linux están en [Modelo de ventana](#-modelo-de-
 │   ├── tauri.conf.json      # base (se fusiona con tauri.{os}.conf.json)
 │   ├── vendor/              # tauri-cli 2.12.0 + templates (ver MODS.md)
 │   └── Info.plist           # plantilla para macOS + iOS
-├── scripts/                 # build-linux.sh, linux-box.sh, Xcode/, ...
-├── docker/linux-gnome/      # imagen de la caja Linux de build/test
+├── scripts/                 # build-linux.sh, box-shot.sh, Xcode/, ...
 ├── docs/en + docs/es        # docs espejadas (regla de paridad)
 ├── MODS.md                  # modificaciones del CLI vendoreado (raíz)
 ├── AGENTS.md                # contrato para agentes
@@ -174,7 +171,7 @@ Todo vive en env / vars de `Makefile` / ficheros estilo `.env` (nada hardcodeado
 | `IOS_DEV_HOST` | autodetección link-local | host dev para iPhone físico (USB) |
 | `ANDROID_AVD` / `ANDROID_TARGET` | `Resizable_Experimental` / `aarch64` | emulador + arquitectura |
 | `ANDROID_HOME` | `~/Library/Android/sdk` | ubicación del SDK |
-| `LINUX_BUILD_REMOTE` / `LINUX_BUILD_DIR` / `LINUX_BUILD_DISPLAY` | `ubuntu-vnc` / `tauri-react-template` / `:1` | caja Linux de build por SSH |
+| `LINUX_BUILD_REMOTE` / `LINUX_BUILD_DIR` | `ubuntu-arm` / `/workspace/tauri-react-template` | caja Linux de build por SSH ([Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)) |
 | `APPLE_SIGNING_IDENTITY` / `src-tauri/keys/macos-signing-identity.txt` | — (opcional) | identidad estable de firma macOS |
 
 > Tras editar, los flujos son por target (`make restart`, scripts de regen); en runtime solo se leen claves `localStorage` de tema/i18n.
@@ -231,7 +228,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-Y testear **scroll + click + no-zoom** en un bundle real por SO (`pnpm tauri:build`, `scripts/build-linux.sh`, `scripts/build-windows.sh`) — matriz completa: [`docs/es/testing.md`](docs/es/testing.md). CI corre matriz Frontend + Rust (ubuntu/windows/macos) en cada PR.
+Y testear **scroll + click + no-zoom** en un bundle real por SO (`pnpm tauri:build`, `scripts/build-linux.sh`, `scripts/build-windows.sh`) — matriz completa: [`docs/es/testing.md`](docs/es/testing.md). Los gates corren en local (sin CI) — ver Verificación arriba.
 
 ---
 
@@ -247,7 +244,7 @@ Y testear **scroll + click + no-zoom** en un bundle real por SO (`pnpm tauri:bui
 | volúmenes Docker `tauri-*` | volúmenes con nombre | cachés cargo/pnpm de la caja Linux mínima |
 | [Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) | repo aparte | caja Linux actual (Ubuntu 26.04 + GNOME 50, toolchain Tauri) — proyecto en `/workspace/tauri-react-template` |
 
-Borrados tipo `make destroy`: solo `scripts/linux-box.sh destroy` borra volúmenes de la caja; el repo no tiene target destroy.
+Los volúmenes de la caja viven en el compose de Ubuntu-arm-docker (`admin-home`, `ssh-host-keys`); este repo no tiene target destroy.
 
 ---
 
@@ -323,7 +320,7 @@ cargo check --manifest-path src-tauri/Cargo.toml
 # abre PR con el checklist de paridad
 ```
 
-Reglas que importan: **paridad bilingüe de docs** (cada cambio `en/` necesita su espejo `es/`), **no editar `src-tauri/gen/`**, **invariantes multiplataforma** (`AGENTS.md` §4.3). CI testea cada PR.
+Reglas que importan: **paridad bilingüe de docs** (cada cambio `en/` necesita su espejo `es/`), **no editar `src-tauri/gen/`**, **invariantes multiplataforma** (`AGENTS.md` §4.3). Los gates corren en local.
 
 ---
 
