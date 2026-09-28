@@ -2,7 +2,7 @@
   "app": {
     "windows": [
       {
-        "title": "tauri-react-template",
+        "title": "Tauri-react-template",
         "width": 1200,
         "height": 800,
         "minWidth": 375,
@@ -22,7 +22,7 @@
   },
   "bundle": {
     "publisher": "YanX Studio",
-    "homepage": "https://github.com/YanxReal/tauri-react-template",
+    "homepage": "https://github.com/YanxReal/Tauri-react-template",
     "copyright": "Copyright © 2026 YanX Studio",
     "category": "DeveloperTool",
     "licenseFile": "LICENSE.rtf",
@@ -36,7 +36,7 @@
         "installerIcon": "icons/icon.ico",
         "headerImage": "icons/nsis-header.bmp",
         "sidebarImage": "icons/nsis-sidebar.bmp",
-        "startMenuFolder": "tauri-react-template",
+        "startMenuFolder": "Tauri-react-template",
         "installMode": "currentUser",
         "languages": ["English", "Spanish", "SpanishInternational"],
         "displayLanguageSelector": true,

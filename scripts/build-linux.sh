@@ -9,7 +9,7 @@
 #                    (the minimal in-repo box). For Ubuntu-arm-docker
 #                    (https://github.com/YanxReal/Ubuntu-arm-docker) use
 #                    `--remote ubuntu-arm` with
-#                    `LINUX_BUILD_DIR=/workspace/tauri-react-template`.
+#                    `LINUX_BUILD_DIR=/workspace/Tauri-react-template`.
 #                    Full featured: build, run, dev, logs, stop. This is the
 #                    path for macOS.
 #   --native         build on this machine (must be Linux).

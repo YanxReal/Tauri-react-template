@@ -21,8 +21,8 @@
 ## Installation
 
 ```bash
-git clone <your-repo> tauri-react-template
-cd tauri-react-template
+git clone <your-repo> Tauri-react-template
+cd Tauri-react-template
 pnpm install
 # Done in ~1m · 581 packages · husky prepare hook
 ```
@@ -104,9 +104,9 @@ VS Code + `tauri-vscode` + `rust-analyzer` + `biome` + `tailwindcss`
 ## Private repo setup
 
 ```bash
-gh repo create tauri-react-template --private --source=. --push
+gh repo create Tauri-react-template --private --source=. --push
 # or:
-git remote add origin git@github.com:YOUR_USER/tauri-react-template.git
+git remote add origin git@github.com:YOUR_USER/Tauri-react-template.git
 git push -u origin master
 ```
 

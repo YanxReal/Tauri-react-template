@@ -133,7 +133,7 @@ export function Header() {
             EinUI
           </a>
           <a
-            href="https://github.com/YanxReal/tauri-react-template"
+            href="https://github.com/YanxReal/Tauri-react-template"
             target="_blank"
             rel="noreferrer"
             className={`${

@@ -80,13 +80,13 @@ La caja actual es **[Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-d
 |---|---|
 | Repo | [YanxReal/Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) (`make install`) |
 | noVNC / VNC / SSH | `http://localhost:6080/vnc.html` · `localhost:5902` · `ssh ubuntu-arm` (alias en `~/.ssh/config`, usuario `admin`, clave) |
-| Ruta del proyecto | `/workspace/tauri-react-template` (bind `./workspace`) |
+| Ruta del proyecto | `/workspace/Tauri-react-template` (bind `./workspace`) |
 | Lanzar apps GUI | wrapper `dev <cmd>` (inyecta `WAYLAND_DISPLAY` + bus de sesión) |
 
 Apúntala con el script de este repo (sync + build). Ojo: `--run`/`--dev` asumen un `DISPLAY` X11, así que en esta caja Wayland lanza vía `dev`:
 
 ```bash
-LINUX_BUILD_DIR=/workspace/tauri-react-template ./scripts/build-linux.sh --remote ubuntu-arm --debug
+LINUX_BUILD_DIR=/workspace/Tauri-react-template ./scripts/build-linux.sh --remote ubuntu-arm --debug
 # luego en la caja (sin GPU — render por software):
 WEBKIT_DISABLE_COMPOSITING_MODE=1 LIBGL_ALWAYS_SOFTWARE=1 dev ./src-tauri/target/debug/tauri-react-template
 ```

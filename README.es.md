@@ -1,4 +1,4 @@
-# tauri-react-template
+# Tauri-react-template
 
 **Starter multi-plataforma Tauri v2 + React 19** — un solo código, ventanas nativas en macOS, Windows, Linux, iOS y Android, con docs bilingües (EN/ES) y contrato para agentes.
 
@@ -92,8 +92,8 @@ pnpm --version   # 10.x
 rustc --version  # 1.85+
 
 # 1. Clonar + instalar
-git clone https://github.com/YanxReal/tauri-react-template.git
-cd tauri-react-template
+git clone https://github.com/YanxReal/Tauri-react-template.git
+cd Tauri-react-template
 pnpm install
 # Done en ~1m (581 paquetes) + hook `husky` de prepare
 
@@ -171,7 +171,7 @@ Todo vive en env / vars de `Makefile` / ficheros estilo `.env` (nada hardcodeado
 | `IOS_DEV_HOST` | autodetección link-local | host dev para iPhone físico (USB) |
 | `ANDROID_AVD` / `ANDROID_TARGET` | `Resizable_Experimental` / `aarch64` | emulador + arquitectura |
 | `ANDROID_HOME` | `~/Library/Android/sdk` | ubicación del SDK |
-| `LINUX_BUILD_REMOTE` / `LINUX_BUILD_DIR` | `ubuntu-arm` / `/workspace/tauri-react-template` | caja Linux de build por SSH ([Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)) |
+| `LINUX_BUILD_REMOTE` / `LINUX_BUILD_DIR` | `ubuntu-arm` / `/workspace/Tauri-react-template` | caja Linux de build por SSH ([Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)) |
 | `APPLE_SIGNING_IDENTITY` / `src-tauri/keys/macos-signing-identity.txt` | — (opcional) | identidad estable de firma macOS |
 
 > Tras editar, los flujos son por target (`make restart`, scripts de regen); en runtime solo se leen claves `localStorage` de tema/i18n.
@@ -242,7 +242,7 @@ Y testear **scroll + click + no-zoom** en un bundle real por SO (`pnpm tauri:bui
 | `dist-linux/` | traído (gitignored) | bundles copiados de vuelta desde la caja Linux |
 | `scripts/.team-id` | local (gitignored) | Team ID persistente de Apple |
 | volúmenes Docker `tauri-*` | volúmenes con nombre | cachés cargo/pnpm de la caja Linux mínima |
-| [Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) | repo aparte | caja Linux actual (Ubuntu 26.04 + GNOME 50, toolchain Tauri) — proyecto en `/workspace/tauri-react-template` |
+| [Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) | repo aparte | caja Linux actual (Ubuntu 26.04 + GNOME 50, toolchain Tauri) — proyecto en `/workspace/Tauri-react-template` |
 
 Los volúmenes de la caja viven en el compose de Ubuntu-arm-docker (`admin-home`, `ssh-host-keys`); este repo no tiene target destroy.
 
@@ -326,10 +326,10 @@ Reglas que importan: **paridad bilingüe de docs** (cada cambio `en/` necesita s
 
 ## 📄 Licencia
 
-MIT © tauri-react-template — ver [LICENSE](LICENSE). Plantilla privada para uso personal:
+MIT © Tauri-react-template — ver [LICENSE](LICENSE). Plantilla privada para uso personal:
 
 ```bash
-gh repo create tauri-react-template --private --source=. --push
+gh repo create Tauri-react-template --private --source=. --push
 ```
 
 ---
@@ -345,6 +345,6 @@ gh repo create tauri-react-template --private --source=. --push
 
 ## 🔗 Enlaces
 
-- **Repo:** https://github.com/YanxReal/tauri-react-template
+- **Repo:** https://github.com/YanxReal/Tauri-react-template
 - **Docs:** [`docs/en/README.md`](docs/en/README.md) · [`docs/es/README.md`](docs/es/README.md) · [router](docs/README.md)
 - **Tauri v2:** https://tauri.app · **Vite:** https://vite.dev · **Tailwind:** https://tailwindcss.com · **Biome:** https://biomejs.dev

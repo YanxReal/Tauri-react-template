@@ -41,7 +41,7 @@ Dispatch por plataforma para `set_window_effect` (`lib.rs:31`):
 
 ```json
 {
-  "productName": "tauri-react-template",
+  "productName": "Tauri-react-template",
   "identifier": "com.tauri-react-template.app",
   "build": {
     "beforeDevCommand": "pnpm --filter web dev",
@@ -52,7 +52,7 @@ Dispatch por plataforma para `set_window_effect` (`lib.rs:31`):
   "app": {
     "macOSPrivateApi": true,
     "windows": [{
-      "title": "tauri-react-template",
+      "title": "Tauri-react-template",
       "width": 1024, "height": 768,
       "minWidth": 800, "minHeight": 600,
       "dragDropEnabled": false,

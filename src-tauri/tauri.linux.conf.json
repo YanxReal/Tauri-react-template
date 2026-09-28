@@ -2,7 +2,7 @@
   "app": {
     "windows": [
       {
-        "title": "tauri-react-template",
+        "title": "Tauri-react-template",
         "width": 1200,
         "height": 800,
         "minWidth": 375,
