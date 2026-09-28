@@ -135,8 +135,8 @@ iOS / Android / Linux-box flows live under [Window model](#-window-model), [Make
 When this template releases a new version, update your app **without breaking your own code, renames, or customizations** using the bundled `template-update` skill (Anthropic Agent Skills format — works in Claude Code, OpenAI Codex, and OpenCode):
 
 ```bash
-make install-skills                # install the skill for this project
-make install-skills SKILLS_GLOBAL=1  # install for all your projects
+make install-skills                # install all project agent skills
+make install-skills SKILLS_GLOBAL=1  # same, for all your projects
 ```
 
 The version you are on is tracked in `TEMPLATE_VERSION` at the repo root. The skill's safe-update protocol (snapshot → classify template-owned vs user-owned → consent → apply → verify invariants + identifiers → gates green before bump) is documented in `.claude/skills/template-update/SKILL.md`; the ownership semantics live in `.claude/skills/template-update/references/ownership.md`.
@@ -222,7 +222,7 @@ make dev-ios-physical     # cargo tauri ios dev + --host (USB iPhone)
 make dev-android-emulator # boot AVD + pnpm tauri android dev
 make gen-apple            # regenerate src-tauri/gen/apple (xcodegen)
 make install-tauri-cli    # build vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
-make install-skills       # install agent skills (SKILLS_GLOBAL=1 → also global)
+make install-skills       # install all project agent skills
 make lint / make build    # aliases
 make help / make doctor   # list commands / check toolchain
 ```

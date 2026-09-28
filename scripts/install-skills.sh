@@ -18,6 +18,7 @@
 #   scripts/install-skills.sh --global       # install into ~/.claude/skills + ~/.config/opencode/skills
 #   scripts/install-skills.sh --dest DIR     # custom destination (copies <repo>/.claude/skills into DIR)
 #   scripts/install-skills.sh --list         # show which skills are installed where
+#   scripts/install-skills.sh --verify       # check installs match source (no-op write)
 #   scripts/install-skills.sh --dry-run      # show what would be copied, change nothing
 # ---------------------------------------------------------------------------
 set -euo pipefail
@@ -29,18 +30,21 @@ CLAUDE_GLOBAL="$HOME/.claude/skills"
 OPENCODE_GLOBAL="$HOME/.config/opencode/skills"
 
 log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33mwarn:\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 
 MODE="project"   # project | global | dest
 DEST=""
 DRY=0
 LIST=0
+VERIFY=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --global)      MODE="global" ;;
     --dest)        MODE="dest"; DEST="${2:?--dest needs a value}"; shift ;;
     --list)        LIST=1 ;;
+    --verify)      VERIFY=1 ;;
     --dry-run)     DRY=1 ;;
     -h|--help)     sed -n '2,/^set -euo pipefail/p' "${BASH_SOURCE[0]}" | sed '$d'; exit 0 ;;
     *) die "unknown argument: $1 (try --help)" ;;
@@ -50,11 +54,30 @@ done
 
 [[ -d "$SRC" ]] || die "skills source not found: $SRC"
 
+# --------------------------------------------------------- collect skills ---
+# Every entry must be a directory containing SKILL.md (Agent Skills format).
+# Directories without a SKILL.md are not skills and are skipped with a warning.
+skills=()
+for d in "$SRC"/*/; do
+  [[ -d "$d" ]] || continue
+  if [[ -f "$d/SKILL.md" ]]; then
+    skills+=("$d")
+  else
+    warn "skipping $d (no SKILL.md)"
+  fi
+done
+
+if [[ ${#skills[@]} -eq 0 ]]; then
+  die "no skills (dirs with SKILL.md) found under $SRC"
+fi
+
 # ------------------------------------------------------- list mode ----------
 if [[ "$LIST" == "1" ]]; then
-  echo "Skills in $SRC:"
-  for d in "$SRC"/*/; do
-    [[ -d "$d" ]] && echo "  - $(basename "$d") ($(basename "$d")/SKILL.md)"
+  echo "Skills in $SRC (${#skills[@]}):"
+  for d in "${skills[@]}"; do
+    name="$(basename "$d")"
+    extra="$(find "$d" -mindepth 1 -not -name SKILL.md -type d 2>/dev/null | wc -l | tr -d ' ')"
+    echo "  - $name (SKILL.md${extra:+ + $extra ref/script dirs})"
   done
   echo "Discovery targets:"
   [[ -d "$CLAUDE_GLOBAL" ]] && echo "  ✓ ~/.claude/skills        (Claude Code/Codex global — native Agent Skills)"
@@ -71,13 +94,40 @@ case "$MODE" in
   project) DESTS=("$SRC") ;;   # already where it should be; self-check
 esac
 
+# ---------------------------------------------------- verify mode (read-only) --
+verify_dest() {
+  local dest="$1" missing=0
+  [[ -d "$dest" ]] || { log "verify: $dest — MISSING ($(basename "$dest") no instaladas)"; return 1; }
+  for d in "${skills[@]}"; do
+    local name="$(basename "$d")"
+    if [[ ! -f "$dest/$name/SKILL.md" ]]; then
+      missing=1
+      log "verify: $name — FALTA en $dest/$name"
+    fi
+  done
+  if [[ "$missing" == "0" ]]; then
+    log "verify: ${#skills[@]} skills presentes en $dest ✓"
+    return 0
+  fi
+  return 1
+}
+
+if [[ "$VERIFY" == "1" ]]; then
+  ec=0
+  case "$MODE" in
+    global) verify_dest "$CLAUDE_GLOBAL" || ec=1; verify_dest "$OPENCODE_GLOBAL" || ec=1 ;;
+    dest)   verify_dest "$DEST" || ec=1 ;;
+    project) verify_dest "$SRC" || ec=1 ;;
+  esac
+  exit $ec
+fi
+
 # -------------------------------------------------------------- copy ---------
+total=0
 for dest in "${DESTS[@]}"; do
   [[ -n "$dest" ]] || continue
   mkdir -p "$dest"
-  # Copy the ENTIRE .claude/skills tree (each skill is a folder with SKILL.md).
-  for d in "$SRC"/*/; do
-    [[ -d "$d" ]] || continue
+  for d in "${skills[@]}"; do
     name="$(basename "$d")"
     target="$dest/$name"
     # Project self-check: installing into the source dir itself is a no-op
@@ -95,8 +145,10 @@ for dest in "${DESTS[@]}"; do
     # keep helper scripts executable (Codex runs <skill>/scripts/*)
     find "$target" -name '*.sh' -exec chmod +x {} +
     log "installed $name → $target"
+    total=$((total+1))
   done
 done
 
-[[ "$DRY" == "1" ]] && { log "dry-run complete (nothing changed)"; exit 0; }
+[[ "$DRY" == "1" ]] && { log "dry-run complete (${#skills[@]} skills, nothing changed)"; exit 0; }
+[[ "$total" -gt 0 ]] && log "installed $total skill dir(s) (${#skills[@]} total)."
 log "done. Reload the skill in your tool if it was already open."

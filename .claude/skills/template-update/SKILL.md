@@ -209,4 +209,4 @@ Produce a structured report to the user:
 
 ## Tool compatibility
 
-This skill is distributed in Anthropic **Agent Skills** format (`.claude/skills/template-update/`). That single format is loaded natively by **Claude Code** and **OpenAI Codex** (both read `.claude/skills`), and by **OpenCode** (which also reads `.claude/skills` as a compatibility source). No conversion is needed — the same `SKILL.md`, `references/`, and `scripts/` work in all three tools. Helper scripts must stay executable (`scripts/detect-identifiers.sh`), which `scripts/install-skills.sh` (or `make install-skills`) ensures when installing.
+This skill is distributed in Anthropic **Agent Skills** format; the same `SKILL.md`, `references/`, and `scripts/` work in Claude Code, OpenAI Codex, and OpenCode. Helper scripts must stay executable (e.g. `scripts/detect-identifiers.sh`); `make install-skills` installs every skill shipped with the project and keeps helper scripts executable.

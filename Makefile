@@ -102,9 +102,8 @@ install-tauri-cli: ## Build vendor CLI → ~/.cargo/bin/cargo-tauri
 	install -m 755 src-tauri/target/tauri-cli/release/cargo-tauri ~/.cargo/bin/cargo-tauri
 	@echo "Installed ~/.cargo/bin/cargo-tauri — use 'cargo tauri ios dev' for physical iOS"
 
-# Agent Skills (Claude Code + Codex + OpenCode) — see scripts/install-skills.sh.
-# SKILLS_GLOBAL=1 runs the same as `--global`.
-install-skills: ## Install agent skills (--global when SKILLS_GLOBAL=1)
+# Install all Agent Skills shipped with the project (see scripts/install-skills.sh).
+install-skills: ## Install all agent skills of the project
 	$(if $(SKILLS_GLOBAL),scripts/install-skills.sh --global,scripts/install-skills.sh)
 
 lint: ## Biome check
