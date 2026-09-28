@@ -156,7 +156,7 @@ targets:
       # self-sufficient: Release runs the frontend production build
       # (`pnpm build`, the CLI's beforeBuildCommand does not run from Xcode),
       # while Debug opens a visible Terminal window running the Vite dev
-      # server (apps/web/scripts/xcode/xcode-dev-server.command, devUrl
+      # server (scripts/Xcode/xcode-dev.command — default "server" mode, devUrl
       # localhost:1420) when it is not already listening, so HMR works with
       # visible logs; closing the window stops the server.
       #
@@ -174,7 +174,7 @@ targets:
               LIB="$SRCROOT/../../target/release/libtauri_react_template_lib.a"
             else
               if ! curl -sf http://localhost:1420 >/dev/null 2>&1; then
-                open -a Terminal "$SRCROOT/../../../apps/web/scripts/xcode/xcode-dev-server.command"
+                open -a Terminal "$SRCROOT/../../../scripts/Xcode/xcode-dev.command"
               fi
               cargo build --manifest-path "$SRCROOT/../../Cargo.toml" --lib || exit 1
               LIB="$SRCROOT/../../target/debug/libtauri_react_template_lib.a"
@@ -185,7 +185,7 @@ targets:
             if [ "$CONFIGURATION" = "release" ]; then
               (cd "$SRCROOT/../../../apps/web" && pnpm build) || exit 1
             elif ! curl -sf http://localhost:1420 >/dev/null 2>&1; then
-              open -a Terminal "$SRCROOT/../../../apps/web/scripts/xcode/xcode-dev-server.command"
+              open -a Terminal "$SRCROOT/../../../scripts/Xcode/xcode-dev.command"
             fi
             {{ shell-escape tauri-binary }} {{ tauri-binary-args-str }} -v --platform "${PLATFORM_DISPLAY_NAME:?}" --sdk-root "${SDKROOT:?}" --framework-search-paths "${FRAMEWORK_SEARCH_PATHS:?}" --header-search-paths "${HEADER_SEARCH_PATHS:?}" --gcc-preprocessor-definitions "${GCC_PREPROCESSOR_DEFINITIONS:-}" --configuration "${CONFIGURATION:?}" ${FORCE_COLOR} ${ARCHS:?}
           fi

@@ -80,7 +80,7 @@
    fixes (this round's example: `excludes`, `shell-escape`).
 4. Delete the old vendor dir. Update pins: `package.json`
    (`@tauri-apps/cli`), `scripts/Xcode/apple-xcode.sh` (`TPL`, `TAURI_CLI`),
-   `scripts/Xcode/xcode-dev-parent.command`, `scripts/README.md`.
+   `scripts/Xcode/xcode-dev.command`, `scripts/README.md`.
 5. `pnpm install`, `make install-tauri-cli`, verify `cargo-tauri --version`
    and `cargo-mobile2` in the vendor `Cargo.lock`.
 6. Update `docs/en|es/mobile.md` + `README.md` + this file's paths, keeping

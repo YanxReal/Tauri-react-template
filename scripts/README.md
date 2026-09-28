@@ -26,8 +26,7 @@ Related: [`docs/en/scripts.md`](../../docs/en/scripts.md) (flags reference),
 | `scripts/box-shot.sh` | Screenshot the Ubuntu-arm-docker box over VNC (`VNC_PASSWORD`, default `/tmp/box-shot.png`) |
 | `scripts/patch-tauri-cli.sh` | Applies the 3 local tweaks onto a stock `tauri-cli` copy (refuses unknown versions) |
 | `scripts/Xcode/apple-xcode.sh` | Regenerates `src-tauri/gen/apple` (xcodegen); `--build` also compiles iOS sim + macOS host |
-| `scripts/Xcode/xcode-dev-parent.command` | Double-clickable `tauri ios dev --open` launcher (Terminal) |
-| `apps/web/scripts/xcode/xcode-dev-server.command` | Double-clickable Vite dev server (`:1420` + HMR) |
+| `scripts/Xcode/xcode-dev.command` | Unified hotreload helper — `server` (visible Vite `:1420` + HMR, default) or `parent` (`tauri ios dev --open` full-IPC) |
 
 Supporting build inputs (not scripts, but part of the system):
 
@@ -80,16 +79,16 @@ NEVER the generated `.xcodeproj` or its Info.plist.
     lets the build hang) → opens the parent `tauri ios dev --open` in Terminal
     (with `--host <LAN>` for physical devices), waits ~40s and retries. With
     no parent → opens the dev-server terminal
-    (`apps/web/scripts/xcode/xcode-dev-server.command`), warns, falls back
+    (`scripts/Xcode/xcode-dev.command`, `server` mode), warns, falls back
     to standalone.
   - `release` → standalone with `--features tauri/custom-protocol` for
     production (builds from scratch: correct for release).
 - Foreground Terminal without AppleScript: the phase uses `open -a Terminal
   <script>.command` (LaunchServices → no TCC permissions, `open` never blocks
-  the phase). Two runscripts in the repo (survive regen):
-  `apps/web/scripts/xcode/xcode-dev-server.command` (Vite :1420 + HMR) and
-  `scripts/Xcode/xcode-dev-parent.command` (`tauri ios dev --open`, with
-  `--host <LAN>` when there is a network).
+  the phase). One unified runscript in the repo (survives regen):
+  `scripts/Xcode/xcode-dev.command` — `server` (Vite :1420 + HMR, default,
+  used by the phase) or `parent` (`tauri ios dev --open`, with `--host <LAN>`
+  when there is a network).
 - Double-Vite warning: in hotreload, the parent starts Vite (its
   `beforeDevCommand`) and fails if `:1420` is already taken
   ("beforeDevCommand terminated with a non-zero..."). Don't leave a previous
