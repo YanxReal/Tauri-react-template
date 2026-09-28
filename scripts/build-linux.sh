@@ -13,11 +13,18 @@
 #                    checkout; the binary itself stays lowercase, see below).
 #                    Full featured: build, run, dev, logs, stop. This is the
 #                    path for macOS.
-#   --native         build on this machine (must be Linux).
+#   --native         build on this machine (must be Linux — aborts elsewhere).
 #
 # With no mode flag: native on Linux, remote when the dev box answers. If the
 # box is unreachable the script stops with instructions — it never builds
 # anywhere else.
+#
+# Platforms: the Linux build ALWAYS happens in the Ubuntu-arm-docker box via
+# SSH (macOS and Windows cannot run webkit2gtk + the Linux bundlers locally).
+#   macOS  run `scripts/build-linux.sh` directly (needs bash + ssh + rsync|tar).
+#   Windows run `scripts\build-linux.cmd` (locates Git Bash) or the .sh from
+#           a Git Bash terminal; OpenSSH is included with Git for Windows, and
+#           rsync is optional (the script falls back to tar).
 #
 # Build profile
 #   --release         optimised, LTO, small       (default)
@@ -48,6 +55,21 @@
 #   ./scripts/build-linux.sh --native                # force a local Linux build
 # ---------------------------------------------------------------------------
 set -euo pipefail
+
+# --- Platform detection ------------------------------------------------------
+# This script's job is building Linux. On macOS/Windows it goes REMOTE (SSH to
+# the Ubuntu-arm-docker box); only on an actual Linux host does it build native.
+# Git Bash on Windows reports MINGW*/MSYS*/CYGWIN* — not "Linux" — so it falls
+# to remote, which is correct. Detect for clearer messaging + a --native guard.
+OST="$(uname -s 2>/dev/null || echo unknown)"
+IS_LINUX_NATIVE=0
+IS_WINDOWS=0
+IS_MACOS_OR_OTHER=0
+case "$OST" in
+  Linux) IS_LINUX_NATIVE=1 ;;
+  MINGW*|MSYS*|CYGWIN*) IS_WINDOWS=1 ;;
+  *) IS_MACOS_OR_OTHER=1 ;;
+esac
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Binary name (lowercase by rule: Cargo package name, `productName` slug,
@@ -115,13 +137,20 @@ BUILD_FLAGS="--bundles $BUNDLES"
 [[ "$PROFILE" == "debug" ]] && BUILD_FLAGS="$BUILD_FLAGS --debug"
 [[ -n "$TRIPLE" ]] && BUILD_FLAGS="$BUILD_FLAGS --target $TRIPLE"
 
+# `--native` only makes sense on an actual Linux host. macOS/Windows have no
+# local Linux toolchain (webkit2gtk + Linux bundlers) — always abort clearly.
+if [[ "$MODE" == "native" && "$IS_LINUX_NATIVE" != "1" ]]; then
+  die "--native requires a Linux host. On macOS/Windows use --remote (the
+       Ubuntu-arm-docker box) instead: $0 --remote ubuntu-arm --debug --fetch"
+fi
+
 # ------------------------------------------------------------- mode picking -
 ssh_probe() {
   ssh -o BatchMode=yes -o ConnectTimeout=4 -o StrictHostKeyChecking=accept-new \
       "$1" true >/dev/null 2>&1
 }
 if [[ -z "$MODE" ]]; then
-  if [[ "$(uname -s)" == "Linux" ]]; then
+  if [[ "$IS_LINUX_NATIVE" == "1" ]]; then
     MODE="native"
   elif ssh_probe "$REMOTE_HOST"; then
     MODE="remote"

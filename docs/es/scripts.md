@@ -37,7 +37,7 @@
 | `make lint` / `make build` | alias |
 | `make help` / `make doctor` | lista comandos / revisa toolchain |
 
-Shells por OS: `scripts/build-linux.sh`, `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`.
+Shells por OS: `scripts/build-linux.sh` (+ `build-linux.cmd` en Windows), `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`.
 
 ## Build Linux (`scripts/build-linux.sh`)
 
@@ -67,6 +67,12 @@ no está accesible el script para con instrucciones en vez de compilar en otro s
 ./scripts/build-linux.sh                                 # auto: remoto, o nativo en Linux
 ./scripts/build-linux.sh --native                        # fuerza un build local en Linux
 ```
+
+**Plataformas:** el build de Linux siempre ocurre en la caja Ubuntu-arm-docker por SSH —
+macOS y Windows no pueden correr `webkit2gtk` + los bundlers de Linux en local. En
+**macOS** ejecuta el `.sh` directo; en **Windows** corre `scripts\build-linux.cmd`
+(localiza Git Bash; necesita cliente OpenSSH, rsync opcional). El flag `--native`
+solo funciona en un host Linux y aborta en el resto.
 
 El backend remoto usa `pnpm tauri` (la CLI fijada en `devDependencies`, así que no hay paso
 `cargo install tauri-cli`) y espera que la caja tenga Rust, Node 24 y las cabeceras de

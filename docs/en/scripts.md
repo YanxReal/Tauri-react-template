@@ -37,7 +37,7 @@
 | `make lint` / `make build` | aliases |
 | `make help` / `make doctor` | list commands / check toolchain |
 
-Per-OS build shells: `scripts/build-linux.sh`, `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`.
+Per-OS build shells: `scripts/build-linux.sh` (+ `build-linux.cmd` on Windows), `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`.
 
 ## Linux build (`scripts/build-linux.sh`)
 
@@ -67,6 +67,12 @@ box is unreachable the script stops with instructions instead of building anywhe
 ./scripts/build-linux.sh                                 # auto: remote, or native on Linux
 ./scripts/build-linux.sh --native                        # force a local Linux build
 ```
+
+**Platforms:** the Linux build always happens in the Ubuntu-arm-docker box via SSH —
+macOS and Windows can't run `webkit2gtk` + the Linux bundlers locally. On **macOS**
+run the `.sh` directly; on **Windows** run `scripts\build-linux.cmd` (locates Git
+Bash; needs an OpenSSH client, rsync optional). Flag `--native` works only on a
+Linux host and aborts elsewhere.
 
 The remote backend drives `pnpm tauri` (the CLI pinned in `devDependencies`, so no
 `cargo install tauri-cli` step) and expects the box to provide Rust, Node 24 and the
