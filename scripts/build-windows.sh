@@ -17,7 +17,12 @@ BUNDLES="nsis"
 EXTRA=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --bundles) BUNDLES="$2"; shift 2;;
+    --bundles) BUNDLES="${2:?--bundles needs a value}"; shift 2;;
+    -h|--help)
+      sed -n '2,/^set -euo pipefail/p' "${BASH_SOURCE[0]}" | sed '$d'
+      echo ""
+      echo "Defaults: --bundles $BUNDLES (nsis | msi — msi needs a Windows host)"
+      exit 0 ;;
     *) EXTRA+=("$1"); shift;;
   esac
 done

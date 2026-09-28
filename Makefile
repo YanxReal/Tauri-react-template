@@ -1,19 +1,19 @@
-# Tauri React Template — desarrollo multi-plataforma
-# La CLI para iOS es la oficial tauri-cli 2.12.0 (trae cargo-mobile2 0.22.5 con
-# el fix de Xcode 27). El vendor solo conserva los templates customizados +
-# 3 retoques locales (fallback standalone + target _Apple); ver
+# Tauri React Template — multi-platform development
+# iOS CLI is the official tauri-cli 2.12.0 (ships cargo-mobile2 0.22.5 with
+# the Xcode 27 fix). The vendor keeps only the customized templates +
+# 3 local tweaks (standalone fallback + _Apple target); see
 # src-tauri/vendor/tauri-cli-2.12.0/templates/mobile/ios/project.yml.
 
 TAURI := pnpm tauri
 CARGO_TAURI := cargo tauri
 
-# Identidad de firma macOS estable (opcional, evita prompts de Keychain)
+# Stable macOS signing identity (optional, avoids Keychain prompts)
 MACOS_SIGNING_IDENTITY := $(shell cat src-tauri/keys/macos-signing-identity.txt 2>/dev/null)
 ifneq ($(strip $(MACOS_SIGNING_IDENTITY)),)
     EXPORT_APPLE_SIGNING_IDENTITY := APPLE_SIGNING_IDENTITY="$(MACOS_SIGNING_IDENTITY)"
 endif
 
-# iOS — IP link-local del Mac en la red USB (lo que el iPhone puede alcanzar)
+# iOS — Mac link-local IP on the USB network (what the iPhone can reach)
 IOS_DEVICE ?= iPhone 17
 IOS_DEV_HOST ?= $(shell ip=$$(ifconfig en9 2>/dev/null | awk '/inet / && $$2 ~ /^169\.254\./ {print $$2; exit}'); if [ -z "$$ip" ]; then ip=$$(ifconfig 2>/dev/null | awk '/^[a-z0-9]+:/{i=$$1} /inet 169\.254\./{print $$2; exit}'); fi; echo $$ip)
 ANDROID_AVD ?= Resizable_Experimental
@@ -21,50 +21,66 @@ ANDROID_TARGET ?= aarch64
 ANDROID_HOME ?= $(HOME)/Library/Android/sdk
 export PATH := $(ANDROID_HOME)/emulator:$(ANDROID_HOME)/platform-tools:$(PATH)
 
-.PHONY: dev dev\:web dev\:ios dev-ios-physical dev-android-emulator gen-apple install-tauri-cli lint build
+.DEFAULT_GOAL := help
 
-dev:
+.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator gen-apple install-tauri-cli lint build
+
+help: ## Show available commands
+	@awk -F'##' '/^[a-zA-Z0-9_\\:.-]+:[ \t]*##/ { t=$$1; sub(/:[ \t]*$$/, "", t); gsub(/\\/, "", t); printf "  \033[36m%-22s\033[0m %s\n", t, $$2 }' $(MAKEFILE_LIST)
+	@echo ""
+
+doctor: ## Check toolchain (versions or MISSING + scope)
+	@command -v node >/dev/null && echo "node:                 $$(node --version)" || echo "node:                 MISSING (required)"
+	@command -v pnpm >/dev/null && echo "pnpm:                 $$(pnpm --version)" || echo "pnpm:                 MISSING (required)"
+	@command -v cargo >/dev/null && echo "cargo:                $$(cargo --version)" || echo "cargo:                MISSING (required for desktop/mobile builds)"
+	@command -v rustc >/dev/null && echo "rustc:               $$(rustc --version | cut -d' ' -f2)" || echo "rustc:                MISSING"
+	@XB=$$(xcodebuild -version 2>/dev/null | head -1); [ -n "$$XB" ] && echo "xcodebuild:           $$XB" || echo "xcodebuild:           MISSING (iOS/macOS builds only)"
+	@command -v xcodegen >/dev/null && echo "xcodegen:             present" || echo "xcodegen:             MISSING (Xcode regen only)"
+	@command -v cargo-tauri >/dev/null && echo "cargo-tauri:          $$(cargo-tauri --version 2>/dev/null)" || { test -x ~/.cargo/bin/cargo-tauri && echo "cargo-tauri:          $$(~/.cargo/bin/cargo-tauri --version 2>/dev/null) (not on PATH)" || echo "cargo-tauri:          MISSING (iOS flows: make install-tauri-cli)"; }
+	@test -x "$(ANDROID_HOME)/emulator/emulator" && echo "android emulator:    present" || echo "android emulator:    MISSING (Android only)"
+	@command -v makensis >/dev/null && echo "makensis:             present" || echo "makensis:             MISSING (Windows NSIS only)"
+	@command -v docker >/dev/null && echo "docker:               $$(docker version --format '{{.Server.Version}}' 2>/dev/null || echo unreachable)" || echo "docker:               MISSING (Linux box only)"
+
+dev: ## Tauri dev (desktop)
 	$(EXPORT_APPLE_SIGNING_IDENTITY) $(TAURI) dev
 
-dev\:web:
+dev\:web: ## Vite dev only (:1420)
 	pnpm --filter web dev
 
-# iOS simulador — usa el target correcto (aarch64-apple-ios-sim) y simctl.
-# El selector distingue simulador vs físico gracias a cargo-mobile2 0.22.5
-# (filtro visibility_class). Si eliges un simulador, el build es
-# -sdk iphonesimulator + simctl install/launch; si eliges un físico, es
-# -sdk iphoneos + devicectl.
-dev\:ios:
+# iOS simulator — correct target (aarch64-apple-ios-sim) + simctl.
+# The selector tells simulator vs physical apart via cargo-mobile2 0.22.5
+# (visibility_class filter). Simulators build with -sdk iphonesimulator +
+# simctl install/launch; physical devices with -sdk iphoneos + devicectl.
+dev\:ios: ## iOS simulator dev
 	pnpm tauri ios dev "$(IOS_DEVICE)"
 
-# iOS físico — requiere el cargo-tauri local (make install-tauri-cli, con los
-# retoques del vendor) y que el iPhone esté conectado por USB. El devUrl se
-# anuncia en la IP link-local.
-dev-ios-physical:
-	@test -n "$(IOS_DEV_HOST)" || { echo "No hay IP link-local 169.254.x.x — ¿iPhone conectado por USB?"; exit 1; }
+# Physical iOS — needs the local cargo-tauri (make install-tauri-cli, with the
+# vendor tweaks) and the iPhone on USB. devUrl is advertised on link-local IP.
+dev-ios-physical: ## iOS device dev (USB iPhone)
+	@test -n "$(IOS_DEV_HOST)" || { echo "No 169.254.x.x link-local IP — iPhone on USB?"; exit 1; }
 	$(CARGO_TAURI) ios dev "$(IOS_DEVICE)" --host $(IOS_DEV_HOST)
 
-# Android emulator — arranca el AVD y corre `tauri android dev` contra él.
-# Requiere Android SDK (cmdline-tools + emulator + una system-image arm64).
-dev-android-emulator:
-	@$(ANDROID_HOME)/emulator/emulator -list-avds 2>/dev/null | grep -qx "$(ANDROID_AVD)" || { echo "No existe el AVD '$(ANDROID_AVD)' — créalo en Android Studio → Device Manager"; exit 1; }
+# Android emulator — boots the AVD and runs `tauri android dev` against it.
+# Needs Android SDK (cmdline-tools + emulator + an arm64 system image).
+dev-android-emulator: ## Boot AVD + android dev
+	@$(ANDROID_HOME)/emulator/emulator -list-avds 2>/dev/null | grep -qx "$(ANDROID_AVD)" || { echo "No AVD '$(ANDROID_AVD)' — create it in Android Studio → Device Manager"; exit 1; }
 	$(ANDROID_HOME)/emulator/emulator -avd "$(ANDROID_AVD)" -no-snapshot -no-boot-anim >/tmp/android-emulator.log 2>&1 &
 	$(ANDROID_HOME)/platform-tools/adb wait-for-device
 	pnpm tauri android dev --target "$(ANDROID_TARGET)"
 
-# Xcode — regenera src-tauri/gen/apple desde el template (xcodegen).
-gen-apple:
+# Xcode — regenerate src-tauri/gen/apple from the template (xcodegen).
+gen-apple: ## Regen Xcode project
 	scripts/Xcode/apple-xcode.sh
 
-install-tauri-cli:
-	@echo "Construyendo cargo-tauri 2.12.0 + retoques locales (fallback standalone, target _Apple) ..."
+install-tauri-cli: ## Build vendor CLI → ~/.cargo/bin/cargo-tauri
+	@echo "Building cargo-tauri 2.12.0 + local tweaks (standalone fallback, _Apple target) ..."
 	cd src-tauri/vendor/tauri-cli-2.12.0 && CARGO_TARGET_DIR=$(CURDIR)/src-tauri/target/tauri-cli cargo build --release
 	mkdir -p ~/.cargo/bin
 	install -m 755 src-tauri/target/tauri-cli/release/cargo-tauri ~/.cargo/bin/cargo-tauri
-	@echo "Instalado ~/.cargo/bin/cargo-tauri — usa 'cargo tauri ios dev' para iOS físico"
+	@echo "Installed ~/.cargo/bin/cargo-tauri — use 'cargo tauri ios dev' for physical iOS"
 
-lint:
+lint: ## Biome check
 	pnpm lint
 
-build:
+build: ## Turbo build
 	pnpm build

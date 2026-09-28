@@ -1,4 +1,4 @@
-# scripts — helpers multiplataforma
+# scripts — Helpers multiplataforma
 
 > 🌐 **Idioma:** **Español** | [English](README.md)
 
@@ -70,7 +70,7 @@ NUNCA el `.xcodeproj` generado ni su Info.plist.
     embebido (`--features tauri/custom-protocol`) como release, **sin Vite ni CLI**:
     la app completa corre y ⌘R incremental = compilación rápida de solo Rust (el
     JS no se toca salvo que cambie el dist). Para HMR usa `hotreload`.
-  - iOS `hotreload` → hot reload honesto: PRIMERO **probea** el parent
+  - iOS `hotreload` → hot reload honesto: primero **sondea** el parent
     `tauri ios dev --open` con un handshake WebSocket JSON-RPC real y timeout 1.5s
     sobre el fichero IPC de address
     (`$TMPDIR/com.tauri-react-template.app-server-addr` — el CLI monta un server

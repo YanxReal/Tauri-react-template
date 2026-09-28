@@ -1,4 +1,4 @@
-# scripts — multi-platform helpers
+# scripts — Multi-platform helpers
 
 > 🌐 **Language:** **English** | [Español](README.es.md)
 

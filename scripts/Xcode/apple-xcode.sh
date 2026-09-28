@@ -20,6 +20,10 @@ if [ ! -d "$TPL" ]; then
   echo "Template not found: $TPL" >&2
   exit 1
 fi
+command -v "$XCODEGEN" >/dev/null || {
+  echo "Missing $XCODEGEN — install with: brew install xcodegen" >&2
+  exit 1
+}
 
 rm -rf "$GEN"
 mkdir -p "$GEN"

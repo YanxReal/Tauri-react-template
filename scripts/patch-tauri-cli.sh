@@ -19,13 +19,20 @@ set -euo pipefail
 
 BASE_VERSION="2.12.0"
 
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  echo "Usage: ./scripts/patch-tauri-cli.sh [VENDOR_DIR]"
+  echo "Applies the 3 local tweaks onto a stock tauri-cli copy."
+  echo "Defaults to src-tauri/vendor/tauri-cli-<BASE_VERSION> (see BASE_VERSION below)."
+  exit 0
+fi
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENDOR="${1:-$ROOT/src-tauri/vendor/tauri-cli-2.12.0}"
 
 log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 die()  { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 
-[[ -d "$VENDOR/src/mobile" ]] || die "no hay copia stock en $VENDOR"
+[[ -d "$VENDOR/src/mobile" ]] || die "no stock copy at $VENDOR"
 
 # --- version pin -------------------------------------------------------------
 VER="$(grep -m1 '^version = ' "$VENDOR/Cargo.toml" | cut -d'"' -f2)"
@@ -35,7 +42,7 @@ VER="$(grep -m1 '^version = ' "$VENDOR/Cargo.toml" | cut -d'"' -f2)"
    BASE_VERSION and update MODS.md (see its 'Rebase checklist')."
 
 export VENDOR
-log "parcheando $VENDOR (base $BASE_VERSION)"
+log "patching $VENDOR (base $BASE_VERSION)"
 
 python3 - <<'PY'
 import os, pathlib, sys

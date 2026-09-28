@@ -30,6 +30,7 @@
 | `make gen-apple` | `scripts/Xcode/apple-xcode.sh` (xcodegen → `gen/apple`) |
 | `make install-tauri-cli` | Builds vendored `src-tauri/vendor/tauri-cli-2.12.0` (stock 2.12.0 + 3 local tweaks: standalone fallback, `_Apple` target) → `~/.cargo/bin/cargo-tauri` |
 | `make lint` / `make build` | aliases |
+| `make help` / `make doctor` | list commands / check toolchain |
 
 Per-OS build shells: `scripts/build-linux.sh`, `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`.
 

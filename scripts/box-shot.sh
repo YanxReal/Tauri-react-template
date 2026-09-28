@@ -30,7 +30,7 @@ cd "$BOX_DIR" || { echo "cannot find $BOX_DIR (set UBUNTU_ARM_DIR)"; exit 1; }
 
 docker compose exec -u admin -T ubuntu-desktop bash -lc "
   [ -x /tmp/vncenv/bin/vncdo ] || { python3 -m venv /tmp/vncenv && /tmp/vncenv/bin/pip install -q vncdotool; }
-  timeout 90 /tmp/vncenv/bin/vncdo -t 60 -s 127.0.0.1::5900 -p '$VNC_PASS' sleep 3 capture $TMP 2>&1 \
+  timeout 90 /tmp/vncenv/bin/vncdo -t 60 -s 127.0.0.1::5900 -p $(printf '%q' "$VNC_PASS") sleep 3 capture $TMP 2>&1 \
     | grep -viE 'deprecat|encryptor' | head -3
   ls -la $TMP 2>&1" || exit 1
 

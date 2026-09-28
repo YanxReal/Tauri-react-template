@@ -189,6 +189,7 @@ make dev-android-emulator # arranca AVD + pnpm tauri android dev
 make gen-apple            # regenera src-tauri/gen/apple (xcodegen)
 make install-tauri-cli    # compila vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
 make lint / make build    # alias
+make help / make doctor   # lista comandos / revisa toolchain
 ```
 
 ---
