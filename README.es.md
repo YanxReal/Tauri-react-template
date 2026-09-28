@@ -61,7 +61,7 @@ Plantilla privada para publicar una **app desktop + móvil con sensación nativa
 - **Semántica HTML5**: landmarks, skip link, nav etiquetada — con tests (`App.test.tsx`).
 - **Backend Tauri v2**: comandos `greet` / `platform_info` / `start_window_resize` / `window_effects_set`, `plugin-opener`, `prevent-default` (`Flags::debug()`).
 - **Efecto cristal**: toggle de translucidez nativa (vibrancy en macOS, Mica en Windows), independiente de las glass cards; forzado a OFF en Linux.
-- **Target Xcode unificado iOS + macOS** (`tauri-react-template_Apple`): configs debug / hotreload / release, auto-inyección de `DEVELOPMENT_TEAM`, CLI 2.12.0 vendoreada + retoques documentados (`MODS.md`).
+- **Target Xcode unificado iOS + macOS** (`tauri-react-template_Apple`): configs debug / hotreload / release, auto-inyección de `DEVELOPMENT_TEAM`, CLI 2.12.0 vendoreada + retoques documentados (`.claude/skills/tauri-cli-rebase/references/mods.md`).
 
 ---
 
@@ -160,11 +160,11 @@ La versión en la que estás se guarda en `TEMPLATE_VERSION` en la raíz del rep
 │   ├── src/lib.rs           # comandos + setup por SO
 │   ├── capabilities/        # default.json + windows.json
 │   ├── tauri.conf.json      # base (se fusiona con tauri.{os}.conf.json)
-│   ├── vendor/              # tauri-cli 2.12.0 + templates (ver MODS.md)
+│   ├── vendor/              # tauri-cli 2.12.0 + templates (ver .claude/skills/tauri-cli-rebase/references/mods.md)
 │   └── Info.plist           # plantilla para macOS + iOS
 ├── scripts/                 # build-linux.sh, box-shot.sh, Xcode/, ...
 ├── docs/en + docs/es        # docs espejadas (regla de paridad)
-├── MODS.md                  # modificaciones del CLI vendoreado (raíz)
+└── .claude/skills/tauri-cli-rebase  # skill de rebase del CLI vendoreado + spec
 ├── AGENTS.md                # contrato para agentes
 ├── biome.json               # formateador + linter (sin ESLint)
 ├── turbo.json               # pipeline

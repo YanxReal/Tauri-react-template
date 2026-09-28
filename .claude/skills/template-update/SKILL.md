@@ -88,7 +88,7 @@ For **every** changed path, classify into one bucket using `references/ownership
 
 | Bucket | Example paths | Default action | Risk |
 |--------|---------------|----------------|------|
-| `A-safe` (template-owned) | `scripts/`, `Makefile`, `MODS.md`, `.github/`, `docs/`, `src-tauri/vendor/`, tooling | Semantic apply with identifier translation | Low — but CHECK these aren't user-customized (see §4.1) |
+| `A-safe` (template-owned) | `scripts/`, `Makefile`, `src-tauri/vendor/`, tooling (MODS content now lives in the tauri-cli-rebase skill) | Semantic apply with identifier translation | Low — but CHECK these aren't user-customized (see §4.1) |
 | `A-component` (vendored UI) | `packages/ui/src/components/**` | Prefer re-vendoring from the registry; else diff | Low if pure vendored; **Medium if user customized** (see §4.4) |
 | `A-config` (per-OS configs) | `tauri.conf.json`, `tauri.*.conf.json` | **JSON merge, never overwrite**: apply new/missing keys, preserve the user's app id, `productName`, `title`, and any value they intentionally set | Medium |
 | `B-user-owned` | `apps/web/src/**`, `src-tauri/src/**`, `.env*`, `capabilities/`, user pages | **READ-ONLY**. Mechanical/backward-safe edits only, and only with per-file user consent | High |

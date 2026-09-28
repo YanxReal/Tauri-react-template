@@ -15,7 +15,7 @@ ficheros de aquí los implementan.
 
 Relacionado: [`docs/es/scripts.md`](../../docs/es/scripts.md) (referencia de flags),
 [`docs/es/mobile.md`](../../docs/es/mobile.md) (flujos iOS/Android),
-[`MODS.md`](../../MODS.md) (modificaciones del CLI vendoreado).
+[`references/mods.md`](../../.claude/skills/tauri-cli-rebase/references/mods.md) (modificaciones del CLI vendoreado).
 
 ## 📋 Inventario
 
@@ -24,7 +24,7 @@ Relacionado: [`docs/es/scripts.md`](../../docs/es/scripts.md) (referencia de fla
 | `scripts/build-linux.sh` | Bundles Linux; compila + lanza en caja Linux por SSH (`--remote`) o en local (`--native`). Perfiles `--release`/`--debug`; `--dev`, `--run`, `--fetch`, `--logs`, `--stop` |
 | `scripts/build-windows.sh` | Cross-compile Windows x64 desde macOS/Linux (`cargo-xwin` + NSIS) |
 | `scripts/box-shot.sh` | Captura de la caja Ubuntu-arm-docker por VNC (`VNC_PASSWORD`, default `/tmp/box-shot.png`) |
-| `scripts/patch-tauri-cli.sh` | Aplica los 3 retoques locales sobre una copia stock de `tauri-cli` (rechaza versiones desconocidas) |
+| Skill `.claude/skills/tauri-cli-rebase/` | Rebase del `tauri-cli` vendoreado — re-aplica los 3 retoques (MOD-1/2/3) semánticamente sobre una versión stock nueva (`.claude/skills/tauri-cli-rebase/references/mods.md`) |
 | `scripts/Xcode/apple-xcode.sh` | Regenera `src-tauri/gen/apple` (xcodegen); `--build` además compila sim iOS + host macOS |
 | `scripts/Xcode/xcode-dev.command` | Ayuda de hotreload unificada — `server` (Vite visible `:1420` + HMR, por defecto) o `parent` (`tauri ios dev --open` IPC completo) |
 
@@ -160,7 +160,7 @@ Sin team configurado el grep no debe devolver nada (elección manual).
 
 El `cargo-tauri` para flujos iOS se compila del `tauri-cli 2.12.0`
 vendoreado (stock + 3 retoques locales: fallback standalone, target `_Apple`
-— ver `MODS.md` en la raíz):
+— ver `.claude/skills/tauri-cli-rebase/references/mods.md`):
 
 ```bash
 make install-tauri-cli   # compila vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
@@ -193,4 +193,4 @@ host y debe poder consultar el server en esa IP.
   sim → cada ⌘R compila por `xcode-script` con las options del parent y el
   frontend hace HMR por Vite. El auto-reload de Rust en sim queda limitado por
   el CLI upstream; `debug` conserva el camino standalone sin CLI. (Arreglado
-  oficialmente para el listado en `cargo-mobile2 0.22.5`; ver `MODS.md`.)
+  oficialmente para el listado en `cargo-mobile2 0.22.5`; ver `.claude/skills/tauri-cli-rebase/references/mods.md`.)

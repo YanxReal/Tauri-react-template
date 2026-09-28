@@ -56,7 +56,7 @@ Xcode 26 lista **simuladores** como devices en `xcrun devicectl list devices --j
 **Fix en esta plantilla** (no en `gen`):
 
 - `cargo-mobile2 0.22.5` (crates.io, 17-08-2026) ya trae el fix de Xcode 27 oficial (`ee65fb1`: filtro de simuladores por `visibility_class` + diccionario `properties` + arranque por Device Hub) — ya no hay `[patch.crates-io]`.
-- `src-tauri/vendor/tauri-cli-2.12.0/src/mobile/` conserva 3 cambios locales sobre el 2.12.0 stock (ver `MODS.md` en la raíz del repo para el porqué + checklist de rebase): `fallback_options()` (builds standalone de Xcode sin proceso CLI padre), búsqueda del target `_iOS` → `_Apple` y el reemplazo simplificado de `{{app.name}}` en `project.rs`. `scripts/patch-tauri-cli.sh` los aplica sobre una copia stock (rechaza versiones que no conoce).
+- `src-tauri/vendor/tauri-cli-2.12.0/src/mobile/` conserva 3 cambios locales sobre el 2.12.0 stock (ver la skill `tauri-cli-rebase` con su `references/mods.md` para el porqué + checklist de rebase): `fallback_options()` (builds standalone de Xcode sin proceso CLI padre), búsqueda del target `_iOS` → `_Apple` y el reemplazo simplificado de `{{app.name}}` en `project.rs`. La skill `.claude/skills/tauri-cli-rebase/` los re-aplica semánticamente sobre una versión stock nueva.
 
 Instálalo una vez por clon:
 

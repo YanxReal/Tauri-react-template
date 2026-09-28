@@ -15,7 +15,7 @@ files here implement them.
 
 Related: [`docs/en/scripts.md`](../../docs/en/scripts.md) (flags reference),
 [`docs/en/mobile.md`](../../docs/en/mobile.md) (iOS/Android flows),
-[`MODS.md`](../../MODS.md) (CLI vendor modifications).
+[`references/mods.md`](../../.claude/skills/tauri-cli-rebase/references/mods.md) (CLI vendor modifications).
 
 ## 📋 Inventory
 
@@ -24,8 +24,8 @@ Related: [`docs/en/scripts.md`](../../docs/en/scripts.md) (flags reference),
 | `scripts/build-linux.sh` | Linux bundles; compile + run on a Linux box over SSH (`--remote`) or locally (`--native`). Profiles `--release`/`--debug`; `--dev`, `--run`, `--fetch`, `--logs`, `--stop` |
 | `scripts/build-windows.sh` | Windows x64 cross-compile from macOS/Linux (`cargo-xwin` + NSIS) |
 | `scripts/box-shot.sh` | Screenshot the Ubuntu-arm-docker box over VNC (`VNC_PASSWORD`, default `/tmp/box-shot.png`) |
-| `scripts/patch-tauri-cli.sh` | Applies the 3 local tweaks onto a stock `tauri-cli` copy (refuses unknown versions) |
 | `scripts/Xcode/apple-xcode.sh` | Regenerates `src-tauri/gen/apple` (xcodegen); `--build` also compiles iOS sim + macOS host |
+| Skill `.claude/skills/tauri-cli-rebase/` | Rebase the vendored `tauri-cli` — re-applies the 3 tweaks (MOD-1/2/3) semantically onto a new stock version (`.claude/skills/tauri-cli-rebase/references/mods.md`) |
 | `scripts/Xcode/xcode-dev.command` | Unified hotreload helper — `server` (visible Vite `:1420` + HMR, default) or `parent` (`tauri ios dev --open` full-IPC) |
 
 Supporting build inputs (not scripts, but part of the system):
@@ -159,7 +159,7 @@ Without a team configured the grep must return nothing (manual pick).
 
 The `cargo-tauri` for iOS flows is built from the vendored
 `tauri-cli 2.12.0` (stock + 3 local tweaks: standalone fallback, `_Apple`
-target — see `MODS.md` at the repo root):
+target — see `.claude/skills/tauri-cli-rebase/references/mods.md`):
 
 ```bash
 make install-tauri-cli   # builds vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
@@ -192,4 +192,4 @@ must reach the server on that IP.
   compiles via `xcode-script` with the parent's options and the frontend does
   HMR via Vite. Sim Rust auto-reload stays limited by upstream CLI; `debug`
   keeps the standalone no-CLI path. (Officially fixed for device listing in
-  `cargo-mobile2 0.22.5`; see `MODS.md`.)
+  `cargo-mobile2 0.22.5`; see `.claude/skills/tauri-cli-rebase/references/mods.md`.)

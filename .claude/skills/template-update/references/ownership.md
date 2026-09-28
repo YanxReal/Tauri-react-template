@@ -13,7 +13,7 @@ is treated as user-customized (see below) even if it "belongs" to a template-own
 
 ### Template-owned (`A`) — the template may replace/migrate these
 `A-safe` (tooling, configs-agnostic, docs, vendored CLI):
-- `scripts/`, `Makefile`, `MODS.md`, `.github/`, `.claude/`, `.vscode/`, `.husky/`
+- `scripts/`, `Makefile`, `.github/`, `.claude/`, `.vscode/`, `.husky/`, `src-tauri/vendor/`
 - `docs/` (both `en/` + `es/` trees; keep parity), root `README*.md`, `CHANGELOG.md`
 - `src-tauri/vendor/` (rebased template CLI), `src-tauri/Info.plist`, `Assets.xcassets`
 - `rust-toolchain.toml`, `biome.json`, `.editorconfig`, `.npmrc`, `pnpm-workspace.yaml`,

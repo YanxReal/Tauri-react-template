@@ -56,7 +56,7 @@ Xcode 26's `xcrun devicectl list devices --json-output` now lists **simulators**
 **Fix in this template** (not in `gen`):
 
 - `cargo-mobile2 0.22.5` (crates.io, 2026-08-17) already contains the Xcode 27 fix upstream (`ee65fb1`: `visibility_class` simulator filter + `properties` dict + Device Hub boot) — no `[patch.crates-io]` anymore.
-- `src-tauri/vendor/tauri-cli-2.12.0/src/mobile/` keeps 3 local changes on top of stock 2.12.0 (see `MODS.md` at the repo root for the why + rebase checklist): `fallback_options()` (standalone Xcode builds without a parent CLI process), `_iOS` → `_Apple` target lookup, and the simplified `{{app.name}}` path replacement in `project.rs`. `scripts/patch-tauri-cli.sh` applies them to a stock copy (it refuses versions it doesn't know).
+- `src-tauri/vendor/tauri-cli-2.12.0/src/mobile/` keeps 3 local changes on top of stock 2.12.0 (see the `tauri-cli-rebase` skill's `references/mods.md` for the why + rebase checklist): `fallback_options()` (standalone Xcode builds without a parent CLI process), `_iOS` → `_Apple` target lookup, and the simplified `{{app.name}}` path replacement in `project.rs`. The `.claude/skills/tauri-cli-rebase/` skill re-applies them semantically onto a new stock version.
 
 Install once per clone:
 

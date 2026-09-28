@@ -57,8 +57,8 @@ src-tauri/src/lib.rs            Commands + vibrancy + traffic lights + decorum �
 src-tauri/tauri.conf.json       Base config (merged with tauri.{os}.conf.json)
 src-tauri/Info.plist            Template source for macOS+iOS Info.plist (gen/ is autogen)
 scripts/Xcode/apple-xcode.sh    Regen of src-tauri/gen/apple (xcodegen) — never edit gen/
-scripts/patch-tauri-cli.sh      Re-applies the 3 CLI tweaks (refuses unknown versions)
-MODS.md                         CLI vendor modifications + rebase checklist (root)
+.claude/skills/tauri-cli-rebase  Re-applies the 3 CLI tweaks semantically (references/mods.md)
+.claude/skills/tauri-cli-rebase/references/mods.md  Durable CLI spec
 Makefile                        Desktop/iOS/Android shortcuts + install-tauri-cli
 docs/                           Bilingual docs — docs/README.md
 AGENTS.md                       This file
@@ -78,7 +78,7 @@ AGENTS.md                       This file
 | macOS traffic lights | `lib.rs:185` (`traffic_lights_target_y`) / `lib.rs:205` (snap) — X `17.5/39.5/61.5` (`lib.rs:160`) | AppKit internals elsewhere |
 | Linux titlebar (app-drawn, frameless) | `header.tsx` + `window-controls.tsx`; `window.show()` after `center()` in `setup()` | `src-tauri/gen/` |
 | Windows overlay (decorum) | `tauri.windows.conf.json:12` + `lib.rs:461`/`lib.rs:457` + `window-controls.tsx` | `src-tauri/gen/` |
-| CLI behavior | `src-tauri/vendor/tauri-cli-*/src/mobile/` (then rebuild) | crates.io copy (use `patch-tauri-cli.sh` flow) |
+| CLI behavior | `src-tauri/vendor/tauri-cli-*/src/mobile/` (then rebuild) | crates.io copy (use the `tauri-cli-rebase` skill flow) |
 
 ---
 

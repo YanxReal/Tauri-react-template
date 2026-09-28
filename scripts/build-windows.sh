@@ -42,7 +42,7 @@ if [[ "$BUNDLES" == *nsis* ]]; then
     echo "==> missing makensis — install with: brew install makensis"; exit 1; }
 fi
 
-# Stock CLI via npm (the vendored `cargo-tauri` is a local tweaked build — see MODS.md).
+# Stock CLI via npm (the vendored `cargo-tauri` is a local tweaked build — see .claude/skills/tauri-cli-rebase).
 echo "==> pnpm tauri build --target x86_64-pc-windows-msvc --runner cargo-xwin --bundles $BUNDLES ${EXTRA[*]:-}"
 pnpm tauri build --target x86_64-pc-windows-msvc --runner cargo-xwin --bundles "$BUNDLES" \
   ${EXTRA[@]+"${EXTRA[@]}"}
