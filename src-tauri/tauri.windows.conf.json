@@ -38,7 +38,11 @@
         "sidebarImage": "icons/nsis-sidebar.bmp",
         "startMenuFolder": "Tauri-react-template",
         "installMode": "currentUser",
-        "languages": ["English", "Spanish", "SpanishInternational"],
+        "languages": [
+          "English",
+          "Spanish",
+          "SpanishInternational"
+        ],
         "displayLanguageSelector": true,
         "compression": "lzma",
         "installerHooks": "hooks/installer.nsh"

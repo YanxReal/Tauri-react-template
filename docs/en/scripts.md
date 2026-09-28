@@ -33,6 +33,7 @@
 | `make linux-logs` / `make linux-stop` | follow / kill the remote dev server or app |
 | `make install-tauri-cli` | Builds vendored `src-tauri/vendor/tauri-cli-2.12.0` (stock 2.12.0 + 3 local tweaks: standalone fallback, `_Apple` target) → `~/.cargo/bin/cargo-tauri` |
 | `make install-skills` | Installs all project agent skills (macOS/Linux; on Windows run `scripts\install-skills.cmd`) |
+| `make rebrand` | Propagates `branding.json` identity (name, version, identifier, icons) to all desktop consumers; warns to regenerate `gen/` for iOS/Android |
 | `make lint` / `make build` | aliases |
 | `make help` / `make doctor` | list commands / check toolchain |
 
@@ -102,8 +103,8 @@ Target it with this repo's script (sync + build). Note `--run`/`--dev` assume an
 WEBKIT_DISABLE_COMPOSITING_MODE=1 LIBGL_ALWAYS_SOFTWARE=1 dev ./src-tauri/target/debug/tauri-react-template
 ```
 
-Defaults are already `ubuntu-arm` + `/workspace/Tauri-react-template` (capital T:
-the repo checkout; the binary stays lowercase `tauri-react-template`), so
+Defaults are already `ubuntu-arm` + `/workspace/Tauri-react-template` (the repo
+checkout; the binary itself stays lowercase `tauri-react-template`), so
 `make build-linux` / `make dev-linux` need no env. Override with
 `LINUX_BUILD_REMOTE=<host>` / `LINUX_BUILD_DIR=<dir>` when needed.
 The box may ship a newer pnpm than the pinned `pnpm@10.34.5` — harmless:

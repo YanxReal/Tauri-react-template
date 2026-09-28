@@ -169,6 +169,7 @@ The version you are on is tracked in `TEMPLATE_VERSION` at the repo root. The sk
 ├── biome.json               # formatter + linter (no ESLint)
 ├── turbo.json               # pipeline
 ├── TEMPLATE_VERSION         # which template release this app is on
+├── branding.json            # single source of truth for app identity (make rebrand)
 └── .claude/skills/          # agent skills (template-update) — Claude/Codex/OpenCode
 ```
 
@@ -223,6 +224,7 @@ make dev-android-emulator # boot AVD + pnpm tauri android dev
 make gen-apple            # regenerate src-tauri/gen/apple (xcodegen)
 make install-tauri-cli    # build vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
 make install-skills       # install all project agent skills
+make rebrand              # propagate branding.json identity everywhere
 make lint / make build    # aliases
 make help / make doctor   # list commands / check toolchain
 ```

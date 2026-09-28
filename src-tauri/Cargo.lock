@@ -3,6 +3,29 @@
 version = 4
 
 [[package]]
+name = "Tauri-react-template"
+version = "0.1.0"
+dependencies = [
+ "block2",
+ "env_logger",
+ "gtk",
+ "log",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-decorum",
+ "tauri-plugin-opener",
+ "tauri-plugin-prevent-default",
+ "tokio",
+ "window-vibrancy",
+ "windows 0.62.2",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3966,29 +3989,6 @@ dependencies = [
  "strum",
  "tauri",
  "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tauri-react-template"
-version = "0.1.0"
-dependencies = [
- "block2",
- "env_logger",
- "gtk",
- "log",
- "objc2",
- "objc2-app-kit",
- "objc2-foundation",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-decorum",
- "tauri-plugin-opener",
- "tauri-plugin-prevent-default",
- "tokio",
- "window-vibrancy",
- "windows 0.62.2",
 ]
 
 [[package]]

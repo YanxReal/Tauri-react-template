@@ -33,15 +33,25 @@ import json, re, sys
 cargo, conf_path = sys.argv[1], sys.argv[2]
 
 # --- Cargo.toml ------------------------------------------------------------
-crate = lib = None
+crate = lib = bin = None
+section = "package"
 for line in open(cargo, encoding="utf-8"):
     s = line.strip()
+    if s.startswith("[["):
+        section = "bin"
+        continue
+    if s.startswith("["):
+        section = s[1:-1].strip().lower()
+        continue
     m = re.match(r'^name\s*=\s*"([^"]+)"', s)
-    if m:
-        if crate is None:
-            crate = m.group(1)
-        else:
-            lib = m.group(1)
+    if not m:
+        continue
+    if section == "package":
+        crate = m.group(1)
+    elif section == "lib":
+        lib = m.group(1)
+    elif section == "bin":
+        bin = m.group(1)
 
 conf = json.load(open(conf_path, encoding="utf-8"))
 product = conf.get("productName", "")
@@ -49,7 +59,9 @@ identifier = conf.get("identifier", "")
 titles = [w.get("title") for w in conf.get("app", {}).get("windows", []) if w.get("title")]
 title = titles[0] if titles else product
 
-binary = crate or ""
+# binary: explicit [[bin]] name wins (matches productName/installer); fall back
+# to the package name if no [[bin]] block.
+binary = bin or crate or ""
 lib_name = lib or re.sub(r"-", "_", binary)
 # android package: dots stay, hyphens -> underscores (Tauri norm)
 android_package = identifier.replace("-", "_") if identifier else ""
@@ -67,7 +79,7 @@ ids = {
     "appleScheme": apple_scheme,
     "androidPackage": android_package,
     "isTemplateDefault": bool(
-        crate and crate == "tauri-react-template"
+        (crate == "Tauri-react-template" or crate == "tauri-react-template")
         and identifier and identifier == "com.tauri-react-template.app"
     ),
 }

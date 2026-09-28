@@ -28,7 +28,7 @@ LINUX_DIR ?= /workspace/Tauri-react-template
 
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator build-linux dev-linux linux-logs linux-stop gen-apple install-tauri-cli install-skills lint build
+.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator build-linux dev-linux linux-logs linux-stop gen-apple install-tauri-cli install-skills rebrand lint build
 
 help: ## Show available commands
 	@awk -F'##' '/^[a-zA-Z0-9_\\:.-]+:[ \t]*##/ { t=$$1; sub(/:[ \t]*$$/, "", t); gsub(/\\/, "", t); printf "  \033[36m%-22s\033[0m %s\n", t, $$2 }' $(MAKEFILE_LIST)
@@ -102,6 +102,10 @@ install-tauri-cli: ## Build vendor CLI → ~/.cargo/bin/cargo-tauri
 # Install all Agent Skills shipped with the project (see scripts/install-skills.sh).
 install-skills: ## Install all agent skills of the project
 	$(if $(SKILLS_GLOBAL),scripts/install-skills.sh --global,scripts/install-skills.sh)
+
+# Rebrand from branding.json (single source of truth) — see that file's _doc.
+rebrand: ## Propagate branding.json identity to all consumers
+	scripts/branding-update.sh
 
 lint: ## Biome check
 	pnpm lint

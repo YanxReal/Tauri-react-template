@@ -1,13 +1,19 @@
 [package]
-name = "tauri-react-template"
+name = "Tauri-react-template"
 version = "0.1.0"
 description = "Tauri + React + Vite template — generic multi-platform (iOS/Android/desktop) with Xcode layers"
 authors = ["you"]
 edition = "2021"
 rust-version = "1.85"
 
+# Package name uses the brand with a capital T (`Tauri-react-template`), so the
+# produced binary matches `productName` and the installer on every OS.
+[[bin]]
+name = "Tauri-react-template"
+path = "src/main.rs"
+
 [lib]
-name = "tauri_react_template_lib"
+name = "Tauri_react_template_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

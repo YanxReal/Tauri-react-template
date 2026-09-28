@@ -75,7 +75,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Binary name (lowercase by rule: Cargo package name, `productName` slug,
 # target dir, pkill patterns). Never capitalise this: the repo checkout is
 # `Tauri-react-template` (capital T) but the built binary is lowercase.
-APP_NAME="tauri-react-template"
+APP_NAME="Tauri-react-template"
 
 MODE=""
 REMOTE_HOST="${LINUX_BUILD_REMOTE:-ubuntu-arm}"
@@ -211,7 +211,7 @@ remote_stop() {
   # app name would also hit any shell whose cmdline contains the checkout dir.
   # `vite` needs two forms: the node bin (`vite.js`) and the shim (`sh -c vite`).
   remote_ssh "for p in '[t]auri.js dev' '[p]npm tauri dev' '[v]ite.js' '[v]ite --port' \
-                     'target/[d]ebug/tauri-react-template' 'target/[r]elease/tauri-react-template'; do \
+                     'target/[d]ebug/Tauri-react-template' 'target/[r]elease/Tauri-react-template'; do \
                 pkill -f \"\$p\" >/dev/null 2>&1 || true; \
               done; echo stopped"
 }

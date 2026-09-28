@@ -169,6 +169,7 @@ La versión en la que estás se guarda en `TEMPLATE_VERSION` en la raíz del rep
 ├── biome.json               # formateador + linter (sin ESLint)
 ├── turbo.json               # pipeline
 ├── TEMPLATE_VERSION         # release del template en la que está esta app
+├── branding.json            # fuente única de verdad de identidad (make rebrand)
 └── .claude/skills/          # agent skills (template-update) — Claude/Codex/OpenCode
 ```
 
@@ -223,6 +224,7 @@ make dev-android-emulator # arranca AVD + pnpm tauri android dev
 make gen-apple            # regenera src-tauri/gen/apple (xcodegen)
 make install-tauri-cli    # compila vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
 make install-skills       # instala todas las agent skills del proyecto
+make rebrand              # propaga la identidad de branding.json a todos lados
 make lint / make build    # alias
 make help / make doctor   # lista comandos / revisa toolchain
 ```

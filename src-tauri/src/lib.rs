@@ -1,3 +1,7 @@
+// The crate (`[lib] name`) is `Tauri_react_template_lib` to keep the brand's
+// capital T; silence the cosmetic non-snake-case lint it triggers.
+#![allow(non_snake_case)]
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 
 #[cfg(desktop)]
