@@ -371,7 +371,6 @@ MIT © Tauri-react-template — see [LICENSE](LICENSE).
 - [Tauri](https://tauri.app/) + [wry](https://github.com/tauri-apps/wry)/[tao](https://github.com/tauri-apps/tao) for the webview runtime
 - [shadcn/ui](https://ui.shadcn.com) + [einui](https://ui.eindev.ir) for the design system
 - [decorum](https://github.com/clearlysid/tauri-plugin-decorum) for the Windows overlay titlebar
-- [noVNC](https://github.com/novnc/noVNC) for browser-based testing
 
 ---
 
