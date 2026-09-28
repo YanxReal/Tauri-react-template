@@ -21,8 +21,8 @@ export function App() {
   const { enabled: glassEnabled } = useGlassCards()
   const platform = usePlatform()
   const isLinux = platform === "linux"
-  // Linux WebKitGTK no soporta blur de forma estable (glitches amarillos + RAM);
-  // el veto vive en GlassCardsProvider (`supported`), así que acá basta el flag.
+  // Linux WebKitGTK has no stable blur (yellow glitches + RAM);
+  // the veto lives in GlassCardsProvider (`supported`), so the flag suffices here.
   const effectiveGlass = glassEnabled && !isLinux
   const [greet, setGreet] = useState<string | null>(null)
 
@@ -33,7 +33,7 @@ export function App() {
   async function handleGreet() {
     try {
       const message = await invoke<string>("greet", { name: "Tauri" })
-      // Traduce la respuesta del backend cuando la UI está en español
+      // Translate the backend reply when the UI is in Spanish
       const translated =
         i18n.language.startsWith("es") && message.includes("Hello,")
           ? message
@@ -61,12 +61,11 @@ export function App() {
       <TitleBar />
       <Header />
 
-      {/* Scroller del contenido (desktop). El header queda FUERA a propósito:
-          es la barra de título y debe llegar al borde derecho. Si el scroller
-          fuera `.app-shell` (header + contenido), la barra de scroll le robaría
-          ancho al header y a los caption buttons — y con scrollbars overlay se
-          pintaría encima de ellos. En web/móvil este div es inerte y scrollea
-          el documento. */}
+      {/* Content scroller (desktop). The header stays OUTSIDE on purpose:
+          it is the titlebar and must reach the right edge. If `.app-shell`
+          (header + content) scrolled, the scrollbar would steal width from
+          the header and caption buttons — and overlay scrollbars would paint
+          over them. On web/mobile this div is inert and the document scrolls. */}
       <div className="app-scroll flex min-h-0 flex-1 flex-col">
         <main id="main-content" className="flex-1">
           <Hero />

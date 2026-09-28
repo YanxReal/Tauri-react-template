@@ -3,10 +3,10 @@ import { getCurrentWindow } from "@tauri-apps/api/window"
 import { useEffect, useState } from "react"
 
 /**
- * Alto de la banda de arrastre. Se mide del propio header (`.app-header`) en vez
- * de duplicar su clase de Tailwind: si la banda cambia (52px macOS, 44px
- * Win/Linux, 56px móvil) el arrastre la sigue sin tocar dos sitios. Los
- * fallbacks aplican si el header todavía no está montado.
+ * Drag-band height. Measured from the header itself (`.app-header`) instead
+ * of duplicating its Tailwind class: if the band changes (52px macOS, 44px
+ * Win/Linux, 56px mobile) dragging follows without touching two places.
+ * Fallbacks apply when the header is not mounted yet.
  */
 const FALLBACK_BAND_MAC = 52
 const FALLBACK_BAND_DESKTOP = 44
@@ -81,13 +81,12 @@ function useMacDragRegion(enabled: boolean): void {
 }
 
 /**
- * Win/Linux: la ventana es frameless (decorum en Windows, `decorations:false`
- * en Linux) pero el header de la app sigue siendo la zona de arrastre
- * personalizada.
- * WebKitGTK y WebView2 a veces no respetan `data-tauri-drag-region` en hijos
- * (solo en el elemento directo) y en Linux el CSS `app-region:drag` no siempre
- * funciona, así que el JS rescata el arrastre limitándolo a la altura real del
- * header (`h-11` = 44px) y con la misma guarda `INTERACTIVE_SELECTOR`.
+ * Win/Linux: the window is frameless (decorum on Windows, `decorations:false`
+ * on Linux) but the app header stays the custom drag region.
+ * WebKitGTK and WebView2 sometimes ignore `data-tauri-drag-region` on children
+ * (direct element only), and on Linux the `app-region:drag` CSS does not always
+ * work, so JS rescues dragging, limited to the real header height
+ * (`h-11` = 44px) with the same `INTERACTIVE_SELECTOR` guard.
  */
 function useWindowDragRegion(enabled: boolean): void {
   useEffect(() => {
@@ -98,7 +97,7 @@ function useWindowDragRegion(enabled: boolean): void {
       if (event.clientY > limit) return
       const target = event.target instanceof Element ? event.target : null
       if (target?.closest(INTERACTIVE_SELECTOR)) return
-      // No prevenir default en botones no-interactivos; startDragging necesita el evento vivo
+      // No preventDefault on non-interactive targets; startDragging needs the live event
       if (event.detail === 2) {
         void getCurrentWindow().toggleMaximize()
         return
@@ -132,14 +131,14 @@ const RESIZE_CURSOR: Record<ResizeEdge, string> = {
 }
 
 /**
- * Ancho de la banda de agarre del borde interior, en px CSS.
+ * Inner-edge grip band width, in CSS px.
  *
- * 6 da margen al ratón sin comerse la UI. Exportado para poder testear
- * `resizeEdgeAt` sin replicar el número.
+ * 6 gives the mouse room without eating UI. Exported so tests can cover
+ * `resizeEdgeAt` without duplicating the number.
  */
 const RESIZE_BAND = 6
 
-/** Borde bajo el puntero, o null si está lejos de los cantos. */
+/** Edge under the pointer, or null when far from any border. */
 function resizeEdgeAt(x: number, y: number, band: number): ResizeEdge | null {
   const w = window.innerWidth
   const h = window.innerHeight
@@ -160,13 +159,11 @@ function resizeEdgeAt(x: number, y: number, band: number): ResizeEdge | null {
 }
 
 /**
- * Linux: la ventana frameless **no trae agarres de resize** (el WM no decora
- * una ventana sin marco). Tauri 2.12 tampoco expone un `startResizing`, así
- * que el borde lo detecta la app y lo ejecuta Rust con
- * `gtk_window_begin_resize_drag` (`start_window_resize`).
+ * Linux: the frameless window has **no resize grips** (the WM decorates
+ * nothing). Tauri 2.12 exposes no `startResizing` either, so the app detects
+ * the edge and Rust runs `gtk_window_begin_resize_drag` (`start_window_resize`).
  *
- * El cursor del borde también es cosa nuestra: sin marco del WM no hay zona
- * que lo active.
+ * Edge cursors are ours too: with no WM frame nothing would set them.
  */
 function useWindowResizeEdges(enabled: boolean): void {
   useEffect(() => {
@@ -177,7 +174,7 @@ function useWindowResizeEdges(enabled: boolean): void {
       if (event.button !== 0) return
       const edge = resizeEdgeAt(event.clientX, event.clientY, BAND)
       if (!edge) return
-      // Capturamos: el arrastre lo lleva GTK, no el DOM.
+      // Capture: GTK owns the drag, not the DOM.
       event.preventDefault()
       void invoke("start_window_resize", { direction: edge }).catch(() => {})
     }

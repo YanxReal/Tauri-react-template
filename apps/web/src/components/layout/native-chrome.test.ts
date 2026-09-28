@@ -2,19 +2,18 @@ import { describe, expect, it } from "vitest"
 import { RESIZE_BAND, resizeEdgeAt } from "./native-chrome"
 
 /**
- * Tests de `resizeEdgeAt`, la función que decide si un mousedown launcha un
- * resize de ventana y de que borde.
+ * Tests for `resizeEdgeAt`, the function deciding whether a mousedown starts
+ * a window resize and from which edge.
  *
- * Importa `resizeEdgeAt` para testearlo, pero el hook `useWindowResizeEdges` que
- * la usa sigue siendo el camino real: este archivo protege la CLASIFICACION
- * (que borde corresponde a que posicion), que es donde un `match` mal escrito
- * redimensiona la ventana por el lado equivocado sin que se note en un test de
- * UI. Solo corre en Linux (ver `title-bar.tsx`), pero la funcion es pura y
- * estos tests corren en cualquier plataforma.
+ * Imports `resizeEdgeAt` for testing, but the `useWindowResizeEdges` hook that
+ * uses it stays the real path: this file guards the CLASSIFICATION (which
+ * edge a position maps to) — where a miswritten `match` would resize from the
+ * wrong side without any UI test noticing. Only runs on Linux (see
+ * `title-bar.tsx`), but the function is pure and these tests run anywhere.
  */
 
-// jsdom arranca con 1024x768; fijamos un tamaño conocido para que los bordes
-// sean calculables sin depender del entorno.
+// jsdom starts at 1024x768; pin a known size so edges are computable
+// without depending on the environment.
 const W = 1000
 const H = 800
 

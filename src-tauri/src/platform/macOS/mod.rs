@@ -1,3 +1,3 @@
-// Plataforma macOS — stub para código específico de este OS.
+// macOS platform — stub for OS-specific code.
 // Solo se compila cuando target_os == "macOS" (o web fallback).
-// Añade aquí #[tauri::command] o helpers de este OS.
+// Add #[tauri::command]s or helpers for this OS here.

@@ -8,23 +8,21 @@ import { usePlatform, useWindowDragRegion } from "./native-chrome"
 import { WindowControls } from "./window-controls"
 
 /**
- * Hover de los controles del header (idioma / tema). Ni el `ghost` de shadcn
- * (`bg-muted` / `dark:bg-muted/50`) ni el de glass (`white/10` → apenas 6 %
- * negro tras la inversión en claro) se leen sobre la banda de la titlebar: el
- * primero desaparece en oscuro y el segundo en claro. Usamos el mismo lenguaje
- * que los caption buttons (negro/10 en claro) y subimos el oscuro a blanco/15
- * para que el efecto se vea igual de claro en los dos temas.
+ * Header control hover (language / theme). Neither shadcn `ghost`
+ * (`bg-muted` / `dark:bg-muted/50`) nor glass (`white/10` → barely 6% black
+ * after light-mode inversion) reads on the titlebar band: the first vanishes
+ * in dark, the second in light. We use the caption-button language (black/10
+ * in light) and raise dark to white/15 so it reads equally in both themes.
  */
 const HEADER_CONTROL_HOVER = "hover:bg-black/10 dark:hover:bg-white/15"
 
 /**
- * La titlebar de Win/Linux es frameless: el header ES la banda, así que su alto
- * tiene que ser fijo. Antes sólo estaba `h-14` y el flex-column del shell la
- * comprimía hasta su min-content, o sea que el alto lo decidía el contenido de
- * cada página (44px — lo que medía de facto). Con `shrink-0` + `h-11` la banda
- * queda clavada en esos 44px, con aire suficiente para los botones de 32px sin
- * que el pill crezca fuera de la barra. macOS conserva sus 52px (traffic
- * lights) y móvil/web sus 56px.
+ * The Win/Linux titlebar is frameless: the header IS the band, so its height
+ * must be fixed. Before, only `h-14` was set and the shell flex-column
+ * squeezed it to min-content — each page's content decided the height
+ * (44px, the de-facto measure). With `shrink-0` + `h-11` the band stays
+ * pinned at 44px, with room for the 32px buttons without the pill growing
+ * out of the bar. macOS keeps its 52px (traffic lights), mobile/web 56px.
  */
 const HEADER_HEIGHT = {
   macos: "h-[52px]",
@@ -43,7 +41,7 @@ const HEADER_HEIGHT = {
  * listener (`useMacDragRegion` in native-chrome.ts).
  *
  * Windows (`decorations: false` + decorum overlay) and Linux (`decorations:
- * false`, frameless — esquinas cuadradas del sistema, decisión consciente):
+ * false`, frameless — square system corners, deliberate):
  * this header IS the titlebar — one fixed 44px row (Edge / VS Code style)
  * that stays draggable through `data-tauri-drag-region` + `useWindowDragRegion`
  * (drag band) and hosts the caption buttons (`WindowControls`).
@@ -81,7 +79,7 @@ export function Header() {
       } ${headerHeight}`}
       {...(isWinLinux ? { "data-tauri-drag-region": true } : {})}
     >
-      {/* Capa de arrastre detrás del contenido — solo Win/Linux */}
+      {/* Drag layer behind the content — Win/Linux only */}
       {isWinLinux && (
         <div data-tauri-drag-region className="absolute inset-0" aria-hidden />
       )}

@@ -1,8 +1,8 @@
 #!/bin/bash
-# Servidor Vite visible para el modo hotreload del template (sin parent de
-# `tauri ios dev`): la phase "Build Rust Code" de Xcode lo abre con
-# `open -a Terminal` cuando nada escucha en :1420, así el HMR funciona con
-# logs visibles. Cerrar la ventana detiene el servidor.
+# Visible Vite server for the template hotreload mode (no `tauri ios dev`
+# parent): the Xcode "Build Rust Code" phase opens it via
+# `open -a Terminal` when nothing listens on :1420, so HMR runs with visible
+# logs. Closing the window stops the server.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 exec pnpm dev

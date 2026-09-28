@@ -1,9 +1,9 @@
 #!/bin/bash
-# Parent `tauri ios dev --open` visible en Terminal para el modo hotreload
-# full IPC del template. La phase "Build Rust Code" la abre con
-# `open -a Terminal` cuando no hay parent vivo (probe JSON-RPC). El parent
-# levanta Vite vía su beforeDevCommand y sirve las options por IPC hasta que
-# se cierre la ventana.
+# Visible Terminal parent `tauri ios dev --open` for the template hotreload
+# full-IPC mode. The "Build Rust Code" phase opens it via
+# `open -a Terminal` when no live parent exists (JSON-RPC probe). The parent
+# starts Vite through its beforeDevCommand and serves options over IPC until
+# the window closes.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 export PATH="$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"

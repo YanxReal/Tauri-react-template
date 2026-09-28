@@ -1,9 +1,9 @@
-// Platform-specific modules — compilado solo para el target activo.
-// Detección de plataforma simplificada para template genérico.
-// Cada subdirectorio es una "capa" OS-named; solo el que coincide con
-// target_os se compila. El resto es ignorado por el compilador.
-// Úsalo para aislar código que solo tiene sentido en un OS
-// (ej: vibrancy en macOS/Windows, Keychain en Apple, etc.)
+// Platform-specific modules — compiled only for the active target.
+// Simplified platform detection for a generic template.
+// Each subdirectory is an OS-named "layer"; only the one matching
+// target_os compiles. The rest is ignored by the compiler.
+// Use it to isolate code that only makes sense on one OS
+// (e.g. vibrancy on macOS/Windows, Keychain on Apple, etc.)
 
 #![allow(non_snake_case)]
 
@@ -26,7 +26,7 @@ pub mod iOS;
 #[cfg(target_os = "macos")]
 pub mod macOS;
 
-/// Helper genérico para detectar plataforma en runtime (útil para logs).
+/// Generic runtime platform detection helper (handy for logs).
 pub fn current_platform() -> &'static str {
     #[cfg(target_os = "android")]
     return "android";

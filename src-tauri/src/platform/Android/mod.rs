@@ -1,3 +1,3 @@
-// Plataforma Android — stub para código específico de este OS.
+// Android platform — stub for OS-specific code.
 // Solo se compila cuando target_os == "Android" (o web fallback).
-// Añade aquí #[tauri::command] o helpers de este OS.
+// Add #[tauri::command]s or helpers for this OS here.

@@ -168,12 +168,12 @@ textarea,
   -webkit-touch-callout: default;
 }
 
-/* "Efecto cristal": el material nativo (vibrancy macOS / Mica Windows) se
-   transluce a través del fondo del body, pero teñido con el color del tema
-   (claro/oscuro) para que el cristal SIGA al tema de la app y no al sistema
-   (el fondo lo pinta la app; aquí añadimos translucidez).
-   32% en oscuro deja ver Mica/vibrancy, en claro lo dejamos más opaco
-   para desaumentar la transparencia (antes 12% muy translúcido). */
+/* "Crystal effect": the native material (macOS vibrancy / Windows Mica)
+   shows through the body background, tinted with the theme color (light/dark)
+   so the crystal FOLLOWS the app theme, not the system one (the app paints
+   the background; translucency is added here).
+   32% in dark reveals Mica/vibrancy; in light it stays more opaque to tone
+   the transparency down (12% used to be overly translucent). */
 html.vibrancy body {
   background-color: color-mix(in oklab, var(--background) 32%, transparent);
 }
@@ -181,17 +181,16 @@ html.light.vibrancy body {
   background-color: color-mix(in oklab, var(--background) 42%, transparent);
 }
 
-/* --- Ventana / titlebar -----------------------------------------------
-    La clase `.titlebar` vive en <html>, la monta el componente TitleBar en
-    Tauri desktop (nunca en el navegador/móvil). El header es la franja de
-    arrastre fusionada (h-14 = 56px en Win/Linux); macOS reserva 20px para los
-    traffic lights y el resto lo cubre el padding del header.
+/* --- Window / titlebar -------------------------------------------------
+    The `.titlebar` class lives on <html>, mounted by the TitleBar component on
+    Tauri desktop (never in browser/mobile). The header is the fused drag band
+    (h-14 = 56px on Win/Linux); macOS reserves 20px for the traffic lights and
+    header padding covers the rest.
 
-    macOS: la ventana es TRANSPARENTE con esquinas redondeadas nativas.
-    `.app-shell` es el contenedor de scroll (overflow-y:auto) que lleva el
-    fondo y el border-radius, así el header + contenido quedan recortados
-    DENTRO de las decoraciones redondeadas (el header no sobresale). html/body
-    son siempre transparentes. */
+    macOS: the window is TRANSPARENT with native rounded corners. `.app-shell`
+    clips (overflow hidden) and carries the background, so header + content stay
+    INSIDE the rounded frame (the header never sticks out). html/body stay
+    transparent. */
 @layer utilities {
   html.titlebar {
     --native-titlebar-height: 1.25rem; /* 20px — padding para traffic lights */
@@ -206,28 +205,28 @@ html.light.vibrancy body {
     height: 100%;
   }
 
-  /* .app-shell: recorta TODO (header incluido) y no scrollea — el scroll vive
-     en `.app-scroll` (ver abajo). Solo macOS necesita border-radius CSS
-     (ventana transparente Overlay); Linux y Windows van frameless
-     (`decorations:false`, esquinas cuadradas del sistema) con redondeo de
-     DWM solo en Windows, así que en ambos sin radius para no dejar
-     esquinitas sin colorear en header/footer. */
+  /* .app-shell: clips EVERYTHING (header included), never scrolls — scroll
+     lives in `.app-scroll` (see below). Only macOS needs CSS border-radius
+     (transparent Overlay window); Linux and Windows go frameless
+     (`decorations:false`, square system corners) with DWM rounding on Windows
+     only, so no radius on either — it would leave unpainted notches in
+     header/footer. */
   html.titlebar .app-shell {
     height: 100dvh;
-    /* El scroll NO vive aquí: el header es la barra de título y tiene que
-       llegar al borde derecho. Si `.app-shell` (header + contenido) fuera el
-       scroller, la barra nativa le robaría ancho al header y a los caption
-       buttons — y con scrollbars overlay (Windows Fluent / macOS / WebKitGTK)
-       se pintaría ENCIMA de ellos. Ver `html.titlebar .app-scroll`. */
+    /* Scroll does NOT live here: the header is the titlebar and must reach
+       the right edge. If `.app-shell` (header + content) scrolled, the native
+       bar would steal width from the header and caption buttons — and overlay
+       scrollbars (Windows Fluent / macOS / WebKitGTK) would paint OVER them.
+       See `html.titlebar .app-scroll`. */
     overflow: hidden;
     background-color: var(--background);
   }
-  /* Único scroller de desktop: solo contenido (main + footer). Hereda toda la
-     cadena de scroll nativa de la plataforma, así que los overlay scrollbars
-     (auto-ocultos, finos, por dentro) funcionan tal cual: `scrollBarStyle:
-     fluentOverlay` en Windows, overlay nativo en macOS y gtk-overlay-scrolling
-     en WebKitGTK. NO estilar `::-webkit-scrollbar` aquí: forzaría barras
-     clásicas (con carril y flechas) y perderíamos el overlay. */
+  /* Sole desktop scroller: content only (main + footer). Inherits the full
+     native platform scroll chain, so overlay scrollbars (auto-hidden, slim,
+     in-content) just work: `scrollBarStyle: fluentOverlay` on Windows, native
+     overlay on macOS, gtk-overlay-scrolling on WebKitGTK. NEVER style
+     `::-webkit-scrollbar` here: it would force classic bars (track + arrows)
+     and lose the overlay. */
   html.titlebar .app-scroll {
     flex: 1 1 auto;
     min-height: 0;
@@ -239,29 +238,29 @@ html.light.vibrancy body {
   html.titlebar-win .app-shell {
     border-radius: 0;
   }
-  /* Linux: ventana frameless (`decorations:false`) — esquinas cuadradas del
-     sistema, decisión consciente. Sin radio CSS para no dejar esquinitas sin
-     colorear (el shell es opaco: `transparent:false`). */
+  /* Linux: frameless window (`decorations:false`) — square system corners,
+     deliberate. No CSS radius, or unpainted notches would remain
+     (the shell is opaque: `transparent:false`). */
   html.linux .app-shell {
     border-radius: 0;
   }
-  /* Windows + decorum: el plugin inyecta su propia barra de título fija
-     (32px, z-index 100) con un `data-tauri-drag-region`. Este template ya
-     tiene su header fusionado (drag band + caption buttons del design
-     system), así que esa barra solo taparía los botones: la ocultamos y
-     dejamos el arrastre al header (`header.tsx`). */
+  /* Windows + decorum: the plugin injects its own fixed 32px titlebar
+     (z-index 100) with a `data-tauri-drag-region`. This template already has
+     its fused header (drag band + design-system caption buttons), so that bar
+     would only cover the buttons: hide it, keep dragging on the header
+     (`header.tsx`). */
   [data-tauri-decorum-tb] {
     display: none !important;
   }
-  /* Linux WebKitGTK: backdrop-blur es carísimo y causa RAM desbocada en resize;
-     lo desactivamos. Ver Tauri linux-graphics docs. */
+  /* Linux WebKitGTK: backdrop-blur is prohibitively expensive and blows up RAM
+     on resize; disable it. See Tauri linux-graphics docs. */
   html.linux .app-header,
   html.linux .app-shell {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
-  /* Linux: glass cards con blur provocan glitches amarillos y lentitud extrema
-     (segunda captura). Los desactivamos por completo y caen a sólido. */
+  /* Linux: blurred glass cards cause yellow glitches and extreme slowness
+     (second screenshot). Disable them entirely; they fall back to solid. */
   html.linux .glass-card,
   html.linux [data-glass],
   html.linux .backdrop-blur,
@@ -277,23 +276,24 @@ html.light.vibrancy body {
     background-color: var(--card) !important;
     border-color: var(--border) !important;
   }
-  /* Windows: transparent true mejora resize pero blur+100dvh causa layout thrashing;
-     contenemos el shell para que el compositor no repinte todo en cada frame. */
+  /* Windows: transparent:true helps resize, but blur+100dvh causes layout
+     thrashing; contain the shell so the compositor does not repaint everything
+     each frame. */
   html.titlebar-win .app-shell {
     contain: layout paint;
     will-change: transform;
   }
 
-  /* Cristal: 32% oscuro / 42% claro — en claro más opaco para desaumentar. */
+  /* Crystal: 32% dark / 42% light — more opaque in light to tone it down. */
   html.vibrancy .app-shell {
     background-color: color-mix(in oklab, var(--background) 32%, transparent);
   }
   html.light.vibrancy .app-shell {
     background-color: color-mix(in oklab, var(--background) 42%, transparent);
   }
-  /* Header: con vibrancy lo hacemos translúcido pero en claro más opaco.
-     Blur solo en macOS (vibrancy nativo); en Win Mica ya da el material y
-     en Linux el blur es carísimo (RAM). */
+  /* Header: translucent with vibrancy, but more opaque in light.
+     Blur on macOS only (native vibrancy); on Win Mica already provides the
+     material, and on Linux blur is prohibitively expensive (RAM). */
   html.vibrancy .app-header {
     background-color: color-mix(
       in oklab,
@@ -312,7 +312,7 @@ html.light.vibrancy body {
       transparent
     ) !important;
   }
-  /* Win/Linux: sin blur CSS, solo color (Mica ya tiene blur nativo, Linux no) */
+  /* Win/Linux: no CSS blur, color only (Mica brings native blur, Linux has none) */
   html.windows .app-header,
   html.linux .app-header {
     backdrop-filter: none !important;
@@ -401,7 +401,7 @@ html.light.glass-cards .to-transparent {
 }
 
 /* Hover en modo claro + glass: el hover:text-white por defecto vuelve
-   blanco (ilegible sobre glass claro). Invertimos también los hovers. */
+   white (unreadable on light glass). Invert hovers too. */
 html.light.glass-cards .hover\:bg-white\/10:hover {
   background-color: rgba(0, 0, 0, 0.06);
 }

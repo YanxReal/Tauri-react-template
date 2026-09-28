@@ -48,11 +48,11 @@ function CaptionButton({
 /**
  * Caption buttons (minimize / maximize-restore / close).
  *
- * Windows (`decorations:false` + decorum overlay) y Linux (`decorations:false`,
- * frameless) dibujan su propia titlebar, así que este componente aporta los
- * controles y la banda fija de 44px del header queda como franja arrastrable
- * fusionada (`data-tauri-drag-region` + `useWindowDragRegion`). macOS conserva
- * los traffic lights nativos, por eso `Header` solo lo renderiza en Win/Linux.
+ * Windows (`decorations:false` + decorum overlay) and Linux (`decorations:false`,
+ * frameless) draw their own titlebar, so this component provides the controls
+ * and the fixed 44px header band stays the fused draggable strip
+ * (`data-tauri-drag-region` + `useWindowDragRegion`). macOS keeps the native
+ * traffic lights, hence `Header` renders this on Win/Linux only.
  *
  * Hovering *maximize* opens the Windows 11 Snap Layouts flyout through
  * decorum's `show_snap_overlay` (Win+Z) — Windows only: the plugin is a
@@ -121,9 +121,9 @@ export function WindowControls() {
   }
 
   return (
-    // Sin padding derecho: el botón de cerrar tiene que quedar pegado al borde
-    // de la ventana, como Edge/Chrome (al hacer hover el rojo llega hasta la
-    // esquina y DWM lo recorta con el radio).
+    // No right padding: the close button must sit flush against the window
+    // edge, like Edge/Chrome (on hover the red reaches the corner and DWM
+    // clips it with the radius).
     <div className="relative z-20 flex h-full shrink-0 items-stretch">
       <CaptionButton
         label={t("header.minimize")}

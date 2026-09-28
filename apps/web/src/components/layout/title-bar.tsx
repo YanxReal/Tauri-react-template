@@ -10,7 +10,7 @@ const DESKTOP_PLATFORMS = new Set(["macos", "windows", "linux"])
 
 /**
  * Titlebar side-effects only — side effects for the macOS Overlay titlebar.
- * Aquí solo se monta la clase `.titlebar` (alto de banda + estilos del shell).
+ * Only the `.titlebar` class is mounted here (band height + shell styles).
  */
 export function TitleBar() {
   const platform = usePlatform()

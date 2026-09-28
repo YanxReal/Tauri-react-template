@@ -78,12 +78,12 @@ fn set_window_effect(
     Err("unsupported".to_string())
 }
 
-/// Redimensiona la ventana desde el borde indicado.
+/// Resizes the window from the given edge.
 ///
-/// En Linux la ventana frameless no trae agarres de resize (el WM no decora
-/// una ventana sin marco), asi que el borde lo detecta la app
-/// (`useWindowResizeEdges`) y acaba aqui, en `begin_resize_drag` de GTK.
-/// En el resto de plataformas el WM ya lo hace solo.
+/// On Linux the frameless window has no resize grips (the WM does not
+/// decorate a frameless window), so the app detects the edge
+/// (`useWindowResizeEdges`) and it ends here, in GTK's `begin_resize_drag`.
+/// On other platforms the WM handles it.
 #[tauri::command]
 fn start_window_resize(window: tauri::WebviewWindow, direction: String) -> Result<(), String> {
     #[cfg(target_os = "linux")]
@@ -100,7 +100,7 @@ fn start_window_resize(window: tauri::WebviewWindow, direction: String) -> Resul
             "NorthEast" => gtk::gdk::WindowEdge::NorthEast,
             "SouthWest" => gtk::gdk::WindowEdge::SouthWest,
             "SouthEast" => gtk::gdk::WindowEdge::SouthEast,
-            _ => return Err(format!("direccion desconocida: {direction}")),
+            _ => return Err(format!("unknown direction: {direction}")),
         };
         let (root_x, root_y) = gtk::gdk::Display::default()
             .and_then(|display| display.default_seat())
@@ -109,8 +109,8 @@ fn start_window_resize(window: tauri::WebviewWindow, direction: String) -> Resul
                 let (_screen, x, y) = pointer.position();
                 (x, y)
             })
-            .ok_or_else(|| "sin dispositivo de puntero".to_string())?;
-        // `GDK_CURRENT_TIME` (= 0): gdk-rs no lo exporta, así que va el valor.
+            .ok_or_else(|| "no pointer device".to_string())?;
+        // `GDK_CURRENT_TIME` (= 0): gdk-rs does not export it, so hardcode the value.
         gtk_window.begin_resize_drag(edge, 1, root_x, root_y, 0);
         Ok(())
     }
@@ -135,56 +135,54 @@ fn window_effects_set(
     result
 }
 
-/// Desktop-Apple shell entry para el target unificado `tauri-react-template_Apple`
-/// de Xcode (ver `src-tauri/tauri.macos.conf.json` + `Assets.xcassets`).
-/// `main.mm` del Xcode project llama a `start_app()` vía FFI. En iOS el
-/// símbolo lo genera `tauri::mobile_entry_point` (cfg `mobile`), aquí lo
-/// exportamos para macOS para que un solo `staticlib` sirva a ambos destinos.
+/// Desktop-Apple shell entry for the unified `tauri-react-template_Apple`
+/// Xcode target (see `src-tauri/tauri.macos.conf.json` + `Assets.xcassets`).
+/// The Xcode project's `main.mm` calls `start_app()` via FFI. On iOS the
+/// symbol comes from `tauri::mobile_entry_point` (cfg `mobile`); here it is
+/// exported for macOS so one `staticlib` serves both destinations.
 ///
-/// Sin Xcode (cargo tauri dev/build puro) este símbolo no se usa, pero
-/// debe existir para que `cargo check --target aarch64-apple-ios` y
-/// `cargo tauri ios dev` compilen sin errores de linker.
+/// Without Xcode (plain cargo tauri dev/build) this symbol is unused, but it
+/// must exist so `cargo check --target aarch64-apple-ios` and
+/// `cargo tauri ios dev` link without errors.
 #[cfg(target_os = "macos")]
 #[no_mangle]
 pub extern "C" fn start_app() {
     run()
 }
 
-/// Posición X objetivo de cada traffic light en macOS (Close / Miniaturize /
-/// Zoom). Estaba en `22.5 / 44.5 / 66.5`; se movió 3px y luego 2px más a la
-/// izquierda (`19.5` → `17.5`). Vive en una sola const porque la usan el snap de
-/// `adjust_macos_traffic_lights` y el detector de drift
-/// `needs_traffic_lights_update`: si se separan, el observer re-aplica el frame
-/// en cada tick del polling de 60 fps.
+/// Target X position of each macOS traffic light (Close / Miniaturize /
+/// Zoom). Was `22.5 / 44.5 / 66.5`; moved 3px then 2px further left
+/// (`19.5` → `17.5`). Single const shared by the `adjust_macos_traffic_lights`
+/// snap and the `needs_traffic_lights_update` drift detector: on drift the
+/// observer re-applies the frame on every 60 fps poll tick.
 #[cfg(all(target_os = "macos", desktop))]
 const TRAFFIC_LIGHTS_X: [f64; 3] = [17.5, 39.5, 61.5];
 
-/// Alto de la banda del header en macOS: tiene que coincidir con
-/// `HEADER_HEIGHT.macos` de `apps/web/src/components/layout/header.tsx`
-/// (`h-[52px]`). Los dots se centran dentro de esta banda.
+/// macOS header band height: must match `HEADER_HEIGHT.macos` in
+/// `apps/web/src/components/layout/header.tsx` (`h-[52px]`). Dots center
+/// inside this band.
 #[cfg(all(target_os = "macos", desktop))]
 const MACOS_HEADER_BAND: f64 = 52.0;
 
-/// Centro vertical objetivo de los dots (la mitad de la banda del header).
+/// Target vertical center of the dots (half the header band).
 #[cfg(all(target_os = "macos", desktop))]
 const TRAFFIC_LIGHTS_CENTER_Y: f64 = MACOS_HEADER_BAND / 2.0;
 
-/// Tamaño nativo de un dot antes del `grow` (12px de serie; macOS reciente los
-/// sirve a 14px, que ya cae dentro del rango "agrandado"). Compartido con el
-/// detector de drift para no tener dos copias del número.
+/// Native dot size before `grow` (12px stock; recent macOS serves 14px,
+/// already inside the "grown" range). Shared with the drift detector so the
+/// number lives in one place.
 #[cfg(all(target_os = "macos", desktop))]
 const NATIVE_DOT_SIZE: f64 = 12.0;
 
-/// Y objetivo de un dot de `size` px para que quede centrado en la banda del
-/// header. El `frame` de los botones vive en el sistema de coordenadas de su
-/// **superview** (el contenedor de la titlebar), que puede estar flipped o no:
-/// medido en macOS 26 ese contenedor NO está flipped, así que escribir
-/// `y = 26 - size/2` movía los dots ~9px HACIA ARRIBA en vez de bajarlos.
-/// Con `isFlipped()` cubrimos los dos casos.
+/// Target Y of a `size`px dot to center it in the header band. Button
+/// `frame`s live in their **superview** coordinates (the titlebar container),
+/// which may or may not be flipped: measured on macOS 26 that container is
+/// NOT flipped, so writing `y = 26 - size/2` pushed the dots ~9px UP instead
+/// of down. `isFlipped()` covers both cases.
 #[cfg(all(target_os = "macos", desktop))]
 fn traffic_lights_target_y(btn: &objc2_app_kit::NSButton, size: f64) -> f64 {
     let desired_top = TRAFFIC_LIGHTS_CENTER_Y - size / 2.0;
-    // SAFETY: `btn` es un NSButton vivo de la ventana; `superview` es AppKit puro.
+    // SAFETY: `btn` is a live window NSButton; `superview` is pure AppKit.
     let Some(parent) = (unsafe { btn.superview() }) else {
         return desired_top;
     };
@@ -195,9 +193,9 @@ fn traffic_lights_target_y(btn: &objc2_app_kit::NSButton, size: f64) -> f64 {
     }
 }
 
-/// Ajusta los traffic lights nativos de macOS (patrón "bajarlos y
-/// agrandarlos"). Accede a los botones de ventana estándar vía `NSWindow`
-/// (AppKit tipado) y modifica su `frame` en bloque: `grow` agranda cada dot
+/// Adjusts the native macOS traffic lights (lower + grow). Reaches the
+/// standard window buttons via `NSWindow` (typed AppKit) and edits their
+/// `frame` in bulk: `grow` enlarges each dot
 /// alrededor de su centro y la `y` se fija de forma absoluta para centrarlos
 /// verticalmente en la banda del header (`TRAFFIC_LIGHTS_CENTER_Y`),
 /// conservando el espaciado horizontal entre los tres.
@@ -206,8 +204,8 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
     use objc2_app_kit::{NSAutoresizingMaskOptions, NSWindow, NSWindowButton};
     use objc2_foundation::NSRect;
 
-    let grow = 3.0_f64; // agrandar cada dot ~3px
-    let shift_right = 16.0_f64; // moverlos un poco a la izquierda (19->16)
+    let grow = 3.0_f64; // grow each dot ~3px
+    let shift_right = 16.0_f64; // nudge left (19->16)
 
     let Ok(ptr) = window.ns_window() else {
         return;
@@ -218,9 +216,9 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
         return;
     };
 
-    // Evita drift acumulativo en live-resize: AppKit resetea a ~12px,
-    // nosotros agrandamos a ~15px. Si ya está agrandado, no volver a
-    // sumar (evita que se vayan caminando a la derecha y desaparezcan).
+    // Avoid cumulative drift on live-resize: AppKit resets to ~12px, we grow
+    // to ~15px. If already grown, do not add again (keeps dots from walking
+    // right until they disappear).
     const NATIVE_SIZE: f64 = NATIVE_DOT_SIZE;
     const GROWN_SIZE: f64 = NATIVE_SIZE + 3.0;
     let window_height = ns_window.frame().size.height;
@@ -237,10 +235,9 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
         if frame.size.width <= 0.0 || frame.size.height <= 0.0 {
             continue;
         }
-        // Ya agrandado: snap absoluto de x e y. La `y` se recalcula desde el
-        // superview del botón (ver `traffic_lights_target_y`), así que es
-        // idempotente y no depende del historial de resizes (antes se bajaba 3px
-        // a ciegas en cada tick y el dot acababa donde AppKit quisiera).
+        // Already grown: absolute x/y snap. `y` is recomputed from the button
+        // superview (see `traffic_lights_target_y`), so it is idempotent and
+        // history-free (a blind -3px per tick used to land wherever AppKit went).
         if frame.size.width > NATIVE_SIZE + 1.5 && frame.size.width < GROWN_SIZE + 2.0 {
             let target_x = match button {
                 NSWindowButton::CloseButton => TRAFFIC_LIGHTS_X[0],
@@ -265,9 +262,9 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
             btn.setAutoresizingMask(NSAutoresizingMaskOptions(0));
             continue;
         }
-        // No tocar si está en fullscreen / fuera de la ventana: AppKit manda los
-        // botones fuera de rango visible. (Antes era un `y > 1000` fijo, que en
-        // ventanas altas también descartaba una posición normal.)
+        // Skip when fullscreen / off-window: AppKit sends buttons out of the
+        // visible range. (A fixed `y > 1000` used to discard normal positions
+        // on tall windows too.)
         if frame.origin.y < -100.0 || frame.origin.y > window_height - 4.0 {
             continue;
         }
@@ -287,7 +284,7 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
                 height: frame.size.height + grow,
             },
         };
-        // Clamp para no sacarlos de la ventana al agrandar
+        // Clamp to keep them inside the window when growing
         if new_rect.origin.x < 6.0 || new_rect.origin.x > 400.0 {
             continue;
         }
@@ -340,7 +337,7 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
     if REGISTERED.with(|s| s.borrow().contains(&label)) {
         return;
     }
-    // NSWindowDidResizeNotification y DidMove llegan en tracking mode, más fiable que WindowEvent en macOS 26
+    // NSWindowDidResizeNotification + DidMove arrive in tracking mode — more reliable than WindowEvent on macOS 26
     let w1 = window.clone();
     let block_resize = RcBlock::new(move |_note: NonNull<NSNotification>| {
         adjust_macos_traffic_lights(&w1);
@@ -380,41 +377,41 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Linux: ventana frameless (`decorations:false` + `transparent:false` en
-    // tauri.linux.conf.json) con la titlebar dibujada por la app, igual que en
-    // Windows: esquinas cuadradas del sistema, sin canal alfa. Decisión
-    // consciente (2026-09-27): el marco CSD redondeado dejaba puntas
-    // transparentes visibles y no compensaba.
+    // Linux: frameless window (`decorations:false` + `transparent:false` in
+    // tauri.linux.conf.json) with the app-drawn titlebar, same as Windows:
+    // square system corners, no alpha channel. Deliberate (2026-09-27):
+    // the rounded CSD frame left visible transparent tips and was not
+    // worth it.
     //
-    // Linux WebKitGTK: DMABUF renderer causa flicker, Error 71 Wayland y RAM desbocada en resize
-    // (NVIDIA + Wayland). Ver https://v2.tauri.app/develop/debug/linux-graphics/ y tauri#9394
+    // Linux WebKitGTK: DMABUF renderer causes flicker, Wayland Error 71 and runaway RAM on resize
+    // (NVIDIA + Wayland). See https://v2.tauri.app/develop/debug/linux-graphics/ and tauri#9394
     #[cfg(target_os = "linux")]
     {
-        // Desactiva el fast path DMABUF, usa el renderer seguro (costo mínimo, evita crash/resize RAM)
+        // Disable the DMABUF fast path, use the safe renderer (minimal cost, avoids crash/resize RAM)
         std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
         // NVIDIA Wayland explicit sync bug (Error 71 dispatching to Wayland display)
         std::env::set_var("__NV_DISABLE_EXPLICIT_SYNC", "1");
-        // Opcional: si sigue el colapso, descomentar la siguiente línea (desactiva compositing acelerado)
+        // Optional: if collapse persists, uncomment below (disables accelerated compositing)
         // std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
     }
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        // Native-app feel (multi-OS): bloquea atajos/menús de "sitio web".
-        // `Flags::debug()` deja activos en DEBUG context-menu (Recargar por
-        // clic derecho), DevTools (Ctrl/Cmd+Shift+I) y Reload (F5, Cmd+R);
-        // en RELEASE bloquea TODO (Ctrl+P/S, zoom rueda, menú contextual
-        // nativo del webview, fuente, etc.). El zoom por teclado se apaga
-        // además con `zoomHotkeysEnabled:false` en tauri.conf.json.
+        // Native-app feel (multi-OS): blocks "website" shortcuts/menus.
+        // `Flags::debug()` keeps context-menu (right-click Reload),
+        // DevTools (Ctrl/Cmd+Shift+I) and Reload (F5, Cmd+R) in DEBUG;
+        // in RELEASE it blocks everything (Ctrl+P/S, wheel zoom, native
+        // webview context menu, etc.). Keyboard zoom is additionally off
+        // via `zoomHotkeysEnabled:false` in tauri.conf.json.
         .plugin(
             tauri_plugin_prevent_default::Builder::new()
                 .with_flags(tauri_plugin_prevent_default::Flags::debug())
                 .build(),
         );
 
-    // decorum (plugin de la comunidad) — solo Windows: titlebar overlay estilo
-    // Edge/VS Code. En Linux la ventana ya es frameless (`decorations:false`)
-    // con la titlebar de React, y en macOS va el Overlay nativo con traffic
-    // lights, así que no se registra ahí.
+    // decorum (community plugin) — Windows only: Edge/VS Code style overlay
+    // titlebar. Linux is already frameless (`decorations:false`) with the
+    // React titlebar, and macOS uses the native Overlay with traffic lights,
+    // so it is not registered there.
     #[cfg(target_os = "windows")]
     let builder = builder.plugin(tauri_plugin_decorum::init());
 
@@ -426,30 +423,30 @@ pub fn run() {
             window_effects_set
         ])
         .setup(|app| {
-            // Centrado forzado en desktop — `center:true` en tauri.conf no siempre
-            // se honra si el OS restaura la posición previa (Windows/macOS resume).
-            // Va PRIMERO: en Linux la ventana nace oculta (`visible:false`) y se
-            // muestra despues, así que centrar al final haría que apareciera
-            // sin centrar y luego saltara un frame.
+            // Forced centering on desktop — `center:true` in tauri.conf is not
+            // always honored when the OS restores the previous position
+            // (Windows/macOS resume). Goes FIRST: on Linux the window is born
+            // hidden (`visible:false`) and shown later, so centering last would
+            // flash it uncentered and then jump a frame.
             #[cfg(desktop)]
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.center();
             }
 
-            // Linux: ventana frameless (`decorations:false`). Nace oculta
-            // (`visible:false`) y se muestra aquí, ya centrada: sin parpadeo.
+            // Linux: frameless window (`decorations:false`). Born hidden
+            // (`visible:false`), shown here already centered: no flash.
             #[cfg(target_os = "linux")]
             if let Some(window) = app.get_webview_window("main") {
                 if let Err(e) = window.show() {
-                    log::warn!("no pude mostrar la ventana en Linux: {e}");
+                    log::warn!("could not show the Linux window: {e}");
                 }
             }
 
-            // Windows: ventana FRAMELESS (`decorations:false`) con titlebar
-            // propia — `header.tsx` aporta la zona de arrastre + caption buttons
-            // y decorum expone `show_snap_overlay` (Win+Z) para el hover de
-            // maximizar. El resize lo mantiene tao vía WM_NCHITTEST y las
-            // esquinas redondeadas las pone DWM (una frameless es cuadrada).
+            // Windows: FRAMELESS window (`decorations:false`) with its own
+            // titlebar — `header.tsx` provides the drag region + caption buttons
+            // and decorum exposes `show_snap_overlay` (Win+Z) for the maximize
+            // hover. Resize stays with tao via WM_NCHITTEST; DWM supplies the
+            // rounded corners (a frameless window is square by default).
             #[cfg(target_os = "windows")]
             {
                 use windows::Win32::Foundation::HWND;
@@ -474,13 +471,13 @@ pub fn run() {
                 }
             }
 
-            // macOS: las esquinas redondeadas son nativas (decorations:true +
-            // transparent + Overlay). HuLa 3-mecanismos: WindowEvent + NSNotificationCenter + live-resize poll
+            // macOS: rounded corners are native (decorations:true +
+            // transparent + Overlay). HuLa 3-mechanism fix: WindowEvent + NSNotificationCenter + live-resize poll
             #[cfg(all(target_os = "macos", desktop))]
             if let Some(window) = app.get_webview_window("main") {
-                // 1) Posición inicial
+                // 1) Initial position
                 adjust_macos_traffic_lights(&window);
-                // 2) WindowEvent (Focused/Resized/ScaleFactor) - Wry/Tao solo emite al soltar
+                // 2) WindowEvent (Focused/Resized/ScaleFactor) - Wry/Tao only fires on release
                 let w = window.clone();
                 window.on_window_event(move |event| {
                     if matches!(
@@ -492,13 +489,13 @@ pub fn run() {
                         adjust_macos_traffic_lights(&w);
                     }
                 });
-                // 3) NSNotificationCenter para DidResize/DidMove (macOS 26+ necesita esto porque Resized llega tarde)
+                // 3) NSNotificationCenter for DidResize/DidMove (macOS 26+ needs this: Resized arrives late)
                 ensure_traffic_lights_observer(&window);
-                // 4) Polling live-resize a 60fps en CommonModes (dispara durante NSEventTrackingRunLoopMode)
+                // 4) 60fps live-resize polling in CommonModes (fires during NSEventTrackingRunLoopMode)
                 let w2 = window.clone();
                 let block = block2::RcBlock::new(
                     move |_timer: std::ptr::NonNull<objc2_foundation::NSTimer>| {
-                        // Solo si está en live-resize y necesita update (evita setFrame redundante)
+                        // Only while live-resizing and needing an update (avoids redundant setFrame)
                         if needs_traffic_lights_update(&w2) {
                             adjust_macos_traffic_lights(&w2);
                         }
@@ -519,12 +516,12 @@ pub fn run() {
                 }
             }
 
-            // En release, el plugin `prevent-default` (registrado arriba con
-            // `Flags::debug()`) ya suprime el menú contextual NATIVO del
-            // webview (Recargar/Volver en WKWebView, WebView2, WebKitGTK) y el
-            // de long-press móvil, sin tocar código por perfil aquí.
+            // In release, the `prevent-default` plugin (registered above with
+            // `Flags::debug()`) already suppresses the webview NATIVE context
+            // menu (Reload/Back in WKWebView, WebView2, WebKitGTK) and the
+            // mobile long-press one, with no per-profile code here.
 
-            // Log plataforma al iniciar (útil para debug multi-OS)
+            // Log platform at startup (handy for multi-OS debugging)
             log::info!("backend started on {}", platform::current_platform());
             let _ = app;
             Ok(())

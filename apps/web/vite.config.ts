@@ -16,12 +16,12 @@ export default defineConfig({
   server: {
     port: 1420,
     strictPort: true,
-    // `tauri ios dev` negocia el devUrl con una IP de red (el primer
-    // interfaz local no-loopback; en esta máquina a veces cae en la de
-    // PairVPN) y comprueba el server en esa dirección. Escuchando en TODAS
-    // las interfaces (host: true) la health-check del CLI
-    // pasa en cualquier IP (127.0.0.1, ::1 o la de red). Cuando el CLI
-    // exporta TAURI_DEV_HOST (device físico) vitamos ese host concreto.
+    // `tauri ios dev` negotiates devUrl on a network IP (the first
+    // non-loopback local interface; on this machine it sometimes lands on the
+    // PairVPN one) and probes the server there. Listening on ALL interfaces
+    // (host: true) passes the CLI health-check on any IP (127.0.0.1, ::1 or
+    // LAN). When the CLI exports TAURI_DEV_HOST (physical device) we pin that
+    // exact host.
     host: host || true,
     hmr: host
       ? {

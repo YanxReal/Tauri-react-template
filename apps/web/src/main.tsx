@@ -8,13 +8,13 @@ import { AppProviders } from "@/components/app-providers.tsx"
 import { App } from "./App.tsx"
 
 // --- Native-app feel (multi-OS) ---------------------------------------------
-// Bloquear atajos "de navegador" (F5, Cmd+R, DevTools, Ctrl+P/S, zoom por
-// teclado, menú contextual) lo hace el plugin Rust `tauri-plugin-prevent-default`
-// de forma PERFIL-condicional (en debug conserva DevTools y el menú Recargar),
-// así que aquí solo cubrimos lo que no gestiona el plugin:
-//   - arrastre de elementos (dragstart)
-//   - zoom con Ctrl/Cmd + rueda del ratón (fallback escritorio)
-//   - enlaces externos → navegador del OS, nunca dentro del webview
+// Blocking "browser" shortcuts (F5, Cmd+R, DevTools, Ctrl+P/S, keyboard
+// zoom, context menu) is the Rust `tauri-plugin-prevent-default` plugin's job,
+// applied per profile (debug keeps DevTools and the Reload menu), so here we
+// only cover what the plugin does not handle:
+//   - element dragging (dragstart)
+//   - Ctrl/Cmd + wheel zoom (desktop fallback)
+//   - external links → OS browser, never inside the webview
 // ----------------------------------------------------------------------------
 const isTauri = "__TAURI_INTERNALS__" in window
 

@@ -16,8 +16,8 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = "2"
-# Native-app feel: bloquea atajos/menús predeterminados del navegador
-# (F5, Cmd+R, F12, Ctrl+P/S, zoom, menú contexto) a nivel de WebView.
+# Native-app feel: blocks default browser shortcuts/menus
+# (F5, Cmd+R, F12, Ctrl+P/S, zoom, context menu) at the WebView level.
 tauri-plugin-prevent-default = "2"
 # Generic OS info for frontend (optional, no Keychain). Uncomment if you need
 # `platform_info` richer than `platform::current_platform()`.
@@ -27,7 +27,7 @@ serde_json = "1"
 log = "0.4"
 env_logger = "0.11"
 
-# Window translucency (macOS vibrancy / Windows Mica) — "efecto cristal".
+# Window translucency (macOS vibrancy / Windows Mica).
 # NOTE: the crate publishes under the name `window-vibrancy`;
 # applies/clears the native material on supported OS (no-op-ish elsewhere).
 # NOTE: must stay in the main [dependencies] table (BEFORE any
@@ -35,12 +35,12 @@ env_logger = "0.11"
 window-vibrancy = "0.8"
 
 # --- Target-specific dependencies ------------------------------------------
-# macOS NO necesita deps nativas para esquinas redondeadas — el marco
-# nativo (decorations:true + transparent + Overlay) las dibuja a cualquier
-# tamaño. Solo Windows necesita DWMWCP_ROUND para el frameless.
+# macOS needs no native deps for rounded corners — the native frame
+# (decorations:true + transparent + Overlay) draws them at any size.
+# Only Windows needs DWMWCP_ROUND for its frameless window.
 
-# Ajuste de los traffic lights nativos de macOS ("bajarlos / agrandarlos"):
-# se accede a los NSButton de la ventana vía AppKit y se modifica su frame.
+# Native macOS traffic-light adjustment (lower + grow):
+# reaches the window NSButtons via AppKit and edits their frame.
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
 objc2-app-kit = { version = "0.3", features = ["NSWindow", "NSButton", "NSView"] }
@@ -48,10 +48,10 @@ objc2-foundation = { version = "0.3", features = ["NSGeometry", "NSTimer", "NSRu
 block2 = "0.6"
 tokio = { version = "1", features = ["rt", "time", "sync"] }
 
-# Windows: overlay titlebar estilo Edge/VS Code (frameless + caption buttons
-# propios + Snap Layouts vía `show_snap_overlay`) — plugin de la comunidad.
-# Esquinas redondeadas: DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE,
-# DWMWCP_ROUND) en lib.rs (una ventana frameless es cuadrada por defecto).
+# Windows: Edge/VS Code style overlay titlebar (frameless + own caption
+# buttons + Snap Layouts via `show_snap_overlay`) — community plugin.
+# Rounded corners: DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE,
+# DWMWCP_ROUND) in lib.rs (a frameless window is square by default).
 [target.'cfg(target_os = "windows")'.dependencies]
 tauri-plugin-decorum = "1.1"
 windows = { version = "0.61", features = [
@@ -59,13 +59,10 @@ windows = { version = "0.61", features = [
     "Win32_Graphics_Dwm",
 ] }
 
-# Linux: marco CSD "latched" — una `GtkHeaderBar` vacía y oculta deja la ventana
-# en modo cliente-decorado para conservar la SOMBRA nativa de GTK, y su fondo se
-# pinta transparente para que la forma la defina `.app-shell` (globals.css). La
-# titlebar visible la dibuja la app (header + WindowControls), patrón
-# Chromium/VS Code/Edge: la SSD de mutter no puede seguir al tema
-# (`_GTK_THEME_VARIANT` con LOAD_INIT) y la `GtkHeaderBar` no es arrastrable
-# cuando tao crea la ventana en modo SSD. Misma versión de gtk-rs que tao/wry.
+# Linux: frameless window (`decorations:false`) with the app-drawn titlebar
+# (header + WindowControls); square system corners by design. gtk-rs is only
+# needed for `start_window_resize` (edge detection drives `begin_resize_drag`
+# — a frameless window gets no WM handles). Same gtk-rs version as tao/wry.
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
 
