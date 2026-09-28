@@ -54,6 +54,21 @@ dirs).
 **Porting notes:** if upstream simplifies this themselves, drop MOD-3. The
 now-unused `ffi::OsString` / `path::{Component, PathBuf}` imports go with it.
 
+## MOD-4 — Android status-bar contrast for edge-to-edge
+
+**Where:** `templates/mobile/android/app/src/main/MainActivity.kt`.
+
+Stock calls `enableEdgeToEdge()` and nothing else. Ours adds
+`applyStatusBarContrast()` (called from `onCreate` + `onResume`): reads the
+system night mode and sets `isAppearanceLightStatusBars` /
+`isAppearanceLightNavigationBars` accordingly. Without it, edge-to-edge leaves
+dark system icons (clock, signal, battery) invisible over a dark WebView — the
+user reports "not even the time shows" in dark mode.
+
+**Porting notes:** template file, not CLI source — overlay it from the old
+vendor onto the new stock (same as the iOS `project.yml`). If upstream adds an
+equivalent, drop MOD-4.
+
 ## Templates (not stock)
 
 Unified `project.yml` (single `_Apple` target, debug/hotreload/release configs,

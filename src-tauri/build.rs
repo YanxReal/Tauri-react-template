@@ -1,5 +1,7 @@
 //! Build script — multi-platform adaptations.
 //! - Calls `tauri_build::build()` to generate context + mobile/desktop cfg aliases.
+//! - On Android targets: passes `-Wl,-z,max-page-size=16384` so the .so is
+//!   16 KB-page compatible (Android 15+ shows no compatibility warning).
 //! - On macOS: compiles `Assets.xcassets/AppIcon` via `actool` so the .app uses
 //!   the theme-aware AppIcon (instead of just icon.icns). Works without Xcode
 //!   (skips with warning) and is ignored on other platforms.
@@ -19,6 +21,14 @@ const EMBED_KEYS: &[&str] = &[
 
 fn main() {
     tauri_build::build();
+
+    // Android 15+ (16 KB page size): align LOAD segments to 16 KB so the .so
+    // is 16 KB-page compatible (no "isn't 16 KB compatible" warning). Only
+    // for Android targets — desktop/iOS linkers don't take this flag the
+    // same way. `TARGET` is set by cargo for the build script.
+    if env::var("TARGET").unwrap_or_default().contains("android") {
+        println!("cargo:rustc-link-arg=-Wl,-z,max-page-size=16384");
+    }
 
     // macOS: compile Assets.xcassets via actool (Xcode) for theme-aware AppIcon.
     #[cfg(target_os = "macos")]
