@@ -19,22 +19,23 @@
 1. [Overview](#-overview)
 2. [Features](#-features)
 3. [Requirements](#-requirements)
-4. [Quick Start](#-quick-start)
-5. [Project structure](#-project-structure)
-6. [Window model](#-window-model)
-7. [Configuration](#-configuration)
-8. [Make Targets](#-make-targets)
-9. [Development workflow](#-development-workflow)
-10. [Verification](#-verification)
-11. [Data & Persistence](#-data--persistence)
-12. [Security](#-security)
-13. [Troubleshooting](#-troubleshooting)
-14. [Roadmap](#-roadmap)
-15. [Documentation](#-documentation)
-16. [Contributing](#-contributing)
-17. [License](#-license)
-18. [Acknowledgements](#-acknowledgements)
-19. [Links](#-links)
+4. [What you can build per OS](#-what-you-can-build-per-os)
+5. [Quick Start](#-quick-start)
+6. [Project structure](#-project-structure)
+7. [Window model](#-window-model)
+8. [Configuration](#-configuration)
+9. [Make Targets](#-make-targets)
+10. [Development workflow](#-development-workflow)
+11. [Verification](#-verification)
+12. [Data & Persistence](#-data--persistence)
+13. [Security](#-security)
+14. [Troubleshooting](#-troubleshooting)
+15. [Roadmap](#-roadmap)
+16. [Documentation](#-documentation)
+17. [Contributing](#-contributing)
+18. [License](#-license)
+19. [Acknowledgements](#-acknowledgements)
+20. [Links](#-links)
 
 ---
 
@@ -80,6 +81,26 @@ A private template for shipping a **native-feel desktop + mobile app** from a si
 | **cargo-tauri 2.12.0** | vendored + tweaks | `make install-tauri-cli` | ◻️ iOS flows |
 
 > Windows-only note: the MSI/WiX bundler and installer signing need a Windows host; from macOS/Linux use `--bundles nsis`.
+
+## 🔀 What you can build per OS
+
+The OS you develop on decides what you can ship — native webviews + bundlers are
+per-platform, and **iOS requires Xcode (macOS only)**. So:
+
+| Develop on → produce | macOS | Windows | Linux | **iOS** | **Android** |
+|---|---|---|---|---|---|
+| **macOS** (Apple Silicon) | ✅ native | ⚠️ cross (`cargo-xwin`) | ❌ Linux box | ✅ only on macOS | ✅ |
+| **Windows** | ❌ | ✅ native | ❌ | ❌ no iOS (no Xcode) | ✅ |
+| **Linux** | ❌ | ⚠️ cross (`cargo-xwin`) | ✅ native | ❌ no iOS (no Xcode) | ✅ |
+
+- Only **macOS** builds iOS (Xcode); Windows/Linux can't.
+- **macOS** and **Linux** desktop apps build only on their own OS; a macOS dev uses the
+  Linux box for Linux bundles (`scripts/build-linux.sh`).
+- **Android** builds on all three (Android Studio SDK/NDK/JDK).
+- **Windows** cross-compiles from macOS/Linux via `cargo-xwin` (`scripts/build-windows.sh`);
+  MSI + installer signing stay Windows-only.
+
+See [`docs/en/getting-started.md`](docs/en/getting-started.md) for the full matrix.
 
 ---
 
@@ -341,11 +362,7 @@ Rules that matter: **bilingual docs parity** (every `en/` change needs its `es/`
 
 ## 📄 License
 
-MIT © Tauri-react-template — see [LICENSE](LICENSE). Private template for personal use:
-
-```bash
-gh repo create Tauri-react-template --private --source=. --push
-```
+MIT © Tauri-react-template — see [LICENSE](LICENSE).
 
 ---
 

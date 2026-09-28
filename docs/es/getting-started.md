@@ -18,6 +18,33 @@
 
 `package.json:engines` fija Node + pnpm.
 
+## Matriz de compilación por SO
+
+Qué targets de escritorio/móvil puede producir **cada SO de desarrollo**. Tauri compila
+el backend contra el webview y los bundlers nativos del host, así que los límites los
+marca el SO, no el template:
+
+| Compilas en → produces | macOS | Windows | Linux | **iOS** | **Android** |
+|---|---|---|---|---|---|
+| **macOS** (Apple Silicon) | ✅ nativo | ⚠️ cross (`cargo-xwin`) | ❌ necesita caja Linux | ✅ **único lugar donde es posible** (Xcode) | ✅ |
+| **Windows** | ❌ | ✅ nativo | ❌ | ❌ **imposible** (sin Xcode) | ✅ |
+| **Linux** | ❌ | ⚠️ cross (`cargo-xwin`) | ✅ nativo | ❌ **imposible** (sin Xcode) | ✅ |
+
+Reglas clave (fuente: [`Requisitos de Tauri`](https://v2.tauri.app/start/prerequisites/)):
+
+- **iOS requiere Xcode → solo un host macOS puede compilarlo.** "El desarrollo de iOS
+  requiere Xcode y solo está disponible en macOS." Windows y Linux no pueden producir
+  un build de iOS.
+- **macOS desktop → solo en macOS** (AppKit + Xcode no existen en otros SO).
+- **Linux desktop → solo en Linux** (necesita `webkit2gtk`; los bundlers deb/rpm/AppImage
+  solo corren en Linux). Este es el único target que un desarrollador en macOS no puede
+  compilar en local → va a la caja Linux (`scripts/build-linux.sh --remote ubuntu-arm`).
+- **Android → compilable en los tres SO** (Android Studio/SDK/NDK/JDK existen en
+  macOS, Windows y Linux).
+- **Windows desktop → nativo en Windows; cross-compile desde macOS/Linux vía
+  `cargo-xwin`** (`scripts/build-windows.sh`). El firmado del instalador y el MSI siguen
+  necesitando un host Windows.
+
 ## Instalación
 
 ```bash
@@ -101,11 +128,11 @@ VS Code + `tauri-vscode` + `rust-analyzer` + `biome` + `tailwindcss`
 (ver `.vscode/extensions.json`). Settings recomendados (`formatOnSave` +
 `source.fixAll.biome`) en `.vscode/settings.json`.
 
-## Repo privado
+## Publicar a un repo remoto
 
 ```bash
-gh repo create Tauri-react-template --private --source=. --push
-# o:
+gh repo create Tauri-react-template --public --source=. --push
+# o (público, o créalo privado en GitHub primero y usa SSH):
 git remote add origin git@github.com:TU_USUARIO/Tauri-react-template.git
 git push -u origin master
 ```

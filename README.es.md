@@ -19,22 +19,23 @@
 1. [Resumen](#-resumen)
 2. [Características](#-características)
 3. [Requisitos](#-requisitos)
-4. [Inicio rápido](#-inicio-rápido)
-5. [Estructura del proyecto](#-estructura-del-proyecto)
-6. [Modelo de ventana](#-modelo-de-ventana)
-7. [Configuración](#-configuración)
-8. [Targets Make](#-targets-make)
-9. [Flujo de desarrollo](#-flujo-de-desarrollo)
-10. [Verificación](#-verificación)
-11. [Datos y persistencia](#-datos-y-persistencia)
-12. [Seguridad](#-seguridad)
-13. [Solución de problemas](#-solución-de-problemas)
-14. [Roadmap](#-roadmap)
-15. [Documentación](#-documentación)
-16. [Contribuir](#-contribuir)
-17. [Licencia](#-licencia)
-18. [Agradecimientos](#-agradecimientos)
-19. [Enlaces](#-enlaces)
+4. [Qué puedes compilar por SO](#-qué-puedes-compilar-por-so)
+5. [Inicio rápido](#-inicio-rápido)
+6. [Estructura del proyecto](#-estructura-del-proyecto)
+7. [Modelo de ventana](#-modelo-de-ventana)
+8. [Configuración](#-configuración)
+9. [Targets Make](#-targets-make)
+10. [Flujo de desarrollo](#-flujo-de-desarrollo)
+11. [Verificación](#-verificación)
+12. [Datos y persistencia](#-datos-y-persistencia)
+13. [Seguridad](#-seguridad)
+14. [Solución de problemas](#-solución-de-problemas)
+15. [Roadmap](#-roadmap)
+16. [Documentación](#-documentación)
+17. [Contribuir](#-contribuir)
+18. [Licencia](#-licencia)
+19. [Agradecimientos](#-agradecimientos)
+20. [Enlaces](#-enlaces)
 
 ---
 
@@ -80,6 +81,26 @@ Plantilla privada para publicar una **app desktop + móvil con sensación nativa
 | **cargo-tauri 2.12.0** | vendoreado + retoques | `make install-tauri-cli` | ◻️ flujos iOS |
 
 > Nota solo-Windows: el bundler MSI/WiX y la firma del instalador necesitan un host Windows; desde macOS/Linux usa `--bundles nsis`.
+
+## 🔀 Qué puedes compilar por SO
+
+El SO desde el que desarrollas decide qué puedes distribuir — el webview y los bundlers
+son por plataforma, y **iOS requiere Xcode (solo macOS)**. Es decir:
+
+| Compilas en → produces | macOS | Windows | Linux | **iOS** | **Android** |
+|---|---|---|---|---|---|
+| **macOS** (Apple Silicon) | ✅ nativo | ⚠️ cross (`cargo-xwin`) | ❌ caja Linux | ✅ solo en macOS | ✅ |
+| **Windows** | ❌ | ✅ nativo | ❌ | ❌ sin iOS (sin Xcode) | ✅ |
+| **Linux** | ❌ | ⚠️ cross (`cargo-xwin`) | ✅ nativo | ❌ sin iOS (sin Xcode) | ✅ |
+
+- Solo **macOS** compila iOS (Xcode); Windows/Linux no pueden.
+- **macOS** y **Linux** desktop se compilan solo en su propio SO; un dev de macOS usa la
+  caja Linux para los bundles Linux (`scripts/build-linux.sh`).
+- **Android** se compila en los tres (SDK/NDK/JDK de Android Studio).
+- **Windows** se cross-compila desde macOS/Linux vía `cargo-xwin` (`scripts/build-windows.sh`);
+  el MSI y la firma del instalador quedan solo-Windows.
+
+Ver [`docs/es/getting-started.md`](docs/es/getting-started.md) para la matriz completa.
 
 ---
 
@@ -341,11 +362,7 @@ Reglas que importan: **paridad bilingüe de docs** (cada cambio `en/` necesita s
 
 ## 📄 Licencia
 
-MIT © Tauri-react-template — ver [LICENSE](LICENSE). Plantilla privada para uso personal:
-
-```bash
-gh repo create Tauri-react-template --private --source=. --push
-```
+MIT © Tauri-react-template — ver [LICENSE](LICENSE).
 
 ---
 

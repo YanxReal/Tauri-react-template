@@ -18,6 +18,32 @@
 
 `package.json:engines` enforces Node + pnpm.
 
+## Cross-platform build matrix
+
+Which desktop/mobile targets each **development OS** can produce. Tauri builds the
+backend against the host's native webview + bundlers, so the hard limits are set by
+the OS, not the template:
+
+| Build on → produces | macOS | Windows | Linux | **iOS** | **Android** |
+|---|---|---|---|---|---|
+| **macOS** (Apple Silicon) | ✅ native | ⚠️ cross (`cargo-xwin`) | ❌ needs a Linux box | ✅ **only place it's possible** (Xcode) | ✅ |
+| **Windows** | ❌ | ✅ native | ❌ | ❌ **not possible** (no Xcode) | ✅ |
+| **Linux** | ❌ | ⚠️ cross (`cargo-xwin`) | ✅ native | ❌ **not possible** (no Xcode) | ✅ |
+
+Key rules (source: [`Tauri prerequisites`](https://v2.tauri.app/start/prerequisites)):
+
+- **iOS requires Xcode → only a macOS host can build it.** "iOS development requires
+  Xcode and is only available on macOS." Windows and Linux cannot produce an iOS build.
+- **macOS desktop → only on macOS** (AppKit + Xcode aren't on other OSes).
+- **Linux desktop → only on Linux** (needs `webkit2gtk`; the deb/rpm/AppImage bundlers
+  only run on Linux). This is the one target a macOS developer cannot build locally →
+  it goes to the Linux box (`scripts/build-linux.sh --remote ubuntu-arm`).
+- **Android → buildable on all three OSes** (Android Studio/SDK/NDK/JDK exist on
+  macOS, Windows and Linux).
+- **Windows desktop → native on Windows; cross-compiled from macOS/Linux via
+  `cargo-xwin`** (`scripts/build-windows.sh`). Installer signing + MSI still need a
+  Windows host.
+
 ## Installation
 
 ```bash
@@ -101,11 +127,11 @@ VS Code + `tauri-vscode` + `rust-analyzer` + `biome` + `tailwindcss`
 (see `.vscode/extensions.json`). Recommended settings (`formatOnSave` +
 `source.fixAll.biome`) live in `.vscode/settings.json`.
 
-## Private repo setup
+## Publish to a remote repo
 
 ```bash
-gh repo create Tauri-react-template --private --source=. --push
-# or:
+gh repo create Tauri-react-template --public --source=. --push
+# or (public, or create it private on GitHub first and use SSH):
 git remote add origin git@github.com:YOUR_USER/Tauri-react-template.git
 git push -u origin master
 ```
