@@ -24,7 +24,8 @@ Relacionado: [`docs/es/scripts.md`](../../docs/es/scripts.md) (referencia de fla
 | `scripts/build-linux.sh` (+ `.cmd` en Windows) | Bundles Linux; compila + lanza en caja Linux por SSH (`--remote`) o en local (`--native`). Perfiles `--release`/`--debug`; `--dev`, `--run`, `--fetch`, `--logs`, `--stop` |
 | `scripts/build-windows.sh` | Cross-compile Windows x64 desde macOS/Linux (`cargo-xwin` + NSIS) |
 | Skill `.claude/skills/tauri-cli-rebase/` | Rebase del `tauri-cli` vendoreado — re-aplica los 3 retoques (MOD-1/2/3) semánticamente sobre una versión stock nueva (`.claude/skills/tauri-cli-rebase/references/mods.md`) |
-| `scripts/Xcode/apple-xcode.sh` | Regenera `src-tauri/gen/apple` (xcodegen); `--build` además compila sim iOS + host macOS |
+| `scripts/Xcode/apple-xcode.sh` | Regenera `src-tauri/gen/apple` (init del CLI vendoreado, branding-aware); `--build` además compila sim iOS + host macOS |
+| `scripts/Android/android-autogen.sh` | Regenera `src-tauri/gen/android` (init del CLI vendoreado, branding-aware, Linux/Win/macOS + `.cmd`); `--build` además compila el APK debug |
 | `scripts/Xcode/xcode-dev.command` | Ayuda de hotreload unificada — `server` (Vite visible `:1420` + HMR, por defecto) o `parent` (`tauri ios dev --open` IPC completo) |
 | `scripts/install-skills.sh` (+ `.cmd`) | Instala todas las agent skills del proyecto; el `.cmd` es el launcher de Windows (corre el `.sh` vía Git Bash) |
 
@@ -49,8 +50,13 @@ La fuente de verdad del proyecto Xcode es el template:
 
 `src-tauri/gen/apple` se regenera **completo** desde ahí (gitignored, NO persiste):
 
-    scripts/Xcode/apple-xcode.sh             # regenera + xcodegen
+    scripts/Xcode/apple-xcode.sh             # regenera (init del CLI vendoreado)
     scripts/Xcode/apple-xcode.sh --build     # además compila sim iOS (vía CLI) + host macOS
+
+Android es la misma idea, espejada en `scripts/Android/`:
+
+    scripts/Android/android-autogen.sh       # regenera gen/android (branding-aware)
+    scripts/Android/android-autogen.sh --build   # + APK debug (aarch64)
 
 Regla: editar SIEMPRE el template (`project.yml`, `apple.xcconfig`, entitlements, `Assets.xcassets`),
 NUNCA el `.xcodeproj` generado ni su Info.plist.

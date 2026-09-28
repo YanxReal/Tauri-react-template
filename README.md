@@ -221,7 +221,8 @@ make dev:web              # pnpm --filter web dev
 make dev:ios              # pnpm tauri ios dev "iPhone 17" (simulator)
 make dev-ios-physical     # cargo tauri ios dev + --host (USB iPhone)
 make dev-android-emulator # boot AVD + pnpm tauri android dev
-make gen-apple            # regenerate src-tauri/gen/apple (xcodegen)
+make gen-apple            # regen src-tauri/gen/apple (Xcode, branding-aware)
+make gen-android          # regen src-tauri/gen/android (branding-aware)
 make install-tauri-cli    # build vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
 make install-skills       # install all project agent skills
 make rebrand              # propagate branding.json identity everywhere

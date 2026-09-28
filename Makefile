@@ -28,7 +28,7 @@ LINUX_DIR ?= /workspace/Tauri-react-template
 
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator build-linux dev-linux linux-logs linux-stop gen-apple install-tauri-cli install-skills rebrand lint build
+.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator build-linux dev-linux linux-logs linux-stop gen-apple gen-android install-tauri-cli install-skills rebrand lint build
 
 help: ## Show available commands
 	@awk -F'##' '/^[a-zA-Z0-9_\\:.-]+:[ \t]*##/ { t=$$1; sub(/:[ \t]*$$/, "", t); gsub(/\\/, "", t); printf "  \033[36m%-22s\033[0m %s\n", t, $$2 }' $(MAKEFILE_LIST)
@@ -77,6 +77,9 @@ dev-android-emulator: ## Boot AVD + android dev
 # Xcode — regenerate src-tauri/gen/apple from the template (xcodegen).
 gen-apple: ## Regen Xcode project
 	scripts/Xcode/apple-xcode.sh
+
+gen-android: ## Regen Android Studio project (android-autogen.sh)
+	scripts/Android/android-autogen.sh
 
 # Linux — Ubuntu-arm-docker box over SSH (see scripts/build-linux.sh).
 # Checkout dir is capital-T; override with LINUX_DIR=/path if needed.

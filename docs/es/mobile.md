@@ -7,16 +7,29 @@ La plantilla es **multiplataforma**: escritorio (macOS, Windows, Linux) **y** m�
 ## Fuente de verdad vs generado
 
 - **Plantilla (edita aquí):** `src-tauri/vendor/tauri-cli-2.12.0/templates/mobile/ios/` — `project.yml`, `apple.xcconfig`, entitlements, `Assets.xcassets`. Es la fuente del proyecto Xcode.
-- **Generado (nunca editar):** `src-tauri/gen/apple/` y `src-tauri/gen/android/` — gitignored, se regenera en cada `scripts/Xcode/apple-xcode.sh` o `tauri ios init`.
+- **Generado (nunca editar):** `src-tauri/gen/apple/` y `src-tauri/gen/android/` — gitignored, se regenera con los scripts autogen de abajo.
 
 Regla: **nunca toques `src-tauri/gen/`** — cualquier edición manual se pierde al regenerar.
+
+## Scripts autogen (los ÚNICOS generadores válidos)
+
+El CLI vendoreado (`make install-tauri-cli`) resuelve identifiers/teams y escribe
+los proyectos desde los templates vendoreados; `xcodegen` solo no puede parsear
+el markup Handlebars. Ambos wrappers leen `branding.json` (nombre de la app) y
+son multi-plataforma (macOS/Linux directo; Windows vía `.cmd`/Git Bash):
+
+```bash
+scripts/Xcode/apple-xcode.sh              # regen gen/apple (Xcode iOS+macOS)
+scripts/Android/android-autogen.sh        # regen gen/android (proyecto Studio + MainActivity)
+make gen-apple / make gen-android         # alias
+```
 
 ## iOS — target unificado Xcode (iOS + macOS en uno)
 
 `scripts/Xcode/apple-xcode.sh` es el entrypoint (ver `scripts/README.es.md:46`):
 
 ```bash
-scripts/Xcode/apple-xcode.sh            # xcodegen → src-tauri/gen/apple
+scripts/Xcode/apple-xcode.sh            # init del CLI vendoreado → src-tauri/gen/apple
 scripts/Xcode/apple-xcode.sh --build    # + iOS simulator (CLI) + macOS host
 make gen-apple                          # alias
 ```

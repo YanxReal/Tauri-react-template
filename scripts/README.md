@@ -23,7 +23,8 @@ Related: [`docs/en/scripts.md`](../../docs/en/scripts.md) (flags reference),
 |---|---|
 | `scripts/build-linux.sh` (+ `.cmd` on Windows) | Linux bundles; compile + run on a Linux box over SSH (`--remote`) or locally (`--native`). Profiles `--release`/`--debug`; `--dev`, `--run`, `--fetch`, `--logs`, `--stop` |
 | `scripts/build-windows.sh` | Windows x64 cross-compile from macOS/Linux (`cargo-xwin` + NSIS) |
-| `scripts/Xcode/apple-xcode.sh` | Regenerates `src-tauri/gen/apple` (xcodegen); `--build` also compiles iOS sim + macOS host |
+| `scripts/Xcode/apple-xcode.sh` | Regenerates `src-tauri/gen/apple` (vendored CLI init, branding-aware); `--build` also compiles iOS sim + macOS host |
+| `scripts/Android/android-autogen.sh` | Regenerates `src-tauri/gen/android` (vendored CLI init, branding-aware, Linux/Win/macOS + `.cmd`); `--build` also compiles the debug APK |
 | Skill `.claude/skills/tauri-cli-rebase/` | Rebase the vendored `tauri-cli` — re-applies the 3 tweaks (MOD-1/2/3) semantically onto a new stock version (`.claude/skills/tauri-cli-rebase/references/mods.md`) |
 | `scripts/Xcode/xcode-dev.command` | Unified hotreload helper — `server` (visible Vite `:1420` + HMR, default) or `parent` (`tauri ios dev --open` full-IPC) |
 | `scripts/install-skills.sh` (+ `.cmd`) | Installs all project agent skills; `.cmd` is the Windows launcher (runs the `.sh` via Git Bash) |
@@ -49,8 +50,13 @@ The source of truth for the Xcode project is the template:
 
 `src-tauri/gen/apple` regenerates **entirely** from it (gitignored, does NOT persist):
 
-    scripts/Xcode/apple-xcode.sh             # regenerate + xcodegen
+    scripts/Xcode/apple-xcode.sh             # regenerate (vendored CLI init)
     scripts/Xcode/apple-xcode.sh --build     # plus iOS sim (via CLI) + macOS host
+
+Android is the same idea, mirrored under `scripts/Android/`:
+
+    scripts/Android/android-autogen.sh       # regenerate gen/android (branding-aware)
+    scripts/Android/android-autogen.sh --build   # + debug APK (aarch64)
 
 Rule: ALWAYS edit the template (`project.yml`, `apple.xcconfig`, entitlements, `Assets.xcassets`),
 NEVER the generated `.xcodeproj` or its Info.plist.

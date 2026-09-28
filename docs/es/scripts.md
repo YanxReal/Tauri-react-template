@@ -27,7 +27,8 @@
 | `make dev:ios` | `pnpm tauri ios dev "iPhone 17"` (sim, usa `IOS_DEVICE`) |
 | `make dev-ios-physical` | `cargo tauri ios dev "iPhone 17" --host $(IOS_DEV_HOST)` (necesita `make install-tauri-cli`) |
 | `make dev-android-emulator` | arranca `$ANDROID_AVD` + `tauri android dev --target $ANDROID_TARGET` |
-| `make gen-apple` | `scripts/Xcode/apple-xcode.sh` (xcodegen → `gen/apple`) |
+| `make gen-apple` | `scripts/Xcode/apple-xcode.sh` — regen `gen/apple` (init del CLI vendoreado, branding-aware) |
+| `make gen-android` | `scripts/Android/android-autogen.sh` — regen `gen/android` (init del CLI vendoreado, branding-aware, Linux/Win/macOS) |
 | `make build-linux` | `scripts/build-linux.sh --remote --debug --fetch` en `ubuntu-arm` (`LINUX_REMOTE`/`LINUX_DIR` lo cambian) |
 | `make dev-linux` | `scripts/build-linux.sh --remote --dev` (hot reload en la caja) |
 | `make linux-logs` / `make linux-stop` | sigue / mata el dev server o la app en remoto |
@@ -37,7 +38,7 @@
 | `make lint` / `make build` | alias |
 | `make help` / `make doctor` | lista comandos / revisa toolchain |
 
-Shells por OS: `scripts/build-linux.sh` (+ `build-linux.cmd` en Windows), `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`.
+Shells por OS: `scripts/build-linux.sh` (+ `build-linux.cmd` en Windows), `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`, `scripts/Android/android-autogen.sh`.
 
 ## Build Linux (`scripts/build-linux.sh`)
 
