@@ -1,4 +1,4 @@
-# scripts — Helpers multiplataforma
+# Scripts — Helpers multiplataforma
 
 > 🌐 **Idioma:** **Español** | [English](README.md)
 
