@@ -109,6 +109,17 @@ pnpm typecheck && pnpm lint && pnpm test && pnpm build
 
 iOS / Android / Linux-box flows live under [Window model](#-window-model), [Make Targets](#-make-targets) and [`docs/en/scripts.md`](docs/en/scripts.md).
 
+## 🔁 Keep in sync with the template
+
+When this template releases a new version, update your app **without breaking your own code, renames, or customizations** using the bundled `template-update` skill (Anthropic Agent Skills format — works in Claude Code, OpenAI Codex, and OpenCode):
+
+```bash
+make install-skills                # install the skill for this project
+make install-skills SKILLS_GLOBAL=1  # install for all your projects
+```
+
+The version you are on is tracked in `TEMPLATE_VERSION` at the repo root. The skill's safe-update protocol (snapshot → classify template-owned vs user-owned → consent → apply → verify invariants + identifiers → gates green before bump) is documented in `.claude/skills/template-update/SKILL.md`; the ownership semantics live in `.claude/skills/template-update/references/ownership.md`.
+
 ---
 
 ## 📁 Project structure
@@ -124,7 +135,7 @@ iOS / Android / Linux-box flows live under [Window model](#-window-model), [Make
 │       └── test/setup.ts
 ├── packages/ui              # design system (shadcn + glass-*)
 │   └── src/{components,lib,styles/globals.css}
-├── src-tauri/               # Tauri v2 backend (Rust)
+└── src-tauri/               # Tauri v2 backend (Rust)
 │   ├── src/lib.rs           # commands + per-OS setup
 │   ├── capabilities/        # default.json + windows.json
 │   ├── tauri.conf.json      # base (merged with tauri.{os}.conf.json)
@@ -135,7 +146,9 @@ iOS / Android / Linux-box flows live under [Window model](#-window-model), [Make
 ├── MODS.md                  # CLI vendor modifications (root)
 ├── AGENTS.md                # agent contract
 ├── biome.json               # formatter + linter (no ESLint)
-└── turbo.json               # pipeline
+├── turbo.json               # pipeline
+├── TEMPLATE_VERSION         # which template release this app is on
+└── .claude/skills/          # agent skills (template-update) — Claude/Codex/OpenCode
 ```
 
 `src-tauri/gen/` is autogen (gitignored) — never edit it; edit the template instead.
@@ -188,6 +201,7 @@ make dev-ios-physical     # cargo tauri ios dev + --host (USB iPhone)
 make dev-android-emulator # boot AVD + pnpm tauri android dev
 make gen-apple            # regenerate src-tauri/gen/apple (xcodegen)
 make install-tauri-cli    # build vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
+make install-skills       # install agent skills (SKILLS_GLOBAL=1 → also global)
 make lint / make build    # aliases
 make help / make doctor   # list commands / check toolchain
 ```

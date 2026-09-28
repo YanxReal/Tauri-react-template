@@ -33,6 +33,7 @@
 | `make linux-logs` / `make linux-stop` | follow / kill the remote dev server or app |
 | `make box-shot` | `scripts/box-shot.sh` (VNC screenshot of the box) |
 | `make install-tauri-cli` | Builds vendored `src-tauri/vendor/tauri-cli-2.12.0` (stock 2.12.0 + 3 local tweaks: standalone fallback, `_Apple` target) → `~/.cargo/bin/cargo-tauri` |
+| `make install-skills` | Installs agent skills (`.claude/skills`) for Claude Code / Codex / OpenCode; `SKILLS_GLOBAL=1` also installs globally |
 | `make lint` / `make build` | aliases |
 | `make help` / `make doctor` | list commands / check toolchain |
 

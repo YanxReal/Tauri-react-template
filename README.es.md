@@ -109,6 +109,17 @@ pnpm typecheck && pnpm lint && pnpm test && pnpm build
 
 Los flujos iOS / Android / caja Linux están en [Modelo de ventana](#-modelo-de-ventana), [Targets Make](#-targets-make) y [`docs/es/scripts.md`](docs/es/scripts.md).
 
+## 🔁 Mantente sincronizado con el template
+
+Cuando este template saque una versión nueva, actualiza tu app **sin romper tu código, tus renombres ni tus customizaciones** con la skill `template-update` incluida (formato Anthropic Agent Skills — funciona en Claude Code, OpenAI Codex y OpenCode):
+
+```bash
+make install-skills                # instala la skill para este proyecto
+make install-skills SKILLS_GLOBAL=1  # instala para todos tus proyectos
+```
+
+La versión en la que estás se guarda en `TEMPLATE_VERSION` en la raíz del repo. El protocolo de actualización segura (snapshot → clasifica template-owned vs user-owned → consentimiento → aplica → verifica invariantes + identificadores → gates en verde antes de subir) está documentado en `.claude/skills/template-update/SKILL.md`; la semántica de propiedad en `.claude/skills/template-update/references/ownership.md`.
+
 ---
 
 ## 📁 Estructura del proyecto
@@ -135,7 +146,9 @@ Los flujos iOS / Android / caja Linux están en [Modelo de ventana](#-modelo-de-
 ├── MODS.md                  # modificaciones del CLI vendoreado (raíz)
 ├── AGENTS.md                # contrato para agentes
 ├── biome.json               # formateador + linter (sin ESLint)
-└── turbo.json               # pipeline
+├── turbo.json               # pipeline
+├── TEMPLATE_VERSION         # release del template en la que está esta app
+└── .claude/skills/          # agent skills (template-update) — Claude/Codex/OpenCode
 ```
 
 `src-tauri/gen/` es autogen (gitignored) — no lo edites nunca; edita la plantilla.
@@ -188,6 +201,7 @@ make dev-ios-physical     # cargo tauri ios dev + --host (iPhone USB)
 make dev-android-emulator # arranca AVD + pnpm tauri android dev
 make gen-apple            # regenera src-tauri/gen/apple (xcodegen)
 make install-tauri-cli    # compila vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
+make install-skills       # instala agent skills (SKILLS_GLOBAL=1 → también global)
 make lint / make build    # alias
 make help / make doctor   # lista comandos / revisa toolchain
 ```
