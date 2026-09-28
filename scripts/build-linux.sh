@@ -5,11 +5,12 @@
 # Two build backends, chosen explicitly or inferred from the host:
 #
 #   --remote [HOST]  push the sources over SSH to a Linux dev box and build
-#                    there. Default host: $LINUX_BUILD_REMOTE or `ubuntu-vnc`
-#                    (the minimal in-repo box). For Ubuntu-arm-docker
-#                    (https://github.com/YanxReal/Ubuntu-arm-docker) use
-#                    `--remote ubuntu-arm` with
-#                    `LINUX_BUILD_DIR=/workspace/Tauri-react-template`.
+#                    there. Default host: $LINUX_BUILD_REMOTE or `ubuntu-arm`
+#                    (Ubuntu-arm-docker: https://github.com/YanxReal/Ubuntu-arm-docker,
+#                    Ubuntu 26.04 + GNOME 50 Wayland, user `admin`).
+#                    Default dir: $LINUX_BUILD_DIR or
+#                    `/workspace/Tauri-react-template` (capital T: the repo
+#                    checkout; the binary itself stays lowercase, see below).
 #                    Full featured: build, run, dev, logs, stop. This is the
 #                    path for macOS.
 #   --native         build on this machine (must be Linux).
@@ -24,7 +25,10 @@
 #
 # Options
 #   --dev             `tauri dev` (Vite + app, hot reload); implies --debug
-#   --run             after building, launch the app on the target display
+#   --run             after building, launch the app on the target display.
+#                     NOTE: Ubuntu-arm-docker is Wayland-only, so a plain
+#                     DISPLAY launch may show nothing — prefer `dev <binary>`
+#                     in the box (software rendering, see docs/en/scripts.md).
 #   --bundles LIST    deb | appimage | rpm | all            (default: deb)
 #   --target ARCH     aarch64 | x86_64 | <rust triple>; must match the box
 #   --display :N      X display for --dev/--run             (default: :1)
@@ -46,11 +50,14 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Binary name (lowercase by rule: Cargo package name, `productName` slug,
+# target dir, pkill patterns). Never capitalise this: the repo checkout is
+# `Tauri-react-template` (capital T) but the built binary is lowercase.
 APP_NAME="tauri-react-template"
 
 MODE=""
-REMOTE_HOST="${LINUX_BUILD_REMOTE:-ubuntu-vnc}"
-REMOTE_DIR="${LINUX_BUILD_DIR:-tauri-react-template}"
+REMOTE_HOST="${LINUX_BUILD_REMOTE:-ubuntu-arm}"
+REMOTE_DIR="${LINUX_BUILD_DIR:-/workspace/Tauri-react-template}"
 BUNDLES="deb"
 TARGET=""
 PROFILE="release"
@@ -120,8 +127,9 @@ if [[ -z "$MODE" ]]; then
     MODE="remote"
   else
     die "SSH build box '$REMOTE_HOST' is unreachable.
-     Start it, or point the script at another box:
-       $0 --remote <host>              # e.g. --remote ubuntu-vnc
+     Start it (Ubuntu-arm-docker: make install in that repo), or point the
+     script at another box:
+       $0 --remote <host>              # e.g. --remote ubuntu-arm
        LINUX_BUILD_REMOTE=<host> $0    # or set the default once
      To build on this very machine instead (Linux only): $0 --native"
   fi
@@ -141,6 +149,9 @@ target_dir() { # relative cargo output dir for the chosen profile/triple
 }
 
 # =============================================================== remote =====
+# Box toolchain lives outside PATH for non-interactive SSH (rustup shim at
+# /usr/local/cargo/bin, node/pnpm at /usr/local/bin), so every remote cargo
+# invocation needs this prefix. Verified against Ubuntu-arm-docker 2026-09.
 REMOTE_ENV='export CARGO_HOME=/usr/local/cargo RUSTUP_HOME=/usr/local/rustup PATH=/usr/local/cargo/bin:$PATH'
 remote_ssh() { ssh -o StrictHostKeyChecking=accept-new "$REMOTE_HOST" "$@"; }
 # Detached variant: `-f` forks after auth, so the caller never blocks waiting

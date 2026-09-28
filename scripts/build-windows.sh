@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Build the Windows x64 bundle from macOS/Linux via cargo-xwin.
 # Usage: ./scripts/build-windows.sh [--bundles nsis] [extra `tauri build` args]
 # Example: ./scripts/build-windows.sh

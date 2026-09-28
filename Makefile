@@ -21,9 +21,14 @@ ANDROID_TARGET ?= aarch64
 ANDROID_HOME ?= $(HOME)/Library/Android/sdk
 export PATH := $(ANDROID_HOME)/emulator:$(ANDROID_HOME)/platform-tools:$(PATH)
 
+# Linux — Ubuntu-arm-docker box (separate repo, Wayland).
+# Checkout dir uses capital T; the binary stays lowercase (see build-linux.sh).
+LINUX_REMOTE ?= ubuntu-arm
+LINUX_DIR ?= /workspace/Tauri-react-template
+
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator gen-apple install-tauri-cli lint build
+.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator build-linux dev-linux linux-logs linux-stop box-shot gen-apple install-tauri-cli lint build
 
 help: ## Show available commands
 	@awk -F'##' '/^[a-zA-Z0-9_\\:.-]+:[ \t]*##/ { t=$$1; sub(/:[ \t]*$$/, "", t); gsub(/\\/, "", t); printf "  \033[36m%-22s\033[0m %s\n", t, $$2 }' $(MAKEFILE_LIST)
@@ -38,6 +43,7 @@ doctor: ## Check toolchain (versions or MISSING + scope)
 	@command -v xcodegen >/dev/null && echo "xcodegen:             present" || echo "xcodegen:             MISSING (Xcode regen only)"
 	@command -v cargo-tauri >/dev/null && echo "cargo-tauri:          $$(cargo-tauri --version 2>/dev/null)" || { test -x ~/.cargo/bin/cargo-tauri && echo "cargo-tauri:          $$(~/.cargo/bin/cargo-tauri --version 2>/dev/null) (not on PATH)" || echo "cargo-tauri:          MISSING (iOS flows: make install-tauri-cli)"; }
 	@test -x "$(ANDROID_HOME)/emulator/emulator" && echo "android emulator:    present" || echo "android emulator:    MISSING (Android only)"
+	@ssh -o BatchMode=yes -o ConnectTimeout=4 $(LINUX_REMOTE) true 2>/dev/null && echo "linux box ($(LINUX_REMOTE)): reachable" || echo "linux box ($(LINUX_REMOTE)): UNREACHABLE (start Ubuntu-arm-docker)"
 	@command -v makensis >/dev/null && echo "makensis:             present" || echo "makensis:             MISSING (Windows NSIS only)"
 	@command -v docker >/dev/null && echo "docker:               $$(docker version --format '{{.Server.Version}}' 2>/dev/null || echo unreachable)" || echo "docker:               MISSING (Linux box only)"
 
@@ -71,6 +77,23 @@ dev-android-emulator: ## Boot AVD + android dev
 # Xcode — regenerate src-tauri/gen/apple from the template (xcodegen).
 gen-apple: ## Regen Xcode project
 	scripts/Xcode/apple-xcode.sh
+
+# Linux — Ubuntu-arm-docker box over SSH (see scripts/build-linux.sh).
+# Checkout dir is capital-T; override with LINUX_DIR=/path if needed.
+build-linux: ## Linux build (remote debug) + fetch bundles
+	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" scripts/build-linux.sh --remote --debug --fetch
+
+dev-linux: ## Linux dev (hot reload on the box)
+	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" scripts/build-linux.sh --remote --dev
+
+linux-logs: ## Follow remote dev/app log
+	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" scripts/build-linux.sh --remote --logs
+
+linux-stop: ## Kill remote dev/app
+	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" scripts/build-linux.sh --remote --stop
+
+box-shot: ## Screenshot the Linux box over VNC
+	scripts/box-shot.sh
 
 install-tauri-cli: ## Build vendor CLI → ~/.cargo/bin/cargo-tauri
 	@echo "Building cargo-tauri 2.12.0 + local tweaks (standalone fallback, _Apple target) ..."

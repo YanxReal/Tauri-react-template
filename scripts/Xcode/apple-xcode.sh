@@ -46,9 +46,9 @@ fi
 
 (cd "$GEN" && "$XCODEGEN" generate)
 
-# Shim para el CLI stock (`tauri ios dev|build`): cargo-mobile2 lee
-# gen/apple/<app>_iOS/Info.plist. Copia del plist generado por XcodeGen para
-# el target `_Apple` (misma info: propiedades del bloque `info` de project.yml).
+# Shim for the stock CLI (`tauri ios dev|build`): cargo-mobile2 reads
+# gen/apple/<app>_iOS/Info.plist. Copy of the XcodeGen-generated plist for
+# the `_Apple` target (same info: properties of the `info` block in project.yml).
 mkdir -p "$GEN/tauri-react-template_iOS"
 cp -f "$GEN/tauri-react-template_Apple/Info.plist" \
   "$GEN/tauri-react-template_iOS/Info.plist"

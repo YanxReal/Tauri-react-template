@@ -51,7 +51,7 @@ v = pathlib.Path(os.environ["VENDOR"])
 failures = []
 
 def check(name, cond, hint):
-    print(("  OK " if cond else "  FALLO ") + name)
+    print(("  OK " if cond else "  FAIL ") + name)
     if not cond:
         failures.append(f"{name}: {hint}")
 
@@ -59,7 +59,7 @@ def check(name, cond, hint):
 mod_rs = v / "src/mobile/mod.rs"
 s = mod_rs.read_text()
 if "fn fallback_options" in s:
-    print("  SKIP MOD-1a (fallback_options ya existe)")
+    print("  SKIP MOD-1a (fallback_options already present)")
 else:
     anchor = "/// Requests the CLI options from the `dev` or `build` command that started the IDE build.\nfn fetch_options(target: Target, tauri_dir: &Path) -> Result<CliOptions> {"
     block = '''/// CLI options for standalone IDE builds (no `tauri ios|android dev|build`
@@ -91,14 +91,14 @@ fn fallback_options() -> CliOptions {
 '''
     if anchor in s:
         mod_rs.write_text(s.replace(anchor, block + anchor, 1))
-        print("  OK MOD-1a (fallback_options insertado)")
+        print("  OK MOD-1a (fallback_options inserted)")
     else:
         check("MOD-1a", False, "not applied and the stock context changed — update the block")
 
 # --- MOD-1b: fetch_options con fallback en vez de errores --------------------
 s = mod_rs.read_text()
 if "unwrap_or_else(fallback_options)" in s:
-    print("  SKIP MOD-1b (fetch_options ya usa fallback)")
+    print("  SKIP MOD-1b (fetch_options already uses fallback)")
 else:
     old = '''  let server_file = options_server_file(target, tauri_dir);
   let contents = read_to_string(&server_file).with_context(|| {
@@ -160,7 +160,7 @@ else:
 }'''
     if old in s:
         s = s.replace(old, new, 1)
-        # el closure not_running se queda sin usos: fuera (si no, warning)
+        # the not_running closure is now unused: drop it (else warning)
         not_running = '''  let not_running = move || {
     format!(
       "the `tauri {0} dev` or `tauri {0} build` command must be running while {1} builds the app",
@@ -173,7 +173,7 @@ else:
         if "not_running()" not in s.replace(not_running, "") and not_running in s:
             s = s.replace(not_running, "", 1)
         mod_rs.write_text(s)
-        print("  OK MOD-1b (fetch_options con fallback)")
+        print("  OK MOD-1b (fetch_options with fallback)")
     else:
         check("MOD-1b", False, "not applied and the stock fetch_options body changed — update the block")
 
@@ -182,7 +182,7 @@ for rel in ["src/mobile/ios/mod.rs", "src/mobile/ios/project.rs"]:
     p = v / rel
     s = p.read_text()
     if "_iOS" not in s:
-        print(f"  SKIP MOD-2 ({rel} ya dice _Apple)")
+        print(f"  SKIP MOD-2 ({rel} already says _Apple)")
     elif rel.endswith("mod.rs") and s.count('_iOS') == 2:
         p.write_text(s.replace('_iOS', '_Apple'))
         print(f"  OK MOD-2 ({rel}: 2 lookups)")
@@ -190,13 +190,13 @@ for rel in ["src/mobile/ios/mod.rs", "src/mobile/ios/project.rs"]:
         p.write_text(s.replace('{}_iOS', '{}_Apple'))
         print(f"  OK MOD-2 ({rel}: 1 dir)")
     else:
-        check(f"MOD-2 ({rel})", False, "hay _iOS en sitios inesperados — revisa a mano")
+        check(f"MOD-2 ({rel})", False, "unexpected _iOS sites remain — review by hand")
 
 # --- MOD-3: replace simplificado de {{app.name}} ------------------------------
 proj = v / "src/mobile/ios/project.rs"
 s = proj.read_text()
 if ".as_os_str()" in s:
-    print("  SKIP MOD-3 (replace simplificado ya aplicado)")
+    print("  SKIP MOD-3 (simplified replace already applied)")
 else:
     old = '''      let mut components: Vec<_> = path.components().collect();
       let mut new_component = None;
@@ -226,12 +226,12 @@ else:
   path::{Component, PathBuf},
 };""", "use std::fs::{OpenOptions, create_dir_all};", 1)
         proj.write_text(s)
-        print("  OK MOD-3 (replace simplificado)")
+        print("  OK MOD-3 (simplified replace)")
     else:
         check("MOD-3", False, "the stock component loop changed — update the block")
 
 if failures:
-    print("\nBLOQUES SIN APLICAR:")
+    print("\nBLOCKS NOT APPLIED:")
     print("\n".join(" - " + f for f in failures))
     sys.exit(1)
 print("\nAll tweaks applied. Next: template overlay + build (see MODS.md).")
