@@ -67,7 +67,7 @@ Overlays por OS (merged en build): `tauri.macos.conf.json`, `tauri.windows.conf.
 
 ## Content Security Policy
 
-Una política estricta en **todos** los targets (base `tauri.conf.json:26`, idéntica en `tauri.android.conf.json:4`, `tauri.macos.conf.json:21`, `tauri.windows.conf.json:20`; Linux/iOS heredan la base):
+**Offline-first / solo-local.** La app NO carga nada de la nube en runtime: fuentes, CSS, JS e iconos van empaquetados en el build. Una política estricta en **todos** los targets (base `tauri.conf.json:26`, idéntica en `tauri.android.conf.json:4`, `tauri.macos.conf.json:21`, `tauri.windows.conf.json:20`; Linux/iOS heredan la base) y hace imposible que el webview alcance cualquier host externo automáticamente:
 
 - `default-src 'self'` + `object-src 'none'` + `base-uri 'self'` — sin plugins ni secuestro de `<base>`.
 - `script-src 'self'` — sin scripts inline. Seguro: `dist/index.html` trae un solo bundle modular externo, las fuentes vienen de `@fontsource-variable/inter` (empaquetadas, no Google Fonts en runtime).
