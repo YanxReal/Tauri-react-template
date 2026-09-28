@@ -85,12 +85,12 @@ in favour of this, as it could never run the app for testing.
 
 ## The Linux box
 
-The current box is **[Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)** (separate repo): Ubuntu 26.04 + GNOME 50 (Wayland) desktop in Docker for arm64, with VNC, SSH and a ready Tauri v2 toolchain. That is where the app is compiled and looked at now.
+The current box is **[Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)** (separate repo): Ubuntu 26.04 + GNOME 50 (Wayland) desktop in Docker for arm64, with noVNC, native VNC, SSH and a ready Tauri v2 toolchain. That is where the app is compiled and looked at now.
 
 | | |
 |---|---|
 | Repo | [YanxReal/Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) (`make install`) |
-| VNC / SSH | `localhost:5902` VNC · `ssh ubuntu-arm` (`~/.ssh/config` alias, user `admin`, key auth) |
+| noVNC / VNC / SSH | `http://localhost:6080/vnc.html` · `localhost:5902` · `ssh ubuntu-arm` (`~/.ssh/config` alias, user `admin`, key auth) |
 | Project path | `/workspace/Tauri-react-template` (bind-mounted `./workspace`) |
 | Launch GUI apps | `dev <cmd>` wrapper (injects `WAYLAND_DISPLAY` + session bus) |
 
