@@ -20,18 +20,19 @@ pnpm test                       # turbo (all workspaces)
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-Runs in CI on `ubuntu-latest` (the only place `#[cfg(target_os = "linux")]` code compiles). Keep Linux-only logic testable as pure functions so it stays covered.
+No CI exists, so run it yourself — on this host AND in the Linux box (`ssh ubuntu-arm`, same command with the rustup env from `scripts/build-linux.sh`). Linux-only logic stays testable as pure functions: `ResizeEdge::from_str` (`lib.rs`) parses the 8 GDK edge names with zero GTK calls, so it runs everywhere; the `cfg(linux)` body that maps it to `gtk::gdk::WindowEdge` only compiles in the box.
 
 ## Static gates (run all, in order)
 
 ```bash
 pnpm typecheck && pnpm lint && pnpm test && pnpm build
 cargo check --manifest-path src-tauri/Cargo.toml
+cargo test --manifest-path src-tauri/Cargo.toml
 cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-No CI exists — run them yourself before every push. A failing gate blocks the PR — no exceptions.
+No CI exists — run them yourself before every push. A failing gate blocks the PR — no exceptions. (`cfg(linux)` bodies only compile in the Linux box: re-run `cargo check`/`cargo test` over SSH there when Rust changes.)
 
 ## Manual matrix (per real bundle)
 

@@ -78,6 +78,45 @@ fn set_window_effect(
     Err("unsupported".to_string())
 }
 
+/// Edge of the window a resize drag starts from.
+///
+/// The frontend (`useWindowResizeEdges`) sends GDK edge names over IPC.
+/// Parsing lives here — host-independent, no GTK calls — so `cargo test`
+/// covers the mapping on any OS. The `cfg(linux)` command below only maps
+/// this enum to `gtk::gdk::WindowEdge` (that half compiles on Linux alone;
+/// type-check it in the box).
+#[cfg(any(target_os = "linux", test))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ResizeEdge {
+    North,
+    South,
+    East,
+    West,
+    NorthWest,
+    NorthEast,
+    SouthWest,
+    SouthEast,
+}
+
+#[cfg(any(target_os = "linux", test))]
+impl std::str::FromStr for ResizeEdge {
+    type Err = String;
+
+    fn from_str(direction: &str) -> Result<Self, Self::Err> {
+        match direction {
+            "North" => Ok(ResizeEdge::North),
+            "South" => Ok(ResizeEdge::South),
+            "East" => Ok(ResizeEdge::East),
+            "West" => Ok(ResizeEdge::West),
+            "NorthWest" => Ok(ResizeEdge::NorthWest),
+            "NorthEast" => Ok(ResizeEdge::NorthEast),
+            "SouthWest" => Ok(ResizeEdge::SouthWest),
+            "SouthEast" => Ok(ResizeEdge::SouthEast),
+            _ => Err(format!("unknown direction: {direction}")),
+        }
+    }
+}
+
 /// Resizes the window from the given edge.
 ///
 /// On Linux the frameless window has no resize grips (the WM does not
@@ -89,18 +128,19 @@ fn start_window_resize(window: tauri::WebviewWindow, direction: String) -> Resul
     #[cfg(target_os = "linux")]
     {
         use gtk::prelude::*;
+        use std::str::FromStr;
 
         let gtk_window = window.gtk_window().map_err(|e| e.to_string())?;
-        let edge = match direction.as_str() {
-            "North" => gtk::gdk::WindowEdge::North,
-            "South" => gtk::gdk::WindowEdge::South,
-            "West" => gtk::gdk::WindowEdge::West,
-            "East" => gtk::gdk::WindowEdge::East,
-            "NorthWest" => gtk::gdk::WindowEdge::NorthWest,
-            "NorthEast" => gtk::gdk::WindowEdge::NorthEast,
-            "SouthWest" => gtk::gdk::WindowEdge::SouthWest,
-            "SouthEast" => gtk::gdk::WindowEdge::SouthEast,
-            _ => return Err(format!("unknown direction: {direction}")),
+        let edge = ResizeEdge::from_str(direction.as_str())?;
+        let edge = match edge {
+            ResizeEdge::North => gtk::gdk::WindowEdge::North,
+            ResizeEdge::South => gtk::gdk::WindowEdge::South,
+            ResizeEdge::West => gtk::gdk::WindowEdge::West,
+            ResizeEdge::East => gtk::gdk::WindowEdge::East,
+            ResizeEdge::NorthWest => gtk::gdk::WindowEdge::NorthWest,
+            ResizeEdge::NorthEast => gtk::gdk::WindowEdge::NorthEast,
+            ResizeEdge::SouthWest => gtk::gdk::WindowEdge::SouthWest,
+            ResizeEdge::SouthEast => gtk::gdk::WindowEdge::SouthEast,
         };
         let (root_x, root_y) = gtk::gdk::Display::default()
             .and_then(|display| display.default_seat())
@@ -528,4 +568,37 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ResizeEdge;
+    use std::str::FromStr;
+
+    #[test]
+    fn resize_edge_parses_all_eight_directions() {
+        let cases = [
+            ("North", ResizeEdge::North),
+            ("South", ResizeEdge::South),
+            ("East", ResizeEdge::East),
+            ("West", ResizeEdge::West),
+            ("NorthWest", ResizeEdge::NorthWest),
+            ("NorthEast", ResizeEdge::NorthEast),
+            ("SouthWest", ResizeEdge::SouthWest),
+            ("SouthEast", ResizeEdge::SouthEast),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(ResizeEdge::from_str(input), Ok(expected), "input: {input}");
+        }
+    }
+
+    #[test]
+    fn resize_edge_rejects_anything_else() {
+        // The frontend sends exact GDK names; near-misses must fail loudly
+        // instead of resizing from the wrong edge.
+        for input in ["", "north", "NORTH", "Center", "NorthWest ", " Up"] {
+            let err = ResizeEdge::from_str(input).unwrap_err();
+            assert!(err.contains(input), "error should echo the input: {err}");
+        }
+    }
 }

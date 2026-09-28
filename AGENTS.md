@@ -139,9 +139,11 @@ Earned through painful commits (§1). Removing any row reintroduces its platform
   ```bash
   pnpm typecheck && pnpm lint && pnpm test && pnpm build
   cargo check --manifest-path src-tauri/Cargo.toml
+  cargo test --manifest-path src-tauri/Cargo.toml
   cargo fmt --manifest-path src-tauri/Cargo.toml --check
   cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
-  # Rust logic changed: also target-check ios + linux-gnu + windows-msvc
+  # Rust logic changed: also check + test over SSH in the Linux box
+  # (`cfg(linux)` never compiles here), plus target-check ios + windows-msvc
   # (see docs/en/testing.md), then scroll/click/no-zoom in a REAL bundle per OS.
   ```
   Red gate = fix before done. No batching completions.

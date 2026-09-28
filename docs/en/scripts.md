@@ -100,6 +100,9 @@ Defaults are already `ubuntu-arm` + `/workspace/Tauri-react-template` (capital T
 the repo checkout; the binary stays lowercase `tauri-react-template`), so
 `make build-linux` / `make dev-linux` need no env. Override with
 `LINUX_BUILD_REMOTE=<host>` / `LINUX_BUILD_DIR=<dir>` when needed.
+The box may ship a newer pnpm than the pinned `pnpm@10.34.5` — harmless:
+every install runs with `--frozen-lockfile`, so the lockfile stays
+authoritative.
 
 ### Retired in-repo box (`docker/linux-gnome` + `scripts/linux-box.sh`)
 

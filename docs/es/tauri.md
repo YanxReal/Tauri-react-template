@@ -58,12 +58,23 @@ Dispatch por plataforma para `set_window_effect` (`lib.rs:31`):
       "dragDropEnabled": false,
       "zoomHotkeysEnabled": false
     }],
-    "security": { "csp": null }
+    "security": { "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ipc: http://ipc.localhost https://*.supabase.co; object-src 'none'; base-uri 'self'" }
   }
 }
 ```
 
 Overlays por OS (merged en build): `tauri.macos.conf.json`, `tauri.windows.conf.json`, `tauri.linux.conf.json`, `tauri.ios.conf.json`, `tauri.android.conf.json`. Mantén `dragDropEnabled:false` + `zoomHotkeysEnabled:false` en **los cuatro** configs de escritorio — no solo macOS.
+
+## Content Security Policy
+
+Una política estricta en **todos** los targets (base `tauri.conf.json:26`, idéntica en `tauri.android.conf.json:4`, `tauri.macos.conf.json:21`, `tauri.windows.conf.json:20`; Linux/iOS heredan la base):
+
+- `default-src 'self'` + `object-src 'none'` + `base-uri 'self'` — sin plugins ni secuestro de `<base>`.
+- `script-src 'self'` — sin scripts inline. Seguro: `dist/index.html` trae un solo bundle modular externo, las fuentes vienen de `@fontsource-variable/inter` (empaquetadas, no Google Fonts en runtime).
+- `style-src 'self' 'unsafe-inline'` — React pone estilos inline; sin esto la UI se rompe.
+- `img-src 'self' data:` — Vite convierte los assets pequeños en URIs `data:`.
+- `connect-src 'self' ipc: http://ipc.localhost https://*.supabase.co` — IPC de Tauri más el backend opcional de Supabase (`build.rs:135` embebe/valida `SUPABASE_*`). Sin Supabase → quita ese host.
+- Dev/HMR no se afecta: esta política ya venía en macOS/Windows con todos los flujos dev funcionando. Si añades Turnstile u otro tercero, extiende `script-src`/`connect-src` explícitamente (el allowance viejo de `challenges.cloudflare.com` se quitó por no usarse).
 
 `src-tauri/capabilities/` — sets de permisos Tauri v2 (opener, window effects, etc.).
 

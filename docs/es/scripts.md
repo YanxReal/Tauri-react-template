@@ -100,6 +100,8 @@ Los defaults ya son `ubuntu-arm` + `/workspace/Tauri-react-template` (T mayúscu
 el checkout del repo; el binario sigue en minúsculas `tauri-react-template`), así
 que `make build-linux` / `make dev-linux` no necesitan env. Cambia con
 `LINUX_BUILD_REMOTE=<host>` / `LINUX_BUILD_DIR=<dir>` si hace falta.
+La caja puede traer un pnpm más nuevo que el fijado `pnpm@10.34.5` — sin problema:
+cada install corre con `--frozen-lockfile`, así el lockfile sigue mandando.
 
 ### Caja retirada del repo (`docker/linux-gnome` + `scripts/linux-box.sh`)
 

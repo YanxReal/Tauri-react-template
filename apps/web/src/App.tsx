@@ -33,11 +33,13 @@ export function App() {
   async function handleGreet() {
     try {
       const message = await invoke<string>("greet", { name: "Tauri" })
-      // Translate the backend reply when the UI is in Spanish
+      // Translate the backend reply when the UI is in Spanish. Anchored at
+      // the start: a bare `includes` would also match a user name
+      // containing "Hello,".
       const translated =
-        i18n.language.startsWith("es") && message.includes("Hello,")
+        i18n.language.startsWith("es") && message.startsWith("Hello,")
           ? message
-              .replace("Hello,", "¡Hola,")
+              .replace(/^Hello,/, "¡Hola,")
               .replace(
                 "You've been greeted from Rust!",
                 "¡Te ha saludado Rust!"

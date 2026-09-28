@@ -39,7 +39,6 @@ coverage
 
 # Tauri
 src-tauri/target
-src-tauri/Cargo.lock
 
 # Bundles traídos de la caja SSH (scripts/build-linux.sh --fetch)
 dist-linux/

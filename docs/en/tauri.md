@@ -58,12 +58,23 @@ Platform dispatch for `set_window_effect` (`lib.rs:31`):
       "dragDropEnabled": false,
       "zoomHotkeysEnabled": false
     }],
-    "security": { "csp": null }
+    "security": { "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ipc: http://ipc.localhost https://*.supabase.co; object-src 'none'; base-uri 'self'" }
   }
 }
 ```
 
 Per-OS overlays (merged at build): `tauri.macos.conf.json`, `tauri.windows.conf.json`, `tauri.linux.conf.json`, `tauri.ios.conf.json`, `tauri.android.conf.json`. Keep `dragDropEnabled:false` + `zoomHotkeysEnabled:false` in **all** four desktop configs — not just macOS.
+
+## Content Security Policy
+
+One strict policy ships on **all** targets (base `tauri.conf.json:26`, identical in `tauri.android.conf.json:4`, `tauri.macos.conf.json:21`, `tauri.windows.conf.json:20`; Linux/iOS inherit the base):
+
+- `default-src 'self'` + `object-src 'none'` + `base-uri 'self'` — no plugins, no `<base>` hijack.
+- `script-src 'self'` — no inline scripts. Safe: `dist/index.html` ships a single external module bundle, fonts come from `@fontsource-variable/inter` (bundled, not Google Fonts at runtime).
+- `style-src 'self' 'unsafe-inline'` — React sets inline styles; without it the UI breaks.
+- `img-src 'self' data:` — Vite inlines small assets as `data:` URIs.
+- `connect-src 'self' ipc: http://ipc.localhost https://*.supabase.co` — Tauri IPC plus the optional Supabase backend (`build.rs:135` embeds/validates `SUPABASE_*`). No Supabase → drop that host.
+- Dev/HMR is unaffected: this policy already shipped on macOS/Windows while all dev flows worked. If you add Turnstile or another third party, extend `script-src`/`connect-src` explicitly (the old `challenges.cloudflare.com` allowance was removed as unused).
 
 `src-tauri/capabilities/` — Tauri v2 permission sets (opener, window effects, etc.).
 
