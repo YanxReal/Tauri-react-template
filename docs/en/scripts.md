@@ -115,9 +115,9 @@ session, no image to maintain here). If you still see `ubuntu-vnc` in an old
 
 ## Windows cross-compile (`cargo-xwin`)
 
-`scripts/build-windows.sh [--bundles nsis] [tauri build args]` builds the Windows x64 bundle from macOS/Linux — it resolves the keg-only LLVM/lld paths itself and calls `pnpm tauri build --target x86_64-pc-windows-msvc --runner cargo-xwin --bundles nsis`.
+`scripts/build-windows.sh [--bundles nsis] [tauri build args]` builds the Windows x64 bundle from macOS **or** Linux — it resolves the platform's LLVM/lld toolchain and the rustup-managed Rust itself, then calls `pnpm tauri build --target x86_64-pc-windows-msvc --runner cargo-xwin --bundles nsis`.
 
-One-time setup: `brew install llvm lld makensis` (macOS; `makensis` is only needed for the NSIS bundle), `cargo install cargo-xwin --locked` and `rustup target add x86_64-pc-windows-msvc`. Outputs: `src-tauri/target/x86_64-pc-windows-msvc/release/tauri-react-template.exe` (app) and `.../bundle/nsis/tauri-react-template_0.1.0_x64-setup.exe` (installer; ~200 MB because `webviewInstallMode: offlineInstaller` embeds WebView2).
+One-time setup: `brew install llvm lld makensis` on macOS, or `sudo apt install llvm lld nsis` on Linux (`makensis`/`nsis` only needed for the NSIS bundle), plus `cargo install cargo-xwin --locked` and `rustup target add x86_64-pc-windows-msvc`. Outputs: `src-tauri/target/x86_64-pc-windows-msvc/release/tauri-react-template.exe` (app) and `.../bundle/nsis/tauri-react-template_0.1.0_x64-setup.exe` (installer; ~200 MB because `webviewInstallMode: offlineInstaller` embeds WebView2).
 
 Notes: the MSI/WiX bundler only runs on a Windows host (`--bundles nsis` is the macOS/Linux default); installer signing also needs Windows unless you set `bundle > windows > signCommand`. `cargo xwin check --target x86_64-pc-windows-msvc` is the fast way to type-check the Windows-only code paths.
 
