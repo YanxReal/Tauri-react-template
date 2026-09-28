@@ -3,18 +3,18 @@
 <plist version="1.0">
 <dict>
     <!-- Direct distribution outside the Mac App Store: archive with Xcode
-         (Product > Archive on the prestly_Apple scheme, destination My Mac),
+         (Product > Archive on the tauri-react-template_Apple scheme, destination My Mac),
          then
          xcodebuild -exportArchive -exportOptionsPlist THIS_FILE
          and notarize the exported app:
-           xcrun notarytool submit Prestly.app.zip --keychain-profile ... --wait
-           xcrun stapler staple Prestly.app
+           xcrun notarytool submit tauri-react-template.app.zip --keychain-profile ... --wait
+           xcrun stapler staple tauri-react-template.app
          Requires: Developer ID Application certificate + Hardened Runtime
          (enabled automatically for Developer ID exports). -->
     <key>method</key>
     <string>developer-id</string>
     <key>teamID</key>
-    <string>36ZZP8X3F5</string>
+    <string>YOUR_TEAM_ID</string>
     <key>signingCertificate</key>
     <string>Developer ID Application</string>
 </dict>

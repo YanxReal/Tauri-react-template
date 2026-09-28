@@ -12,7 +12,7 @@
 	       makes launchd SIGKILL the process at spawn (verified 2026-08);
 	       for MAS archives Xcode expands $(AppIdentifierPrefix) and embeds
 	       a valid profile instead, but the default keychain already covers
-	       everything Prestly stores. -->
+	       everything the app stores. -->
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
 	<key>com.apple.security.network.client</key>

@@ -48,13 +48,13 @@ Key milestones you must know (chronological):
 | `c9ae1a4` | `feat: native-app feel — prevent-default plugin, dragDrop/zoomHotkeys off, CSS+JS multi-OS` | The **foundational native-feel** commit: `dragDropEnabled:false` + `zoomHotkeysEnabled:false` (all 4 configs), viewport lock, CSS `user-select:none` + `touch-action`, Rust `prevent-default` with `Flags::debug()`. |
 | `f997723` | `feat: efecto cristal — toggle de translucidez nativa (window-vibrancy)` | `window-vibrancy 0.8` + **sync** `window_effects_set` (main thread), `VibrancyProvider`. |
 | `5fb6077` | `feat: ventana nativa - esquinas redondeadas, arrastre y cristal por tema` | DWM `DWMWCP_ROUND`, `native-chrome.ts`, glass that follows theme, `pan-x pan-y` scroll. |
-| `aa83704` | `fix: arrastre macOS fiable (patron Prestly, banda 20px)` | Reliable drag: `useMacDragRegion`, 20px band (`--native-titlebar-height`), header sticky offset. |
+| `aa83704` | `fix: arrastre macOS fiable (banda 20px)` | Reliable drag: `useMacDragRegion`, 20px band (`--native-titlebar-height`), header sticky offset. |
 | `9177b88` | `fix: ventana arrastrable y esquinas redondeadas en las 3 plataformas` | Permissions `core:window:allow-start-dragging`, `app-shell` as scroll container with `border-radius`. |
 | `938f89a` | `fix: traffic lights live-resize sin flicker + header alineado + windows NSIS/Wix` | **HuLa 3-mecanismo** for macOS traffic lights (WindowEvent + NSNotificationCenter + 60fps NSTimer), positions `19.5/41.5/63.5`. |
 | `93657d3` | `fix: linux glass veto + curvas ventana + toggle combinado` | Linux glass OFF (yellow DMABUF glitches + RAM), `WEBKIT_DISABLE_DMABUF_RENDERER`, combined toggle, `build-linux.sh`. |
 | `9da8602` | `fix: sombra de ventana nativa en Linux via GTK CssProvider + fallback webview` | GTK `CssProvider` restores `decoration { box-shadow }`, fallback `app-shell` shadow, `gtk-shadow` class. → superseded by Wayland-safe `StyleContext::add_provider`, and finally **removed**: Linux used full native decorations (no GTK code, no CSS frame). Windows later moved to a **frameless overlay titlebar** (`tauri-plugin-decorum`, 2026-09-19) and Linux to an **app-drawn titlebar over a GTK CSD frame** (Chromium-inspired class/hit-test integration, 2026-09-22 → 2026-09-24), and finally to **frameless + opaque with square system corners** (2026-09-27, deliberate). |
 
-> **Rule of thumb:** if you see `// Prestly pattern` or `// HuLa fix` in comments, that line is load-bearing. Don't remove it without re-reading the commit that added it. See `docs/en/native-feel.md` and `docs/en/mobile.md` for the long-form explanations.
+> **Rule of thumb:** if you see `// HuLa fix` in comments, that line is load-bearing. Don't remove it without re-reading the commit that added it. See `docs/en/native-feel.md` and `docs/en/mobile.md` for the long-form explanations.
 
 ---
 

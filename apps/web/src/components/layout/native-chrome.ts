@@ -17,7 +17,7 @@ function headerBandHeight(fallback: number): number {
   return height && height > 0 ? height : fallback
 }
 
-/** Targets that keep their click even inside the drag region (Prestly). */
+/** Targets that keep their click even inside the drag region. */
 const INTERACTIVE_SELECTOR =
   "button, a, input, select, textarea, label, [role='button'], [data-no-drag]"
 
@@ -52,7 +52,7 @@ function usePlatform(): Platform {
 
 /**
  * macOS Overlay titlebars have no system drag surface (the WKWebView covers
- * the whole window), so drags are initiated manually — Prestly pattern:
+ * the whole window), so drags are initiated manually:
  * any primary mousedown inside the fusioned header whose target is not
  * interactive starts a window drag; a double click toggles maximize.
  * IMPORTANT: do NOT call `preventDefault()` here on macOS — Tauri's
@@ -83,7 +83,7 @@ function useMacDragRegion(enabled: boolean): void {
 /**
  * Win/Linux: la ventana es frameless (decorum en Windows, `decorations:false`
  * en Linux) pero el header de la app sigue siendo la zona de arrastre
- * personalizada (Prestly).
+ * personalizada.
  * WebKitGTK y WebView2 a veces no respetan `data-tauri-drag-region` en hijos
  * (solo en el elemento directo) y en Linux el CSS `app-region:drag` no siempre
  * funciona, así que el JS rescata el arrastre limitándolo a la altura real del

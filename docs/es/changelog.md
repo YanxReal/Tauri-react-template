@@ -1,6 +1,6 @@
 # Changelog
 
-> Evolución completa de esta plantilla — 52 commits desde `455897d` (inicial) hasta HEAD. La tabla de hitos de `AGENTS.md` §1 cubre los 20 primeros; el resto es el arco del marco de ventana Windows/Linux documentado abajo. Cada entrada explica **el motivo detrás del código no obvio**. Léelo antes de eliminar cualquier línea marcada `// Prestly pattern` o `// HuLa fix`.
+> Evolución completa de esta plantilla — 52 commits desde `455897d` (inicial) hasta HEAD. La tabla de hitos de `AGENTS.md` §1 cubre los 20 primeros; el resto es el arco del marco de ventana Windows/Linux documentado abajo. Cada entrada explica **el motivo detrás del código no obvio**. Léelo antes de eliminar cualquier línea marcada `// HuLa fix`.
 
 ## 2026-08-30 — Base
 
@@ -54,7 +54,7 @@
 - Reserva **banda de 36px** (`--native-titlebar-height`) para drag, padding `app-shell`, header sticky en `top:36px`. Cristal de ventana completa: `color-mix(var(--background) 62%, transparent)` para que la translucidez siga el tema.
 
 ### `aa83704` `fix: arrastre macOS fiable (patron Prestly, banda 20px)`
-- Drag intermitente: selección del webview + header sticky tapando la banda. Fix: `useMacDragRegion` replica exacto Prestly — `mousedown` a nivel document, `preventDefault` + `startDragging` en banda, doble-clic → maximize, excluye targets interactivos. Encoje banda a **20px** (`1.25rem`), header sticky en `top: var(--native-titlebar-height)`.
+- Drag intermitente: selección del webview + header sticky tapando la banda. Fix: `useMacDragRegion` usa `mousedown` a nivel document, `preventDefault` + `startDragging` en banda, doble-clic → maximize, excluye targets interactivos. Encoje banda a **20px** (`1.25rem`), header sticky en `top: var(--native-titlebar-height)`.
 
 ## 2026-08-31 — Ventana cross-platform
 
@@ -89,7 +89,7 @@
 
 12 commits (`83042a6` … `98966ab`) persiguieron el marco en Linux: sombra híbrida → nativa solo con `StyleContext::add_provider` → CSD forzado con `HeaderBar` oculto → `transparent:false` → visual RGBA forzado + `opaque_region` → `set_opacity(0.99)`.
 
-**Resultado — Linux deja de dibujar su propio marco.** `tauri.linux.conf.json:11` usa `decorations: true` + `transparent: false`, así que GTK / el compositor dibujan la titlebar con minimizar / maximizar / cerrar nativos, sombra y radio de esquinas. Se eliminaron `apply_linux_window_shadow`, las deps linux `gtk` / `gdk` y todas las reglas de marco en `.app-shell` (`border-radius` / `margin` / `box-shadow` / `contain` / scroll interno). Windows también pasó a `decorations: true` aquí, pero se revirtió un día después — ver la entrada del 2026-09-19. El **área de arrastre** personalizada se mantiene (`data-tauri-drag-region` + `useWindowDragRegion`, banda Prestly de 56px).
+**Resultado — Linux deja de dibujar su propio marco.** `tauri.linux.conf.json:11` usa `decorations: true` + `transparent: false`, así que GTK / el compositor dibujan la titlebar con minimizar / maximizar / cerrar nativos, sombra y radio de esquinas. Se eliminaron `apply_linux_window_shadow`, las deps linux `gtk` / `gdk` y todas las reglas de marco en `.app-shell` (`border-radius` / `margin` / `box-shadow` / `contain` / scroll interno). Windows también pasó a `decorations: true` aquí, pero se revirtió un día después — ver la entrada del 2026-09-19. El **área de arrastre** personalizada se mantiene (`data-tauri-drag-region` + `useWindowDragRegion`, banda de arrastre de 56px).
 
 Por qué los hacks no podían funcionar: con `transparent:false` tao nunca instala un visual RGBA (lo hace **antes del realize**, solo para ventanas transparentes) y `gtk_widget_set_visual()` después del realize no tiene efecto, así que las esquinas nunca podían mezclarse — las esquinas blancas/opacas de 1px y el buffer cuadrado bajo el `decoration` redondeado eran eso, no un bug de CSS.
 
@@ -117,7 +117,7 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 ## 2026-09-19 — Titlebar: banda fija de 44px + hover legible en los controles
 
 - `header.tsx:29` — `HEADER_HEIGHT` clava la banda por plataforma (`h-[52px]` macOS, `h-11` = 44px Win/Linux, `h-14` móvil) en vez de un único `h-14`. 44px es lo que el flex-column del shell ya comprimía el header (min-content), o sea la banda que el usuario veía; `shrink-0` + la clase fija sólo evitan que dependa del contenido de la página. Los caption buttons (`h-full`) llenan la banda y los controles de idioma / tema siguen en 32px, así la pastilla no se recorta.
-- `native-chrome.ts:12` — la banda de arrastre Prestly deja de hardcodear 56px: `headerBandHeight()` mide `.app-header` en runtime (fallbacks 52 macOS / 44 Win-Linux), así banda y zona de arrastre no pueden desincronizarse.
+- `native-chrome.ts:12` — la banda de arrastre deja de hardcodear 56px: `headerBandHeight()` mide `.app-header` en runtime (fallbacks 52 macOS / 44 Win-Linux), así banda y zona de arrastre no pueden desincronizarse.
 - `header.tsx:18` — los botones de idioma / tema comparten un único token de hover, `hover:bg-black/10 dark:hover:bg-white/15`, aplicado a **las dos** ramas, shadcn y glass. Los valores viejos no se leían sobre la banda: `bg-muted` / `dark:bg-muted/50` desaparecen sobre la barra oscura translúcida, y el `hover:bg-white/10` de glass se invierte a 6 % de negro en tema claro (`globals.css:403`). Los botones glass mantienen `hover:scale-100`, así la pastilla no crece fuera de la titlebar.
 - Verificado en la VM Windows 11 build 26200 (VNC + sonda de píxeles): la banda de la titlebar mide 44px (48 px capturados con el escala ~1,09 de la VM = rect de hover de los caption buttons + borde de 1px), el hover de tema / idioma pasa de `(11,11,11)` a `(49,49,49)` en oscuro y de `(254,254,254)` a `(228,228,228)` en claro, el hover rojo de cerrar sigue ocupando los últimos 46px (x=1350..1399, borde del cliente 1400) y arrastrar la banda mueve la ventana exactamente lo mismo que el puntero.
 
@@ -147,7 +147,7 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 
 ## 2026-09-18 — cross-compile de Windows funcionando
 
-`scripts/build-windows.sh` ahora cross-compila el bundle Windows x64 desde macOS/Linux con `cargo-xwin` (antes invocaba el `cargo-tauri` con branding de Prestly y caía en `--bundles msi`, que no puede correr fuera de Windows). Resuelve las rutas keg-only de LLVM/lld, valida `cargo-xwin` / el target MSVC / `makensis`, y usa el CLI stock: `pnpm tauri build --target x86_64-pc-windows-msvc --runner cargo-xwin --bundles nsis`. Genera `tauri-react-template.exe` + el `.exe` instalador NSIS. Docs: `docs/es/scripts.md` § Cross-compile Windows.
+`scripts/build-windows.sh` ahora cross-compila el bundle Windows x64 desde macOS/Linux con `cargo-xwin` (antes invocaba un `cargo-tauri` de terceros con branding y caía en `--bundles msi`, que no puede correr fuera de Windows). Resuelve las rutas keg-only de LLVM/lld, valida `cargo-xwin` / el target MSVC / `makensis`, y usa el CLI stock: `pnpm tauri build --target x86_64-pc-windows-msvc --runner cargo-xwin --bundles nsis`. Genera `tauri-react-template.exe` + el `.exe` instalador NSIS. Docs: `docs/es/scripts.md` § Cross-compile Windows.
 
 ---
 
@@ -223,7 +223,7 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 
 ## Lecciones para futuros cambios
 
-- Si ves `// Prestly pattern` o `// HuLa fix`, esa línea sobrevivió a múltiples bugs de plataforma. Lee el commit antes de tocarla.
+- Si ves `// HuLa fix`, esa línea sobrevivió a múltiples bugs de plataforma. Lee el commit antes de tocarla.
 - `backdrop-blur` en Linux está vetado por motivo — cualquier re-activación debe manejar DMABUF + NVIDIA + Wayland y mantener RAM plana al redimensionar.
 - Traffic lights: nunca elimines uno de los tres mecanismos — cada uno cubre un timing distinto (general, macOS 26, live-drag).
 - Titlebar de Linux: la ventana es frameless + opaca (`decorations: false`, `transparent: false`), esquinas cuadradas del sistema por diseño — el arco CSD (`GtkHeaderBar` enganchada, clase `tauri-app`, input shape) se eliminó deliberadamente el 27-09-2026. La app sigue dibujando su titlebar (`header.tsx` + `WindowControls`) y el borde interior de 6px sigue lanzando `begin_resize_drag` (`start_window_resize`). Nunca re-añadas radio CSS ni un provider GTK para redondear las esquinas.

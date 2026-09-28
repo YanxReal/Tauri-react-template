@@ -33,7 +33,7 @@ const HEADER_HEIGHT = {
 } as const
 
 /**
- * Unified header — Prestly fusioned-titlebar pattern.
+ * Unified header — fusioned-titlebar pattern.
  *
  * The header occupies the FULL top of the window on every platform:
  *
@@ -46,7 +46,7 @@ const HEADER_HEIGHT = {
  * false`, frameless — esquinas cuadradas del sistema, decisión consciente):
  * this header IS the titlebar — one fixed 44px row (Edge / VS Code style)
  * that stays draggable through `data-tauri-drag-region` + `useWindowDragRegion`
- * (Prestly band) and hosts the caption buttons (`WindowControls`).
+ * (drag band) and hosts the caption buttons (`WindowControls`).
  */
 export function Header() {
   const { t, i18n } = useTranslation()

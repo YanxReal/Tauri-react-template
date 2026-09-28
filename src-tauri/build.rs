@@ -1,4 +1,4 @@
-//! Build script — mirrors Prestly's multi-platform adaptations.
+//! Build script — multi-platform adaptations.
 //! - Calls `tauri_build::build()` to generate context + mobile/desktop cfg aliases.
 //! - On macOS: compiles `Assets.xcassets/AppIcon` via `actool` so the .app uses
 //!   the theme-aware AppIcon (instead of just icon.icns). Works without Xcode
@@ -74,8 +74,7 @@ fn main() {
         }
     }
 
-    // Env embedding — public values only. Mirrors Prestly's Supabase embedding
-    // but generic: reads src-tauri/.env (gitignored) or process env.
+    // Env embedding — public values only, generic: reads src-tauri/.env (gitignored) or process env.
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR");
     let env_file = Path::new(&manifest_dir).join(".env");
     if env_file.exists() {
@@ -106,7 +105,7 @@ fn main() {
             .ok()
             .or_else(|| file_values.get(*key).cloned());
         if let Some(value) = value {
-            // Validate Supabase URLs in release (like Prestly audit F6)
+            // Validate Supabase URLs in release
             if *key == "SUPABASE_URL" || *key == "VITE_SUPABASE_URL" {
                 validate_supabase_url(&value);
             }

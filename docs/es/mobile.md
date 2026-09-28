@@ -13,7 +13,7 @@ Regla: **nunca toques `src-tauri/gen/`** — cualquier edición manual se pierde
 
 ## iOS — target unificado Xcode (iOS + macOS en uno)
 
-`scripts/Xcode/apple-xcode.sh` es el entrypoint (ver `scripts/README.md:8`):
+`scripts/Xcode/apple-xcode.sh` es el entrypoint (ver `scripts/README.es.md:46`):
 
 ```bash
 scripts/Xcode/apple-xcode.sh            # xcodegen → src-tauri/gen/apple
@@ -34,7 +34,7 @@ Qué hace:
 | `release` | standalone optimizado | standalone optimizado |
 | `hotreload` | abre Terminal con dev server Vite (`apps/web`, `:1420` + HMR), sin `custom-protocol` | hace probe al parent `tauri ios dev --open` vía handshake JSON-RPC (timeout 1.5s) en `$TMPDIR/com.tauri-react-template.app-server-addr`; si responde → `xcode-script` con IPC completo (`TAURI_DEV_HOST` etc.), si no abre el parent en Terminal; si no hay parent → fallback standalone |
 
-Detalles en `scripts/README.md:22`.
+Detalles en `scripts/README.es.md:46`.
 
 ### Comandos iOS (qué CLI usar)
 

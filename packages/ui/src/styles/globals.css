@@ -142,9 +142,9 @@
 
 html,
 body {
-  /* Prestly: `pan-x pan-y` deja el scroll 100% nativo (gestos del OS
+  /* `pan-x pan-y` deja el scroll 100% nativo (gestos del OS
      intactos) sin pinch/zoom; NO se usa `overscroll-behavior:none` porque
-     Prestly no lo hace y puede romper el rebote/arrastre de scroll. */
+     no lo usa y puede romper el rebote/arrastre de scroll. */
   touch-action: pan-x pan-y;
 }
 
@@ -171,7 +171,7 @@ textarea,
 /* "Efecto cristal": el material nativo (vibrancy macOS / Mica Windows) se
    transluce a través del fondo del body, pero teñido con el color del tema
    (claro/oscuro) para que el cristal SIGA al tema de la app y no al sistema
-   (patrón Prestly: el fondo lo pinta la app; aquí añadimos translucidez).
+   (el fondo lo pinta la app; aquí añadimos translucidez).
    32% en oscuro deja ver Mica/vibrancy, en claro lo dejamos más opaco
    para desaumentar la transparencia (antes 12% muy translúcido). */
 html.vibrancy body {
@@ -181,7 +181,7 @@ html.light.vibrancy body {
   background-color: color-mix(in oklab, var(--background) 42%, transparent);
 }
 
-/* --- Ventana / titlebar (patrón Prestly, §144.5) -----------------------------
+/* --- Ventana / titlebar -----------------------------------------------
     La clase `.titlebar` vive en <html>, la monta el componente TitleBar en
     Tauri desktop (nunca en el navegador/móvil). El header es la franja de
     arrastre fusionada (h-14 = 56px en Win/Linux); macOS reserva 20px para los
@@ -195,7 +195,7 @@ html.light.vibrancy body {
 @layer utilities {
   html.titlebar {
     --native-titlebar-height: 1.25rem; /* 20px — padding para traffic lights */
-    --control-height: 2.25rem; /* 36px — franja Win/Linux (Prestly) */
+    --control-height: 2.25rem; /* 36px — franja Win/Linux */
   }
 
   /* Viewport transparente: la forma redondeada del window se ve. */

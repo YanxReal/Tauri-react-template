@@ -1,4 +1,4 @@
-# Prestly unified Apple target — ONE target (`{{app.name}}_Apple`), TWO
+# Unified Apple target — ONE target (`{{app.name}}_Apple`), TWO
 # destinations (iOS/iPhoneSimulator + macOS). Everything that differs
 # between the platforms lives in `apple.xcconfig` ([sdk=...] conditionals)
 # and the platform branch inside the "Build Rust Code" phase.
@@ -88,7 +88,7 @@ targets:
         # NSLocalNetworkUsageDescription the app aborts on the first LAN connection.
         # Needed e.g. to reach the Vite dev server from a physical device during
         # `tauri ios dev`.
-        NSLocalNetworkUsageDescription: Prestly uses the local network to communicate with devices and services in your workspace.
+        NSLocalNetworkUsageDescription: {{app.name}} uses the local network to communicate with devices and services in your workspace.
         # ATS blocks plain-HTTP loads to LAN addresses; NSAllowsLocalNetworking
         # relaxes ATS for local-network hosts only (e.g. the dev server's LAN IP
         # or the USB link-local 169.254.x.x address) without disabling ATS for
@@ -112,15 +112,8 @@ targets:
         # ---- macOS-only keys (ignored by iOS) ----
         LSMinimumSystemVersion: "15.0"
         NSHighResolutionCapable: true
-        LSApplicationCategoryType: public.app-category.finance
+        LSApplicationCategoryType: public.app-category.developer-tools
         CFBundleIconName: AppIcon
-        # Static scheme registration is MANDATORY inside the App Sandbox:
-        # the deep-link plugin's runtime registration
-        # (LSSetDefaultHandlerForURLScheme) silently no-ops when sandboxed,
-        # so prestly:// recovery links only land here via CFBundleURLTypes.
-        CFBundleURLTypes:
-          - CFBundleURLName: com.yanxstudio.prestly
-            CFBundleURLSchemes: [prestly]
     # Per-platform entitlements (static files, see apple.xcconfig):
     # macos.entitlements carries the App Sandbox + network.client +
     # keychain-access-groups required for Mac App Store distribution;
@@ -161,10 +154,10 @@ targets:
       #
       # Standalone IDE builds (no `tauri ios dev|build` parent) are
       # self-sufficient: Release runs the frontend production build
-      # (`yarn build`, the CLI's beforeBuildCommand does not run from Xcode),
+      # (`pnpm build`, the CLI's beforeBuildCommand does not run from Xcode),
       # while Debug opens a visible Terminal window running the Vite dev
-      # server (web-app/scripts/ios-dev-server.command, devUrl
-      # localhost:43422) when it is not already listening, so HMR works with
+      # server (apps/web/scripts/xcode/xcode-dev-server.command, devUrl
+      # localhost:1420) when it is not already listening, so HMR works with
       # visible logs; closing the window stops the server.
       #
       # Platform split: macosx compiles the crate as a host staticlib and
@@ -176,23 +169,23 @@ targets:
 
           if [ "$PLATFORM_NAME" = "macosx" ]; then
             if [ "$CONFIGURATION" = "release" ]; then
-              (cd "$SRCROOT/../../../web-app" && yarn build) || exit 1
+              (cd "$SRCROOT/../../../apps/web" && pnpm build) || exit 1
               cargo build --manifest-path "$SRCROOT/../../Cargo.toml" --lib --release --features tauri/custom-protocol || exit 1
-              LIB="$SRCROOT/../../target/release/libprestly_lib.a"
+              LIB="$SRCROOT/../../target/release/libtauri_react_template_lib.a"
             else
-              if ! curl -sf http://localhost:43422 >/dev/null 2>&1; then
-                open -a Terminal "$SRCROOT/../../../web-app/scripts/ios-dev-server.command"
+              if ! curl -sf http://localhost:1420 >/dev/null 2>&1; then
+                open -a Terminal "$SRCROOT/../../../apps/web/scripts/xcode/xcode-dev-server.command"
               fi
               cargo build --manifest-path "$SRCROOT/../../Cargo.toml" --lib || exit 1
-              LIB="$SRCROOT/../../target/debug/libprestly_lib.a"
+              LIB="$SRCROOT/../../target/debug/libtauri_react_template_lib.a"
             fi
             mkdir -p "$SRCROOT/Externals/macosx/$CONFIGURATION"
             cp -f "$LIB" "$SRCROOT/Externals/macosx/$CONFIGURATION/{{ lib-output-file-name }}"
           else
             if [ "$CONFIGURATION" = "release" ]; then
-              (cd "$SRCROOT/../../../web-app" && yarn build) || exit 1
-            elif ! curl -sf http://localhost:43422 >/dev/null 2>&1; then
-              open -a Terminal "$SRCROOT/../../../web-app/scripts/ios-dev-server.command"
+              (cd "$SRCROOT/../../../apps/web" && pnpm build) || exit 1
+            elif ! curl -sf http://localhost:1420 >/dev/null 2>&1; then
+              open -a Terminal "$SRCROOT/../../../apps/web/scripts/xcode/xcode-dev-server.command"
             fi
             {{ shell-escape tauri-binary }} {{ tauri-binary-args-str }} -v --platform "${PLATFORM_DISPLAY_NAME:?}" --sdk-root "${SDKROOT:?}" --framework-search-paths "${FRAMEWORK_SEARCH_PATHS:?}" --header-search-paths "${HEADER_SEARCH_PATHS:?}" --gcc-preprocessor-definitions "${GCC_PREPROCESSOR_DEFINITIONS:-}" --configuration "${CONFIGURATION:?}" ${FORCE_COLOR} ${ARCHS:?}
           fi

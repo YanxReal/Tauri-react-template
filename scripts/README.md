@@ -1,152 +1,202 @@
-# scripts — helpers multi-plataforma (adaptado de Prestly, genérico)
+# scripts — multi-platform helpers
 
-- `Makefile` en la raíz es la fuente de verdad para dev/build multi-OS.
-- `src-tauri/build.rs` compila `Assets.xcassets` vía `actool` solo si Xcode está disponible; sin Xcode usa `icon.icns` y avisa con `cargo:warning` (escritorio funciona sin Xcode).
-- `rust-toolchain.toml` fija `stable` + targets `aarch64-apple-ios*` y `android` para `cargo check --target ...` y los builds móviles.
-- `src-tauri/Assets.xcassets` + `Info.plist` + `tauri.macos.conf.json` (`titleBarStyle Overlay`, `transparent`) replican la capa macOS/Xcode de Prestly pero genérica.
+> 🌐 **Language:** **English** | [Español](README.es.md)
 
-## Build por OS
+Repo automation: OS build shells, Xcode tooling, CLI patching. The `Makefile`
+(at the repo root) is the source of truth for daily dev/build commands; the
+files here implement them.
 
-| Script | Qué hace |
-|--------|----------|
-| `scripts/build-linux.sh` | Bundles Linux y compilar/lanzar la app. Backends `--remote [HOST]` (SSH, vía principal) y `--native`. Perfiles `--release`/`--debug`; extras `--dev`, `--run`, `--fetch`, `--logs`, `--stop`. Detalle: `docs/es/scripts.md`. |
-| `scripts/build-windows.sh` | Cross-compile Windows x64 desde macOS/Linux (`cargo-xwin` + NSIS). |
-| `scripts/Xcode/apple-xcode.sh` | Regenera `src-tauri/gen/apple` y compila iOS sim + macOS host. |
+- [Inventory](#-inventory)
+- [Build per OS](#-build-per-os)
+- [Xcode unified target](#-xcode-unified-ios--macos-in-one-target)
+- [Signing / DEVELOPMENT_TEAM](#-signing--development_team-auto-injection)
+- [CLI](#-cli)
+- [Hot reload (full IPC)](#-hot-reload-full-ipc--tauri-ios-dev)
+- [Without Xcode](#-without-xcode-linuxwindowsmacos-without-xcode)
 
-## Xcode unificado (iOS + macOS en UN target)
+Related: [`docs/en/scripts.md`](../../docs/en/scripts.md) (flags reference),
+[`docs/en/mobile.md`](../../docs/en/mobile.md) (iOS/Android flows),
+[`MODS.md`](../../MODS.md) (CLI vendor modifications).
 
-La fuente de verdad del proyecto Xcode es el template:
+## 📋 Inventory
+
+| Script | Purpose |
+|---|---|
+| `scripts/build-linux.sh` | Linux bundles; compile + run on a Linux box over SSH (`--remote`) or locally (`--native`). Profiles `--release`/`--debug`; `--dev`, `--run`, `--fetch`, `--logs`, `--stop` |
+| `scripts/build-windows.sh` | Windows x64 cross-compile from macOS/Linux (`cargo-xwin` + NSIS) |
+| `scripts/box-shot.sh` | Screenshot the Ubuntu-arm-docker box over VNC (`VNC_PASSWORD`, default `/tmp/box-shot.png`) |
+| `scripts/patch-tauri-cli.sh` | Applies the 3 local tweaks onto a stock `tauri-cli` copy (refuses unknown versions) |
+| `scripts/Xcode/apple-xcode.sh` | Regenerates `src-tauri/gen/apple` (xcodegen); `--build` also compiles iOS sim + macOS host |
+| `scripts/Xcode/xcode-dev-parent.command` | Double-clickable `tauri ios dev --open` launcher (Terminal) |
+| `apps/web/scripts/xcode/xcode-dev-server.command` | Double-clickable Vite dev server (`:1420` + HMR) |
+
+Supporting build inputs (not scripts, but part of the system):
+
+- `src-tauri/build.rs` compiles `Assets.xcassets` via `actool` only when Xcode exists; without Xcode it falls back to `icon.icns` with a `cargo:warning` (desktop works without Xcode).
+- `rust-toolchain.toml` pins `stable` + `aarch64-apple-ios*` and Android targets for `cargo check --target ...` and mobile builds.
+- `src-tauri/Assets.xcassets` + `Info.plist` + `tauri.macos.conf.json` (`titleBarStyle Overlay`, `transparent`) replicate the generic macOS/Xcode layer.
+
+## 🔨 Build per OS
+
+| Script | Does |
+|---|---|
+| `scripts/build-linux.sh` | Linux bundles plus compile/launch. Backends `--remote [HOST]` (SSH, primary) and `--native`. Profiles `--release`/`--debug`; extras `--dev`, `--run`, `--fetch`, `--logs`, `--stop`. Full flags: `docs/en/scripts.md`. |
+| `scripts/build-windows.sh` | Windows x64 cross-compile from macOS/Linux (`cargo-xwin` + NSIS). One-time setup: `brew install llvm lld makensis`, `cargo install cargo-xwin --locked`, `rustup target add x86_64-pc-windows-msvc`. MSI/WiX needs a Windows host. |
+
+## 📱 Xcode unified (iOS + macOS in ONE target)
+
+The source of truth for the Xcode project is the template:
 
     src-tauri/vendor/tauri-cli-2.12.0/templates/mobile/ios/
 
-`src-tauri/gen/apple` se regenera **completo** desde ahí (está gitignored y NO persiste):
+`src-tauri/gen/apple` regenerates **entirely** from it (gitignored, does NOT persist):
 
-    scripts/Xcode/apple-xcode.sh             # regenera + xcodegen
-    scripts/Xcode/apple-xcode.sh --build     # además compila iOS sim (vía CLI) y macOS host
+    scripts/Xcode/apple-xcode.sh             # regenerate + xcodegen
+    scripts/Xcode/apple-xcode.sh --build     # plus iOS sim (via CLI) + macOS host
 
-Regla: editar SIEMPRE el template (project.yml, apple.xcconfig, entitlements, Assets.xcassets),
-NUNCA el `.xcodeproj` generado ni su Info.plist.
+Rule: ALWAYS edit the template (`project.yml`, `apple.xcconfig`, entitlements, `Assets.xcassets`),
+NEVER the generated `.xcodeproj` or its Info.plist.
 
-- Target único `tauri-react-template_Apple`, destinos iOS + macOS vía `apple.xcconfig`
-  (`SUPPORTED_PLATFORMS = macosx iphoneos iphonesimulator`) y branches `PLATFORM_NAME`
-  en la phase "Build Rust Code".
-- **Tres configs de build** (XcodeGen `configs:`): `debug`, `release` y `hotreload`.
-  La phase ("Build Rust Code") decide el pipeline:
-  - macOS → standalone (`cargo build --lib` host). `debug`/`release` con frontend
-    embebido (`custom-protocol`); `hotreload` abre la terminal en primer plano con Vite
-    (`apps/web`, devUrl :1420 + HMR) y compila la app SIN custom-protocol para que
-    consuma el dev server → `Externals/macosx/...`.
-  - iOS `debug` → **igual que release pero rápido**: standalone con el frontend
-    embebido (`--features tauri/custom-protocol`) como release, **sin Vite ni CLI**:
-    app completa agarra y ⌘R incremental = compilación rápida de solo Rust (el
-    JS no se toca salvo que cambie el dist). Para HMR usa la config `hotreload`.
-  - iOS `hotreload` → hot reload honesto: FIRST **probea** el parent `tauri ios dev --open`
-    con un handshake WebSocket JSON-RPC real y timeout 1.5s sobre el address IPC
-    (`$TMPDIR/com.tauri-react-template.app-server-addr`, el CLI monta un server jsonrpsee con
-    el método `options`). Si responde → corre `xcode-script` (full IPC: features, config merges,
-    `TAURI_DEV_HOST`…). Si no (addr stale apuntando p.ej. al WS de Vite, puerto cerrado o sin
-    archivo → el stock `read_options` de Xcode se colgaría para siempre: por eso este probe
-    NUNCA deja que el build se cuelgue) → abre en Terminal el parent `tauri ios dev --open`
-    ([`--host <LAN>`](./README.md#hot-reload-full-ipc--tauri-ios-dev) para device físico),
-    espera hasta ~40s y reintenta. Sin parent → abre la terminal del dev server
-    (`apps/web/scripts/xcode/xcode-dev-server.command`), avisa y cae a standalone.
-  - `release` → standalone con `--features tauri/custom-protocol` para producción (compila
-    desde cero: correcto para release).
-- Terminal visible en PRIMER PLANO sin AppleScript: la phase usa `open -a Terminal
-  <script>.command` (estilo Prestly; LaunchServices → sin permisos TCC, `open` no bloquea
-  nunca la phase). Dos runscripts en el repo (persisten a la regen):
-  `apps/web/scripts/xcode/xcode-dev-server.command` (Vite :1420 + HMR) y
-  `scripts/Xcode/xcode-dev-parent.command` (`tauri ios dev --open` con `--host <LAN>` si hay red).
-- Ojo de doble Vite: en hotreload, el parent levanta Vite (su `beforeDevCommand`) y falla si
-  `:1420` ya está ocupado ("beforeDevCommand terminated with a non-zero..."). No dejar un Vite
-  preview/dev previo corriendo antes de lanzar la config `hotreload`.
-- `xcode-script` de cargo-mobile stagea `Externals/<arch>/<PROFILE>` (`debug` para cualquier
-  config != release); la phase además copia ese lib al path por SDK que enlaza el target
-  (`Externals/<PLATFORM_NAME>/<CONFIGURATION>`), para que el lib fresco siempre gane.
-- Al cerrar la config `hotreload` (⌘. / terminar app) **el parent NO se cierra solo**:
-  `tauri ios dev --open` queda durmiendo (~24h) con el server de options IPC y su Vite en
-  `:1420`. Para liberar puertos: cerrar la ventana de Terminal (⌘W) o Ctrl+C → SIGHUP mata
-  al parent y a Vite. El addr file stale no rompe nada: el probe lo descarta rápido
-  (puerto cerrado). `hotreload` también compila rápido: Rust en perfil debug incremental +
-  HMR de Vite (solo el primer build desde cero es largo).
-- Así el botón "Run/Run…" de Xcode: `debug`/`release` app completa standalone sin CLI padre
-  (debug rápido, release optimizado); `hotreload` auto-abre la Terminal con el parent y hace
-  HMR real de frontend (y Rust en device físico).
-- Scheme `tauri-react-template_Apple` para Xcode/macOS. Scheme `tauri-react-template_iOS`
-  (shim que construye el target `_Apple`) + `_iOS/Info.plist`: requeridos por cargo-mobile2,
-  que usa `config.scheme()` = `<app>_iOS` para `tauri ios dev|build`.
-- Entitlements estáticos por plataforma (ios.entitlements / macos.entitlements) vía
+- Single target `tauri-react-template_Apple`, iOS + macOS via `apple.xcconfig`
+  (`SUPPORTED_PLATFORMS = macosx iphoneos iphonesimulator`) with `PLATFORM_NAME`
+  branches in the "Build Rust Code" phase.
+- **Three build configs** (XcodeGen `configs:`): `debug`, `release`, `hotreload`.
+  The phase ("Build Rust Code") picks the pipeline:
+  - macOS → standalone (`cargo build --lib` host). `debug`/`release` embed the
+    frontend (`custom-protocol`); `hotreload` opens Terminal in front with Vite
+    (`apps/web`, devUrl :1420 + HMR) and builds the app WITHOUT custom-protocol
+    so it consumes the dev server → `Externals/macosx/...`.
+  - iOS `debug` → **same as release but fast**: standalone with the embedded
+    frontend (`--features tauri/custom-protocol`) like release, **no Vite, no CLI**:
+    full app runs and ⌘R incremental = Rust-only fast compile (JS untouched
+    unless dist changes). For HMR use `hotreload`.
+  - iOS `hotreload` → honest hot reload: FIRST **probes** the parent
+    `tauri ios dev --open` with a real JSON-RPC WebSocket handshake and 1.5s
+    timeout on the IPC address file
+    (`$TMPDIR/com.tauri-react-template.app-server-addr` — the CLI runs a
+    jsonrpsee server with the `options` method). If alive → runs `xcode-script`
+    (full IPC: features, config merges, `TAURI_DEV_HOST`…). If not (stale addr
+    pointing at e.g. the Vite WS, closed port, or missing file — the stock
+    `read_options` would hang Xcode forever, which is why this probe NEVER
+    lets the build hang) → opens the parent `tauri ios dev --open` in Terminal
+    (with `--host <LAN>` for physical devices), waits ~40s and retries. With
+    no parent → opens the dev-server terminal
+    (`apps/web/scripts/xcode/xcode-dev-server.command`), warns, falls back
+    to standalone.
+  - `release` → standalone with `--features tauri/custom-protocol` for
+    production (builds from scratch: correct for release).
+- Foreground Terminal without AppleScript: the phase uses `open -a Terminal
+  <script>.command` (LaunchServices → no TCC permissions, `open` never blocks
+  the phase). Two runscripts in the repo (survive regen):
+  `apps/web/scripts/xcode/xcode-dev-server.command` (Vite :1420 + HMR) and
+  `scripts/Xcode/xcode-dev-parent.command` (`tauri ios dev --open`, with
+  `--host <LAN>` when there is a network).
+- Double-Vite warning: in hotreload, the parent starts Vite (its
+  `beforeDevCommand`) and fails if `:1420` is already taken
+  ("beforeDevCommand terminated with a non-zero..."). Don't leave a previous
+  preview/dev Vite running before launching the `hotreload` config.
+- `xcode-script` (cargo-mobile) stages `Externals/<arch>/<PROFILE>` (`debug`
+  for anything != release); the phase also copies that lib to the per-SDK path
+  the target links (`Externals/<PLATFORM_NAME>/<CONFIGURATION>`), so the fresh
+  lib always wins.
+- Closing `hotreload` (⌘. / stop app) does **not** stop the parent:
+  `tauri ios dev --open` keeps sleeping (~24h) with its options IPC server and
+  Vite on `:1420`. To free ports: close the Terminal window (⌘W) or Ctrl+C →
+  SIGHUP kills parent and Vite. A stale addr file breaks nothing: the probe
+  discards it fast (closed port). `hotreload` also compiles fast: incremental
+  debug Rust + Vite HMR (only the first from-scratch build is long).
+- So the Xcode "Run" button means: `debug`/`release` = full standalone app
+  without a parent CLI (fast debug, optimized release); `hotreload` =
+  auto-opens Terminal with the parent and does real frontend HMR (plus Rust
+  on physical devices).
+- Scheme `tauri-react-template_Apple` for Xcode/macOS. Scheme
+  `tauri-react-template_iOS` (shim building the `_Apple` target) +
+  `_iOS/Info.plist`: required by cargo-mobile2, which uses `config.scheme()`
+  = `<app>_iOS` for `tauri ios dev|build`.
+- Static per-platform entitlements (ios.entitlements / macos.entitlements) via
   `CODE_SIGN_ENTITLEMENTS[sdk=...]`.
-## Firma / DEVELOPMENT_TEAM (auto-inyección)
 
-El template **nunca hardcodea el Team ID**: lleva un sentinel
-`__TAURI_DEVELOPMENT_TEAM__` que `scripts/Xcode/apple-xcode.sh` resuelve ANTES de
-`xcodegen`, sobre la copia en `gen/`. Prioridad:
+## 🔏 Signing / DEVELOPMENT_TEAM (auto-injection)
 
-1. env `DEVELOPMENT_TEAM` (p.ej. en CI)
-2. archivo `scripts/.team-id` (gitignored; persiste entre regeneraciones)
-3. ninguno → la línea se omite y el team se elige a mano en Xcode
+The template **never hardcodes the Team ID**: it carries a
+`__TAURI_DEVELOPMENT_TEAM__` sentinel that `scripts/Xcode/apple-xcode.sh`
+resolves BEFORE `xcodegen`, on the `gen/` copy. Priority:
 
-Cuándo hace falta team: SIEMPRE el pipeline `tauri ios dev|build` (cargo-mobile transita
-por device + archive/export — Xcode moderno lista los sims vía `devicectl` como devices).
-No hace falta para builds directos de Xcode sobre **sim** (firma ad-hoc `-`/Manual vía
-`CODE_SIGN_STYLE[sdk=iphonesimulator*]`) ni para macOS.
+1. env `DEVELOPMENT_TEAM`
+2. file `scripts/.team-id` (gitignored, persists across regens)
+3. none → line omitted, pick manually in Xcode
 
-Cómo hacerlo (elige UNA opción):
+When a team is needed: ALWAYS for the `tauri ios dev|build` pipeline
+(cargo-mobile goes through device + archive/export — modern Xcode lists sims
+via `devicectl` as devices). Not needed for direct Xcode builds on **sim**
+(ad-hoc `-`/Manual via `CODE_SIGN_STYLE[sdk=iphonesimulator*]`) or macOS.
+
+How (pick ONE):
 
 ```bash
-# (1) fleet: una sola generación con team
+# (1) one-shot: single generation with team
 DEVELOPMENT_TEAM=ABCDE12345 scripts/Xcode/apple-xcode.sh
 
-# (2) durable: escribe el team y regenera (recomendado)
+# (2) durable: write the team and regenerate (recommended)
 echo ABCDE12345 > scripts/.team-id
 scripts/Xcode/apple-xcode.sh
 
-# (3) a mano: sin config, regeneras y eliges en Xcode →
-#     Target → Signing & Capabilities. OJO: la elección manual se pierde al
-#     regenerar (gen/ se reconstruye completo) → para persistir usa .team-id.
+# (3) manual: no config, regenerate and pick in Xcode →
+#     Target → Signing & Capabilities. NOTE: manual picks are lost on
+#     regen (gen/ rebuilds fully) → use .team-id to persist.
 ```
 
-Tu Team ID se ve en Xcode → Target → Signing & Capabilities (o Apple ID →
-Membership Details). Verificar que Xcode lo recibió:
+Your Team ID is in Xcode → Target → Signing & Capabilities (or Apple ID →
+Membership Details). Verify Xcode received it:
 
 ```bash
 xcodebuild -project src-tauri/gen/apple/tauri-react-template.xcodeproj \
   -scheme tauri-react-template_Apple -configuration Debug \
-  -showBuildSettings | rg DEVELOPMENT_TEAM        # → "DEVELOPMENT_TEAM = ABCDE12345"
+  -showBuildSettings | grep DEVELOPMENT_TEAM        # → "DEVELOPMENT_TEAM = ABCDE12345"
 ```
 
-Sin team configurado el rg no debe devolver nada (elección manual).
+Without a team configured the grep must return nothing (manual pick).
 
-## CLI
+## 🧰 CLI
 
-El `cargo-tauri` instalado en esta máquina es un build modificado de Prestly (genera
-proyectos Prestly-branded: `com.yanxstudio.prestly`, `web-app`, `yarn`). Para ESTE template
-usar SIEMPRE el CLI stock (mismo código Rust que la versión npm):
+The `cargo-tauri` for iOS flows is built from the vendored
+`tauri-cli 2.12.0` (stock + 3 local tweaks: standalone fallback, `_Apple`
+target — see `MODS.md` at the repo root):
 
-    pnpm dlx @tauri-apps/cli@2.12.0 ios build --target aarch64-sim --debug
-    pnpm dlx @tauri-apps/cli@2.12.0 android build --debug --target aarch64
+```bash
+make install-tauri-cli   # builds vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
+cargo tauri ios dev "iPhone 17"
+```
+
+For one-off stock operations (no local tweaks needed):
+
+```bash
+pnpm dlx @tauri-apps/cli@2.12.0 ios build --target aarch64-sim --debug
+pnpm dlx @tauri-apps/cli@2.12.0 android build --debug --target aarch64
+```
 
 ### Hot reload (full IPC) — `tauri ios dev`
 
-El dev frontend de `apps/web` escucha en TODAS las interfaces (`host: true` en
-`vite.config.ts`, como Prestly): `tauri ios dev` negocia el devUrl con una IP de red del
-host y debe poder consultar el server en esa IP.
+The `apps/web` dev frontend listens on ALL interfaces (`host: true` in
+`vite.config.ts`): `tauri ios dev` negotiates devUrl on a host LAN IP and
+must reach the server on that IP.
 
-- **iPhone físico**: `tauri ios dev --host 192.168.x.x "iPhone Studio"` → build+archive+
-  export+install vía xcodebuild/devicectl + hot reload de Rust (watcher del CLI). La config
-  `hotreload` del proyecto usa la misma forma: si el parent no está vivo, la phase lo abre en
-  Terminal con `--host <LAN>` (por eso el fix de Vite `host: true`). Es el flujo diario de
-  Prestly.
-- **Simulador**: con Xcode 26, `devicectl` lista los sims como devices y cargo-mobile intenta
-  `devicectl device install app` a un sim → no soportado ("Install Application is not
-  supported"). Para SIM: `tauri ios dev --open` (mantiene el parent vivo: IPC + options) y
-  corre la config `hotreload` del scheme `tauri-react-template_Apple` en Xcode con el sim →
-  cada ⌘R compila por `xcode-script` con las options del parent y el frontend hace HMR por
-  Vite. El auto-reload de Rust en sim queda limitado por el CLI upstream; `debug` sigue el
-  camino standalone sin CLI.
+- **Physical iPhone**: `tauri ios dev --host 192.168.x.x "iPhone 17"` →
+  build+archive+export+install via xcodebuild/devicectl + Rust hot reload
+  (CLI watcher). The project's `hotreload` config uses the same shape: if the
+  parent is not alive, the phase opens it in Terminal with `--host <LAN>`
+  (hence the Vite `host: true` fix).
+- **Simulator**: since Xcode 26, `devicectl` lists sims as devices and
+  cargo-mobile tried `devicectl device install app` on a sim → unsupported
+  ("Install Application is not supported"). For SIM: `tauri ios dev --open`
+  (keeps the parent alive: IPC + options) and run the `hotreload` config of
+  the `tauri-react-template_Apple` scheme in Xcode on the sim → each ⌘R
+  compiles via `xcode-script` with the parent's options and the frontend does
+  HMR via Vite. Sim Rust auto-reload stays limited by upstream CLI; `debug`
+  keeps the standalone no-CLI path. (Officially fixed for device listing in
+  `cargo-mobile2 0.22.5`; see `MODS.md`.)
 
-## Sin Xcode (Linux/Windows/macOS sin Xcode)
+## 🖥️ Without Xcode (Linux/Windows/macOS without Xcode)
 
-Todo compila en desktop (`pnpm dev`, `pnpm dlx @tauri-apps/cli@2.12.0 dev`, `make dev`).
-iOS/Android solo con Xcode / Android SDK.
+Everything desktop compiles (`pnpm dev`, `pnpm dlx @tauri-apps/cli@2.12.0 dev`, `make dev`).
+iOS/Android only with Xcode / Android SDK.

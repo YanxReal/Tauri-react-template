@@ -1,6 +1,6 @@
 # Changelog
 
-> Complete evolution of this template — 52 commits from `455897d` (initial) to HEAD. The milestones table in `AGENTS.md` §1 covers the first 20; the rest is the Windows/Linux window-frame arc documented below. Every entry links to the **reason behind non-obvious code**. Read it before removing anything marked `// Prestly pattern` or `// HuLa fix`.
+> Complete evolution of this template — 52 commits from `455897d` (initial) to HEAD. The milestones table in `AGENTS.md` §1 covers the first 20; the rest is the Windows/Linux window-frame arc documented below. Every entry links to the **reason behind non-obvious code**. Read it before removing anything marked `// HuLa fix`.
 
 ## 2026-08-30 — Foundation
 
@@ -54,7 +54,7 @@
 - Reserves a **36px band** (`--native-titlebar-height`) for drag, `app-shell` padding, sticky header at `top:36px`. Full-window crystal: `color-mix(var(--background) 62%, transparent)` so background translucency follows theme.
 
 ### `aa83704` `fix: arrastre macOS fiable (patron Prestly, banda 20px)`
-- Drag was intermittent: webview selection + sticky header covering the band. Fix: `useMacDragRegion` exactly mirrors Prestly — document-level `mousedown`, `preventDefault` + `startDragging` in band, double-click → maximize, excludes interactive targets. Shrinks band to **20px** (`1.25rem`), header sticky at `top: var(--native-titlebar-height)`.
+- Drag was intermittent: webview selection + sticky header covering the band. Fix: `useMacDragRegion` uses a document-level `mousedown`, `preventDefault` + `startDragging` in band, double-click → maximize, excludes interactive targets. Shrinks band to **20px** (`1.25rem`), header sticky at `top: var(--native-titlebar-height)`.
 
 ## 2026-08-31 — Cross-platform window
 
@@ -89,7 +89,7 @@
 
 12 commits (`83042a6` … `98966ab`) chased the Linux frame: hybrid shadow → native-only `StyleContext::add_provider` → CSD latched with a hidden `HeaderBar` → `transparent:false` → forced RGBA visual + `opaque_region` → `set_opacity(0.99)`.
 
-**Outcome — Linux stops drawing its own frame.** `tauri.linux.conf.json:11` uses `decorations: true` + `transparent: false`, so GTK / the compositor draw the titlebar with native minimize / maximize / close, shadow and corner radius. `apply_linux_window_shadow`, the linux-only `gtk` / `gdk` deps and every `.app-shell` frame rule (`border-radius` / `margin` / `box-shadow` / `contain` / inner-scroll) were deleted. Windows also went `decorations: true` here, but that was reverted one day later — see the 2026-09-19 entry. The custom **drag** area stays (`data-tauri-drag-region` + `useWindowDragRegion`, Prestly 56px band).
+**Outcome — Linux stops drawing its own frame.** `tauri.linux.conf.json:11` uses `decorations: true` + `transparent: false`, so GTK / the compositor draw the titlebar with native minimize / maximize / close, shadow and corner radius. `apply_linux_window_shadow`, the linux-only `gtk` / `gdk` deps and every `.app-shell` frame rule (`border-radius` / `margin` / `box-shadow` / `contain` / inner-scroll) were deleted. Windows also went `decorations: true` here, but that was reverted one day later — see the 2026-09-19 entry. The custom **drag** area stays (`data-tauri-drag-region` + `useWindowDragRegion`, 56px drag band).
 
 Why the hacks could not work: with `transparent:false` tao never installs an RGBA visual (it does it **before realize**, only for transparent windows) and `gtk_widget_set_visual()` after realize is a no-op, so the corners could never blend — the white/opaque 1px corners and the square buffer under the rounded `decoration` were that, not a CSS bug.
 
@@ -117,7 +117,7 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 ## 2026-09-19 — Titlebar: fixed 44px band + readable control hover
 
 - `header.tsx:29` — `HEADER_HEIGHT` pins the band per platform (`h-[52px]` macOS, `h-11` = 44px Win/Linux, `h-14` mobile) instead of one `h-14`. 44px is what the shell's flex column already squeezed the header down to (min-content), i.e. the band users actually saw; `shrink-0` + the fixed class just stop it from depending on the page content. The caption buttons (`h-full`) fill the band and the language / theme controls stay 32px, so the pill never clips.
-- `native-chrome.ts:12` — the Prestly drag band no longer hardcodes 56px: `headerBandHeight()` measures `.app-header` at runtime (fallbacks 52 macOS / 44 Win-Linux), so band and drag zone cannot drift apart.
+- `native-chrome.ts:12` — the drag band no longer hardcodes 56px: `headerBandHeight()` measures `.app-header` at runtime (fallbacks 52 macOS / 44 Win-Linux), so band and drag zone cannot drift apart.
 - `header.tsx:18` — language / theme buttons share one hover token, `hover:bg-black/10 dark:hover:bg-white/15`, applied to **both** the shadcn and the glass branch. The old defaults were unreadable on the band: `bg-muted` / `dark:bg-muted/50` vanish on the dark translucent bar, and the glass `hover:bg-white/10` inverts to 6 % black in the light theme (`globals.css:403`). The glass buttons keep `hover:scale-100`, so the pill no longer grows out of the titlebar.
 - Verified on the Windows 11 build 26200 VM (VNC + pixel probe): the titlebar band is 44px (48 captured px at the VM's ~1.09 scale, caption hover rect + 1px border), the theme / language hover goes `(11,11,11)` → `(49,49,49)` in dark and `(254,254,254)` → `(228,228,228)` in light, the red close hover still spans the last 46px (x=1350..1399, client edge 1400) and dragging the band moves the window exactly as far as the pointer.
 
@@ -147,7 +147,7 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 
 ## 2026-09-18 — Windows cross-compile working
 
-`scripts/build-windows.sh` now cross-compiles the Windows x64 bundle from macOS/Linux with `cargo-xwin` (previously it shelled out to the Prestly-branded `cargo-tauri` and defaulted to `--bundles msi`, which cannot run off-Windows). It resolves the keg-only LLVM/lld paths, checks `cargo-xwin` / the MSVC target / `makensis`, and runs the stock CLI: `pnpm tauri build --target x86_64-pc-windows-msvc --runner cargo-xwin --bundles nsis`. Outputs `tauri-react-template.exe` + the NSIS setup `.exe`. Docs: `docs/en/scripts.md` § Windows cross-compile.
+`scripts/build-windows.sh` now cross-compiles the Windows x64 bundle from macOS/Linux with `cargo-xwin` (previously it shelled out to a third-party branded `cargo-tauri` and defaulted to `--bundles msi`, which cannot run off-Windows). It resolves the keg-only LLVM/lld paths, checks `cargo-xwin` / the MSVC target / `makensis`, and runs the stock CLI: `pnpm tauri build --target x86_64-pc-windows-msvc --runner cargo-xwin --bundles nsis`. Outputs `tauri-react-template.exe` + the NSIS setup `.exe`. Docs: `docs/en/scripts.md` § Windows cross-compile.
 
 ---
 
@@ -223,7 +223,7 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 
 ## Lessons for future changes
 
-- If you see `// Prestly pattern` or `// HuLa fix`, that line survived multiple platform bugs. Read the commit before touching it.
+- If you see `// HuLa fix`, that line survived multiple platform bugs. Read the commit before touching it.
 - Linux `backdrop-blur` is vetoed for a reason — any re-enable must handle DMABUF + NVIDIA + Wayland and keep RAM flat on resize.
 - Traffic lights: never remove one of the three mechanisms — each covers a different timing (general, macOS 26, live-drag).
 - Linux titlebar: the window is frameless + opaque (`decorations: false`, `transparent: false`), square system corners by design — the CSD arc (latched `GtkHeaderBar`, `tauri-app` class, input shape) was removed deliberately on 2026-09-27. The app still draws its own titlebar (`header.tsx` + `WindowControls`) and the inner 6px edge still drives `begin_resize_drag` (`start_window_resize`). Never re-add radius CSS or a GTK provider to round the corners.

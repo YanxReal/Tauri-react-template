@@ -34,7 +34,7 @@ Verifica: `pnpm typecheck && pnpm lint && pnpm build` + testear scroll / click /
 
 ## Efecto cristal / glass (window-vibrancy) — toggle
 
-Patrón de **Prestly**: toggle nativo de translucidez.
+Toggle nativo de translucidez:
 
 - **Rust** (`lib.rs:31`): crate `window-vibrancy = "0.8"`. Comando sync `window_effects_set {enabled, dark?}` (`lib.rs:125`) — vibrancy (`NSVisualEffectView`) en macOS, Mica en Windows 11; Linux/móvil devuelven `unsupported` (no-op). Debe ser **sync** (main thread).
 - **Frontend** (`apps/web/src/components/vibrancy-provider.tsx` + `glass-cards-provider.tsx`): `VibrancyProvider` + `useVibrancy()` persistido en `localStorage` (`vibrancy`), `GlassCardsProvider` (`glass-cards`). `html.vibrancy` activa `globals.css:177` body transparente. `dark` sigue al tema (tint de Mica).

@@ -162,7 +162,7 @@ Notes: the MSI/WiX bundler only runs on a Windows host (`--bundles nsis` is the 
 
 ## Xcode helper
 
-`scripts/Xcode/apple-xcode.sh` (`scripts/README.md:8`):
+`scripts/Xcode/apple-xcode.sh` (see `scripts/README.md:46` — Xcode unified section):
 
 - Resolves `DEVELOPMENT_TEAM` sentinel → real ID (env `DEVELOPMENT_TEAM` > `scripts/.team-id` > omitted).
 - Runs `xcodegen` → `src-tauri/gen/apple`.

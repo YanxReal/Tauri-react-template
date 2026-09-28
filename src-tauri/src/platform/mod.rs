@@ -1,5 +1,5 @@
 // Platform-specific modules — compilado solo para el target activo.
-// Patrón tomado de Prestly, simplificado para template genérico.
+// Detección de plataforma simplificada para template genérico.
 // Cada subdirectorio es una "capa" OS-named; solo el que coincide con
 // target_os se compila. El resto es ignorado por el compilador.
 // Úsalo para aislar código que solo tiene sentido en un OS

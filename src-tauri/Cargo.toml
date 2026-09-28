@@ -28,7 +28,7 @@ log = "0.4"
 env_logger = "0.11"
 
 # Window translucency (macOS vibrancy / Windows Mica) — "efecto cristal".
-# Prestly pattern: the crate publishes under the name `window-vibrancy`;
+# NOTE: the crate publishes under the name `window-vibrancy`;
 # applies/clears the native material on supported OS (no-op-ish elsewhere).
 # NOTE: must stay in the main [dependencies] table (BEFORE any
 # [target.'cfg(...)'] section) so it is linked on ALL platforms.
@@ -74,7 +74,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [lints.clippy]
 await_holding_lock = "deny"
-# Prestly style: no .await while holding a Mutex guard.
+# Style: no .await while holding a Mutex guard.
 # Keep to enforce correct async discipline as the template grows.
 
 [profile.release]

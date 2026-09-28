@@ -1,6 +1,6 @@
 ; tauri-react-template — NSIS hooks personalizados
 ; Inyectado via bundle.windows.nsis.installerHooks en tauri.windows.conf.json
-; Requiere NSIS 3.x + MUI2 (Unicode) — estilo Prestly
+; Requiere NSIS 3.x + MUI2 (Unicode)
 ; 4 macros obligatorias: PREINSTALL / POSTINSTALL / PREUNINSTALL / POSTUNINSTALL
 
 !macro NSIS_HOOK_PREINSTALL

@@ -25,7 +25,7 @@ function resolvedDark(): boolean {
 
 /**
  * Tells Rust to apply or clear the native window "cristal" material
- * (vibrancy on macOS / Mica on Windows 11) — % echo Prestly pattern:
+ * (vibrancy on macOS / Mica on Windows 11) via
  * `window_effects_set { enabled, dark? }`. Answers false on unsupported
  * platforms (Linux, mobile, browser dev) so the toggle hides.
  */

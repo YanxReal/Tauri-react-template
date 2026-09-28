@@ -3,22 +3,22 @@
 <plist version="1.0">
 <dict>
     <!-- Mac App Store distribution: archive with Xcode (Product > Archive on
-         the prestly_Apple scheme, destination My Mac), then
+         the tauri-react-template_Apple scheme, destination My Mac), then
          xcodebuild -exportArchive -exportOptionsPlist THIS_FILE.
          Requires: Apple Distribution certificate + a "Mac App Store Connect"
-         provisioning profile for com.yanxstudio.prestly (create it in the
+         provisioning profile for com.tauri-react-template.app (create it in the
           developer portal and set its name below). -->
     <key>method</key>
     <string>app-store-connect</string>
     <key>teamID</key>
-    <string>36ZZP8X3F5</string>
+    <string>YOUR_TEAM_ID</string>
     <key>signingCertificate</key>
     <string>Apple Distribution</string>
     <!-- Uncomment and fill after creating the MAS provisioning profile:
     <key>provisioningProfiles</key>
     <dict>
-        <key>com.yanxstudio.prestly</key>
-        <string>Mac App Store Connect — Prestly</string>
+        <key>com.tauri-react-template.app</key>
+        <string>Mac App Store Connect — tauri-react-template</string>
     </dict>
     -->
 </dict>

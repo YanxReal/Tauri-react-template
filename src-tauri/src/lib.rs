@@ -19,7 +19,7 @@ fn platform_info() -> String {
 }
 
 // --- Window translucency ("efecto cristal") -----------------------------------
-// Prestly pattern: `window_effects_set { enabled, dark? }` applies or clears
+// `window_effects_set { enabled, dark? }` applies or clears
 // the native window material — vibrancy on macOS (NSVisualEffectView) and
 // Mica on Windows 11. Linux / mobile / other report "unsupported" so the
 // frontend hides the toggle instead of pretending the effect exists.

@@ -34,7 +34,7 @@ Verify: `pnpm typecheck && pnpm lint && pnpm build` + test scroll / click / no-z
 
 ## Glass / vibrancy (window-vibrancy) — toggle
 
-Pattern from **Prestly**: native translucency toggle.
+Native translucency toggle:
 
 - **Rust** (`lib.rs:31`): `window-vibrancy = "0.8"` crate. Sync command `window_effects_set {enabled, dark?}` (`lib.rs:125`) — vibrancy (`NSVisualEffectView`) on macOS, Mica on Windows 11; Linux/mobile return `unsupported` (no-op). Must be **sync** (main thread).
 - **Frontend** (`apps/web/src/components/vibrancy-provider.tsx` + `glass-cards-provider.tsx`): `VibrancyProvider` + `useVibrancy()` persistence in `localStorage` (`vibrancy`), `GlassCardsProvider` (`glass-cards`). `html.vibrancy` toggles `globals.css:177` transparent body. `dark` follows the theme (Mica tint).
