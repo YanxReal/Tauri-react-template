@@ -28,7 +28,7 @@ LINUX_DIR ?= /workspace/Tauri-react-template
 
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator build-linux dev-linux linux-logs linux-stop box-shot gen-apple install-tauri-cli install-skills lint build
+.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator build-linux dev-linux linux-logs linux-stop gen-apple install-tauri-cli install-skills lint build
 
 help: ## Show available commands
 	@awk -F'##' '/^[a-zA-Z0-9_\\:.-]+:[ \t]*##/ { t=$$1; sub(/:[ \t]*$$/, "", t); gsub(/\\/, "", t); printf "  \033[36m%-22s\033[0m %s\n", t, $$2 }' $(MAKEFILE_LIST)
@@ -91,9 +91,6 @@ linux-logs: ## Follow remote dev/app log
 
 linux-stop: ## Kill remote dev/app
 	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" scripts/build-linux.sh --remote --stop
-
-box-shot: ## Screenshot the Linux box over VNC
-	scripts/box-shot.sh
 
 install-tauri-cli: ## Build vendor CLI → ~/.cargo/bin/cargo-tauri
 	@echo "Building cargo-tauri 2.12.0 + local tweaks (standalone fallback, _Apple target) ..."

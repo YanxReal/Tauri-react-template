@@ -52,6 +52,6 @@ Always test the **release** profile too: `prevent-default` (`Flags::debug()`) on
 
 ## Screenshots as evidence
 
-Pixel scans beat eyeballing for frames and corners (`standard_deviation` per row: a frozen screen reads `0` everywhere). Tools: `scrot`/`xwd`/`compare` on X11, VNC capture + `box-shot.sh` on Wayland boxes, `gnome-screenshot` where it works. Paste the numbers, not adjectives.
+Pixel scans beat eyeballing for frames and corners (`standard_deviation` per row: a frozen screen reads `0` everywhere). Tools: `scrot`/`xwd`/`compare` on X11, VNC capture on Wayland boxes, `gnome-screenshot` where it works. Paste the numbers, not adjectives.
 
 Next: [Troubleshooting →](./troubleshooting.md)

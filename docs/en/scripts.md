@@ -31,7 +31,6 @@
 | `make build-linux` | `scripts/build-linux.sh --remote --debug --fetch` on `ubuntu-arm` (`LINUX_REMOTE`/`LINUX_DIR` override) |
 | `make dev-linux` | `scripts/build-linux.sh --remote --dev` (hot reload on the box) |
 | `make linux-logs` / `make linux-stop` | follow / kill the remote dev server or app |
-| `make box-shot` | `scripts/box-shot.sh` (VNC screenshot of the box) |
 | `make install-tauri-cli` | Builds vendored `src-tauri/vendor/tauri-cli-2.12.0` (stock 2.12.0 + 3 local tweaks: standalone fallback, `_Apple` target) → `~/.cargo/bin/cargo-tauri` |
 | `make install-skills` | Installs all project agent skills (macOS/Linux; on Windows run `scripts\install-skills.cmd`) |
 | `make lint` / `make build` | aliases |

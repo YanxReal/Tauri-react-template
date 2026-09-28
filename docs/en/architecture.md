@@ -43,7 +43,7 @@
 │   ├── src/{lib.rs,main.rs,platform/}
 │   ├── Info.plist           # template (macOS + iOS source of truth)
 │   └── vendor/              # tauri-cli 2.12.0 + templates (see .claude/skills/tauri-cli-rebase/references/mods.md)
-├── scripts/                 # build-*.sh, box-shot.sh, Xcode/
+├── scripts/                 # build-*.sh, Xcode/
 └── biome.json · turbo.json · pnpm-workspace.yaml · Makefile · AGENTS.md
 ```
 

@@ -23,7 +23,6 @@ Relacionado: [`docs/es/scripts.md`](../../docs/es/scripts.md) (referencia de fla
 |---|---|
 | `scripts/build-linux.sh` (+ `.cmd` en Windows) | Bundles Linux; compila + lanza en caja Linux por SSH (`--remote`) o en local (`--native`). Perfiles `--release`/`--debug`; `--dev`, `--run`, `--fetch`, `--logs`, `--stop` |
 | `scripts/build-windows.sh` | Cross-compile Windows x64 desde macOS/Linux (`cargo-xwin` + NSIS) |
-| `scripts/box-shot.sh` | Captura de la caja Ubuntu-arm-docker por VNC (`VNC_PASSWORD`, default `/tmp/box-shot.png`) |
 | Skill `.claude/skills/tauri-cli-rebase/` | Rebase del `tauri-cli` vendoreado — re-aplica los 3 retoques (MOD-1/2/3) semánticamente sobre una versión stock nueva (`.claude/skills/tauri-cli-rebase/references/mods.md`) |
 | `scripts/Xcode/apple-xcode.sh` | Regenera `src-tauri/gen/apple` (xcodegen); `--build` además compila sim iOS + host macOS |
 | `scripts/Xcode/xcode-dev.command` | Ayuda de hotreload unificada — `server` (Vite visible `:1420` + HMR, por defecto) o `parent` (`tauri ios dev --open` IPC completo) |

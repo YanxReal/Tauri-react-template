@@ -52,6 +52,6 @@ Testea siempre también el perfil **release**: `prevent-default` (`Flags::debug(
 
 ## Capturas como evidencia
 
-Los barridos de píxeles ganan al ojo para marcos y esquinas (`standard_deviation` por fila: una pantalla congelada da `0` en todas). Herramientas: `scrot`/`xwd`/`compare` en X11, captura VNC + `box-shot.sh` en cajas Wayland, `gnome-screenshot` donde funcione. Pega números, no adjetivos.
+Los barridos de píxeles ganan al ojo para marcos y esquinas (`standard_deviation` por fila: una pantalla congelada da `0` en todas). Herramientas: `scrot`/`xwd`/`compare` en X11, captura VNC en cajas Wayland, `gnome-screenshot` donde funcione. Pega números, no adjetivos.
 
 Siguiente: [Solución de problemas →](./troubleshooting.md)

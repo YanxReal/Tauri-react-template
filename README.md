@@ -162,7 +162,7 @@ The version you are on is tracked in `TEMPLATE_VERSION` at the repo root. The sk
 │   ├── tauri.conf.json      # base (merged with tauri.{os}.conf.json)
 │   ├── vendor/              # tauri-cli 2.12.0 + templates (see .claude/skills/tauri-cli-rebase/references/mods.md)
 │   └── Info.plist           # template for macOS + iOS
-├── scripts/                 # build-linux.sh, box-shot.sh, Xcode/, ...
+├── scripts/                 # build-linux.sh, Xcode/, ...
 ├── docs/en + docs/es        # mirrored docs (parity rule)
 └── .claude/skills/tauri-cli-rebase  # vendored CLI rebase skill + spec
 ├── AGENTS.md                # agent contract

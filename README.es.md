@@ -162,7 +162,7 @@ La versión en la que estás se guarda en `TEMPLATE_VERSION` en la raíz del rep
 │   ├── tauri.conf.json      # base (se fusiona con tauri.{os}.conf.json)
 │   ├── vendor/              # tauri-cli 2.12.0 + templates (ver .claude/skills/tauri-cli-rebase/references/mods.md)
 │   └── Info.plist           # plantilla para macOS + iOS
-├── scripts/                 # build-linux.sh, box-shot.sh, Xcode/, ...
+├── scripts/                 # build-linux.sh, Xcode/, ...
 ├── docs/en + docs/es        # docs espejadas (regla de paridad)
 └── .claude/skills/tauri-cli-rebase  # skill de rebase del CLI vendoreado + spec
 ├── AGENTS.md                # contrato para agentes
