@@ -54,7 +54,7 @@ A private template for shipping a **native-feel desktop + mobile app** from a si
 
 ## ✨ Features
 
-- **React 19.2 + Vite 8.2 + TypeScript 5.9 (strict)**, Tailwind v4.3, Biome 2.5, Vitest 4 + Testing Library, Turborepo 2.10 monorepo (`apps/*`, `packages/*`).
+- **React 19.3 + Vite 8.3 + TypeScript 7.0 (strict)**, Tailwind v4.3, Biome 2.5, Vitest 5 + Testing Library, Turborepo 2.11 monorepo (`apps/*`, `packages/*`).
 - **Design system** (`packages/ui`): 45 shadcn components + einui liquid-glass (`glass-*`), OKLCH tokens, Inter Variable.
 - **i18n**: `i18next` + browser detector + `localStorage` cache, `en.json`/`es.json`, header toggle syncs `document.documentElement.lang`.
 - **HTML5 semantics**: landmarks, skip link, labelled nav — tested (`App.test.tsx`).

@@ -54,7 +54,7 @@ Plantilla privada para publicar una **app desktop + móvil con sensación nativa
 
 ## ✨ Características
 
-- **React 19.2 + Vite 8.2 + TypeScript 5.9 (estricto)**, Tailwind v4.3, Biome 2.5, Vitest 4 + Testing Library, monorepo Turborepo 2.10 (`apps/*`, `packages/*`).
+- **React 19.3 + Vite 8.3 + TypeScript 7.0 (estricto)**, Tailwind v4.3, Biome 2.5, Vitest 5 + Testing Library, monorepo Turborepo 2.11 (`apps/*`, `packages/*`).
 - **Design system** (`packages/ui`): 45 componentes shadcn + liquid-glass einui (`glass-*`), tokens OKLCH, Inter Variable.
 - **i18n**: `i18next` + detector de navegador + caché `localStorage`, `en.json`/`es.json`, el toggle del header sincroniza `document.documentElement.lang`.
 - **Semántica HTML5**: landmarks, skip link, nav etiquetada — con tests (`App.test.tsx`).

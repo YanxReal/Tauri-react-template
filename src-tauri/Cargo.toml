@@ -18,7 +18,7 @@ tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = "2"
 # Native-app feel: blocks default browser shortcuts/menus
 # (F5, Cmd+R, F12, Ctrl+P/S, zoom, context menu) at the WebView level.
-tauri-plugin-prevent-default = "2"
+tauri-plugin-prevent-default = "6"
 # Generic OS info for frontend (optional, no Keychain). Uncomment if you need
 # `platform_info` richer than `platform::current_platform()`.
 # tauri-plugin-os = "2"
@@ -54,7 +54,7 @@ tokio = { version = "1", features = ["rt", "time", "sync"] }
 # DWMWCP_ROUND) in lib.rs (a frameless window is square by default).
 [target.'cfg(target_os = "windows")'.dependencies]
 tauri-plugin-decorum = "1.1"
-windows = { version = "0.61", features = [
+windows = { version = "0.62", features = [
     "Win32_Foundation",
     "Win32_Graphics_Dwm",
 ] }

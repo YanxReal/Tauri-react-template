@@ -30,16 +30,37 @@ const localStorageMock = {
   key: () => null,
 } as unknown as Storage
 
-if (typeof globalThis.localStorage === "undefined") {
-  ;(globalThis as unknown as { localStorage: Storage }).localStorage =
-    localStorageMock
+// Vitest 5 defines window.localStorage as a getter-only accessor, so plain
+// assignment throws — define an own property instead when native storage is
+// missing or unusable.
+function storageUsable(s: Storage | null | undefined): boolean {
+  if (s == null) return false
+  try {
+    s.setItem("__probe", "1")
+    s.removeItem("__probe")
+    return true
+  } catch {
+    return false
+  }
 }
-if (typeof window.localStorage === "undefined") {
-  ;(window as unknown as { localStorage: Storage }).localStorage =
-    localStorageMock
-} else {
-  ;(globalThis as unknown as { localStorage: Storage }).localStorage =
-    window.localStorage
+
+let nativeStore: Storage | null = null
+try {
+  nativeStore = window.localStorage
+} catch {
+  nativeStore = null
+}
+if (!storageUsable(nativeStore)) {
+  // NB: in Vitest 5 globalThis IS the jsdom window and localStorage is a
+  // getter-only accessor there, so plain assignment throws — defineProperty
+  // creates an own property that shadows it instead.
+  for (const target of [window, globalThis]) {
+    Object.defineProperty(target, "localStorage", {
+      value: localStorageMock,
+      configurable: true,
+      writable: true,
+    })
+  }
 }
 
 vi.mock("react-i18next", async () => {
