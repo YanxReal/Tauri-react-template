@@ -36,7 +36,7 @@
 │   └── src/{components,lib,styles/globals.css}
 ├── src-tauri/               # Backend Tauri v2 (Rust)
 │   ├── Cargo.toml           # window-vibrancy, prevent-default, gtk (linux)
-│   ├── build.rs             # tauri_build + actool + env embedding
+│   ├── build.rs             # tauri_build + env embedding
 │   ├── tauri.conf.json      # base (devUrl, frontendDist, windows)
 │   ├── tauri.{macos,windows,linux,ios,android}.conf.json
 │   ├── capabilities/        # permisos Tauri v2

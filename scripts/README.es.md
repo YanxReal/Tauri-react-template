@@ -34,7 +34,7 @@ Relacionado: [`docs/es/scripts.md`](../../docs/es/scripts.md) (referencia de fla
 
 Inputs de build de apoyo (no son scripts, pero parte del sistema):
 
-- `src-tauri/build.rs` compila `Assets.xcassets` vía `actool` cuando el tooling de Xcode está presente; si no, cae a `icon.icns` con un `cargo:warning`.
+- `src-tauri/build.rs` incrusta vars públicas de entorno (`EMBED_KEYS`) y alinea las páginas de 16 KB en Android; el icono de macOS se envía desde `bundle.icon` (`icons/icon.icns`).
 - `rust-toolchain.toml` fija `stable` + targets `aarch64-apple-ios*` y Android para `cargo check --target ...` y los builds móviles.
 - `src-tauri/Assets.xcassets` + `Info.plist` + `tauri.macos.conf.json` (`titleBarStyle Overlay`, `transparent`) replican la capa genérica macOS/Xcode.
 
