@@ -21,7 +21,7 @@ Relacionado: [`docs/es/scripts.md`](../../docs/es/scripts.md) (referencia de fla
 
 | Script | Propósito |
 |---|---|
-| `scripts/build-linux.sh` (+ `.cmd` en Windows) | Bundles Linux; compila + lanza en caja Linux por SSH (`--remote`) o en local (`--native`). Perfiles `--release`/`--debug`; `--dev`, `--run`, `--fetch`, `--logs`, `--stop` |
+| Skill `.claude/skills/linux-build/` | **Bundles Linux por SSH** (la única vía Linux: caja Docker en macOS/Windows). Solo SSH — sync con rsync sin `.git` (sin clonar), nunca gestiona el contenedor. Script: `.claude/skills/linux-build/scripts/linux-build.sh`; perfiles `--release`/`--debug` (debug = `--no-bundle`), extras `--dev`, `--run`, `--verify` (assistant shot/ocr), `--fetch`, `--logs`, `--stop` |
 | `scripts/build-windows.sh` | Cross-compile Windows x64 desde macOS/Linux (`cargo-xwin` + NSIS) |
 | Skill `.claude/skills/tauri-cli-rebase/` | Rebase del `tauri-cli` vendoreado — re-aplica los 3 retoques (MOD-1/2/3) semánticamente sobre una versión stock nueva (`.claude/skills/tauri-cli-rebase/references/mods.md`) |
 | `scripts/Xcode/apple-xcode.sh` | Regenera `src-tauri/gen/apple` (init del CLI vendoreado, branding-aware); `--build` además compila sim iOS + host macOS |
@@ -39,7 +39,7 @@ Inputs de build de apoyo (no son scripts, pero parte del sistema):
 
 | Script | Qué hace |
 |---|---|
-| `scripts/build-linux.sh` | Bundles Linux más compilar/lanzar. Backends `--remote [HOST]` (SSH, vía principal) y `--native`. Perfiles `--release`/`--debug`; extras `--dev`, `--run`, `--fetch`, `--logs`, `--stop`. Flags completos: `docs/es/scripts.md`. |
+| `.claude/skills/linux-build/scripts/linux-build.sh` | Bundles Linux más compilar/lanzar/verificar. **Solo SSH** (`--remote [HOST]`); `--release`/`--debug` (debug = `--no-bundle`), `--verify` (assistant windows/shot/ocr + PNG a `dist-linux/`), extras `--dev`, `--run`, `--fetch`, `--logs`, `--stop`. Flags completos: `docs/es/scripts.md`. |
 | `scripts/build-windows.sh` | Cross-compile Windows x64 desde macOS/Linux (`cargo-xwin` + NSIS). Setup una sola vez: `brew install llvm lld makensis`, `cargo install cargo-xwin --locked`, `rustup target add x86_64-pc-windows-msvc`. MSI/WiX necesita host Windows. |
 
 ## 📱 Xcode unificado (iOS + macOS en UN target)

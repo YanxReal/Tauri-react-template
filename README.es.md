@@ -95,7 +95,7 @@ son por plataforma, y **iOS requiere Xcode (solo macOS)**. Es decir:
 
 - Solo **macOS** compila iOS (Xcode); Windows/Linux no pueden.
 - **macOS** y **Linux** desktop se compilan solo en su propio SO; un dev de macOS usa la
-  caja Linux para los bundles Linux (`scripts/build-linux.sh`).
+  caja Linux para los bundles Linux (`make build-linux` / `make linux-release` — la skill `linux-build`).
 - **Android** se compila en los tres (SDK/NDK/JDK de Android Studio).
 - **Windows** se cross-compila desde macOS/Linux vía `cargo-xwin` (`scripts/build-windows.sh`);
   el MSI y la firma del instalador quedan solo-Windows.
@@ -162,9 +162,10 @@ La versión en la que estás se guarda en `TEMPLATE_VERSION` en la raíz del rep
 │   ├── tauri.conf.json      # base (se fusiona con tauri.{os}.conf.json)
 │   ├── vendor/              # tauri-cli 2.12.0 + templates (ver .claude/skills/tauri-cli-rebase/references/mods.md)
 │   └── Info.plist           # plantilla para macOS + iOS
-├── scripts/                 # build-linux.sh, Xcode/, ...
+├── scripts/                 # Xcode/, Android/, build-windows.sh, ...
 ├── docs/en + docs/es        # docs espejadas (regla de paridad)
-└── .claude/skills/tauri-cli-rebase  # skill de rebase del CLI vendoreado + spec
+├── .claude/skills/linux-build  # builds Linux por SSH (skill) + script
+├── .claude/skills/tauri-cli-rebase  # skill de rebase del CLI vendoreado + spec
 ├── AGENTS.md                # contrato para agentes
 ├── biome.json               # formateador + linter (sin ESLint)
 ├── turbo.json               # pipeline
@@ -223,6 +224,7 @@ make dev-ios-physical     # cargo tauri ios dev + --host (iPhone USB)
 make dev-android-emulator # arranca AVD + pnpm tauri android dev
 make gen-apple            # regen src-tauri/gen/apple (Xcode, branding-aware)
 make gen-android          # regen src-tauri/gen/android (branding-aware)
+make build-windows        # cross-compile Windows (cargo-xwin), debug
 make install-tauri-cli    # compila vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
 make install-skills       # instala todas las agent skills del proyecto
 make rebrand              # propaga la identidad de branding.json a todos lados
@@ -267,7 +269,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-Y testear **scroll + click + no-zoom** en un bundle real por SO (`pnpm tauri:build`, `scripts/build-linux.sh`, `scripts/build-windows.sh`) — matriz completa: [`docs/es/testing.md`](docs/es/testing.md). Los gates corren en local (sin CI) — ver Verificación arriba.
+Y testear **scroll + click + no-zoom** en un bundle real por SO (`pnpm tauri:build`, `make build-linux` / `make linux-release` — Linux vía la skill `linux-build` —, `scripts/build-windows.sh`) — matriz completa: [`docs/es/testing.md`](docs/es/testing.md). Los gates corren en local (sin CI) — ver Verificación arriba.
 
 ---
 
@@ -281,7 +283,7 @@ Y testear **scroll + click + no-zoom** en un bundle real por SO (`pnpm tauri:bui
 | `dist-linux/` | traído (gitignored) | bundles copiados de vuelta desde la caja Linux |
 | `scripts/.team-id` | local (gitignored) | Team ID persistente de Apple |
 | volúmenes Docker `tauri-*` | volúmenes con nombre | cachés cargo/pnpm de la caja Linux mínima |
-| [Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) | repo aparte | caja Linux actual (Ubuntu 26.04 + GNOME 50, toolchain Tauri) — proyecto en `/workspace/Tauri-react-template` |
+| [Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) | repo aparte | caja Linux actual (Ubuntu 26.04 + Cinnamon 6.4 en X11/Xvfb, toolchain Tauri) — proyecto en `/workspace/Tauri-react-template` |
 
 Los volúmenes de la caja viven en el compose de Ubuntu-arm-docker (`admin-home`, `ssh-host-keys`); este repo no tiene target destroy.
 

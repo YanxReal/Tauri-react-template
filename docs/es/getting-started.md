@@ -38,7 +38,7 @@ Reglas clave (fuente: [`Requisitos de Tauri`](https://v2.tauri.app/start/prerequ
 - **macOS desktop → solo en macOS** (AppKit + Xcode no existen en otros SO).
 - **Linux desktop → solo en Linux** (necesita `webkit2gtk`; los bundlers deb/rpm/AppImage
   solo corren en Linux). Este es el único target que un desarrollador en macOS no puede
-  compilar en local → va a la caja Linux (`scripts/build-linux.sh --remote ubuntu-arm`).
+  compilar en local → va a la caja Linux (`make build-linux` — la skill `linux-build`).
 - **Android → compilable en los tres SO** (Android Studio/SDK/NDK/JDK existen en
   macOS, Windows y Linux).
 - **Windows desktop → nativo en Windows; cross-compile desde macOS/Linux vía
@@ -99,7 +99,7 @@ flujo propio — ver [Móvil](./mobile.md) y [Scripts](./scripts.md):
 make dev:ios                # simulador iPhone
 make dev-android-emulator   # arranca AVD + android dev
 # Caja Linux (repo aparte):
-#   cd ../Ubuntu-arm-docker && make install   # escritorio Ubuntu 26.04 + GNOME 50
+#   cd ../Ubuntu-arm-docker && make install   # escritorio Ubuntu 26.04 + Cinnamon (X11)
 #   ssh ubuntu-arm                             # admin, clave
 ```
 
@@ -118,8 +118,8 @@ pnpm build            # turbo build → apps/web/dist
 pnpm tauri:build      # bundle Tauri (todos los targets de bundle.targets)
 ```
 
-Shells por SO: `./scripts/build-linux.sh` (bundles + opcional `--run` en la
-caja Linux) y `./scripts/build-windows.sh` (cross-compile `cargo-xwin`, NSIS;
+Shells por SO: **Linux** vía la skill `linux-build` (`make build-linux` / `make linux-release`
+— SSH a la caja, sin build nativo) y `./scripts/build-windows.sh` (cross-compile `cargo-xwin`, NSIS;
 MSI/WiX necesita host Windows). Detalle: [Scripts](./scripts.md).
 
 ## IDE

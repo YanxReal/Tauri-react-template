@@ -21,7 +21,7 @@ Related: [`docs/en/scripts.md`](../../docs/en/scripts.md) (flags reference),
 
 | Script | Purpose |
 |---|---|
-| `scripts/build-linux.sh` (+ `.cmd` on Windows) | Linux bundles; compile + run on a Linux box over SSH (`--remote`) or locally (`--native`). Profiles `--release`/`--debug`; `--dev`, `--run`, `--fetch`, `--logs`, `--stop` |
+| Skill `.claude/skills/linux-build/` | **Linux bundles over SSH** (the only Linux path: Docker box on macOS/Windows). SSH-only — rsync sync without `.git` (no clone), never manages the container. Script: `.claude/skills/linux-build/scripts/linux-build.sh`; profiles `--release`/`--debug` (debug = `--no-bundle`), extras `--dev`, `--run`, `--verify` (assistant shot/ocr), `--fetch`, `--logs`, `--stop` |
 | `scripts/build-windows.sh` | Windows x64 cross-compile from macOS/Linux (`cargo-xwin` + NSIS) |
 | `scripts/Xcode/apple-xcode.sh` | Regenerates `src-tauri/gen/apple` (vendored CLI init, branding-aware); `--build` also compiles iOS sim + macOS host |
 | `scripts/Android/android-autogen.sh` | Regenerates `src-tauri/gen/android` (vendored CLI init, branding-aware, Linux/Win/macOS + `.cmd`); `--build` also compiles the debug APK |
@@ -39,7 +39,7 @@ Supporting build inputs (not scripts, but part of the system):
 
 | Script | Does |
 |---|---|
-| `scripts/build-linux.sh` | Linux bundles plus compile/launch. Backends `--remote [HOST]` (SSH, primary) and `--native`. Profiles `--release`/`--debug`; extras `--dev`, `--run`, `--fetch`, `--logs`, `--stop`. Full flags: `docs/en/scripts.md`. |
+| `.claude/skills/linux-build/scripts/linux-build.sh` | Linux bundles plus compile/launch/verify. **SSH-only** (`--remote [HOST]`); `--release`/`--debug` (debug = `--no-bundle`), `--verify` (assistant windows/shot/ocr + PNG to `dist-linux/`), extras `--dev`, `--run`, `--fetch`, `--logs`, `--stop`. Full flags: `docs/en/scripts.md`. |
 | `scripts/build-windows.sh` | Windows x64 cross-compile from macOS/Linux (`cargo-xwin` + NSIS). One-time setup: `brew install llvm lld makensis`, `cargo install cargo-xwin --locked`, `rustup target add x86_64-pc-windows-msvc`. MSI/WiX needs a Windows host. |
 
 ## 📱 Xcode unified (iOS + macOS in ONE target)

@@ -20,7 +20,7 @@ pnpm test                       # turbo (todos los workspaces)
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-No hay CI, así que córrelo tú — en este host Y en la caja Linux (`ssh ubuntu-arm`, mismo comando con el env de rustup de `scripts/build-linux.sh`). La lógica Linux-only se mantiene testeable como funciones puras: `ResizeEdge::from_str` (`lib.rs`) parsea los 8 nombres de borde GDK sin llamadas GTK, así corre en todas partes; el cuerpo `cfg(linux)` que lo mapea a `gtk::gdk::WindowEdge` solo compila en la caja.
+No hay CI, así que córrelo tú — en este host Y en la caja Linux (`make build-linux` — la skill `linux-build` sincroniza, compila y verifica con el env de rustup de la caja). La lógica Linux-only se mantiene testeable como funciones puras: `ResizeEdge::from_str` (`lib.rs`) parsea los 8 nombres de borde GDK sin llamadas GTK, así corre en todas partes; el cuerpo `cfg(linux)` que lo mapea a `gtk::gdk::WindowEdge` solo compila en la caja.
 
 ## Gates estáticos (todos, en orden)
 
@@ -36,7 +36,7 @@ No hay CI — pásalos tú antes de cada push. Un gate en rojo bloquea el PR —
 
 ## Matriz manual (por bundle real)
 
-La automatización no ve píxeles. Tras los gates, verifica en un **bundle real por SO** (`pnpm tauri:build`, `scripts/build-linux.sh`, `scripts/build-windows.sh`):
+La automatización no ve píxeles. Tras los gates, verifica en un **bundle real por SO** (`pnpm tauri:build`, `make build-linux` / `make linux-release` — Linux vía la skill `linux-build` —, `scripts/build-windows.sh`):
 
 | Check | macOS | Windows | Linux |
 |---|---|---|---|
@@ -52,6 +52,6 @@ Testea siempre también el perfil **release**: `prevent-default` (`Flags::debug(
 
 ## Capturas como evidencia
 
-Los barridos de píxeles ganan al ojo para marcos y esquinas (`standard_deviation` por fila: una pantalla congelada da `0` en todas). Herramientas: `scrot`/`xwd`/`compare` en X11, captura VNC en cajas Wayland, `gnome-screenshot` donde funcione. Pega números, no adjetivos.
+Los barridos de píxeles ganan al ojo para marcos y esquinas (`standard_deviation` por fila: una pantalla congelada da `0` en todas). Herramientas: en la caja Linux (X11, real) usa el flujo de la skill `linux-build` — `assistant shot` (captura), `assistant ocr` (texto), `assistant click/type` (input real) — y `scrot`/`xwd`/`compare` en hardware X11; en Wayland con GPU real usa `gnome-screenshot` donde funcione. Pega números, no adjetivos.
 
 Siguiente: [Solución de problemas →](./troubleshooting.md)

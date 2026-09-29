@@ -20,7 +20,7 @@ pnpm test                       # turbo (all workspaces)
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-No CI exists, so run it yourself — on this host AND in the Linux box (`ssh ubuntu-arm`, same command with the rustup env from `scripts/build-linux.sh`). Linux-only logic stays testable as pure functions: `ResizeEdge::from_str` (`lib.rs`) parses the 8 GDK edge names with zero GTK calls, so it runs everywhere; the `cfg(linux)` body that maps it to `gtk::gdk::WindowEdge` only compiles in the box.
+No CI exists, so run it yourself — on this host AND in the Linux box (`make build-linux` — the `linux-build` skill syncs, builds and verifies with the box's rustup env). Linux-only logic stays testable as pure functions: `ResizeEdge::from_str` (`lib.rs`) parses the 8 GDK edge names with zero GTK calls, so it runs everywhere; the `cfg(linux)` body that maps it to `gtk::gdk::WindowEdge` only compiles in the box.
 
 ## Static gates (run all, in order)
 
@@ -36,7 +36,7 @@ No CI exists — run them yourself before every push. A failing gate blocks the 
 
 ## Manual matrix (per real bundle)
 
-Automation cannot see pixels. After the gates, verify on a **real bundle per OS** (`pnpm tauri:build`, `scripts/build-linux.sh`, `scripts/build-windows.sh`):
+Automation cannot see pixels. After the gates, verify on a **real bundle per OS** (`pnpm tauri:build`, `make build-linux` / `make linux-release` — Linux via the `linux-build` skill —, `scripts/build-windows.sh`):
 
 | Check | macOS | Windows | Linux |
 |---|---|---|---|
@@ -52,6 +52,6 @@ Always test the **release** profile too: `prevent-default` (`Flags::debug()`) on
 
 ## Screenshots as evidence
 
-Pixel scans beat eyeballing for frames and corners (`standard_deviation` per row: a frozen screen reads `0` everywhere). Tools: `scrot`/`xwd`/`compare` on X11, VNC capture on Wayland boxes, `gnome-screenshot` where it works. Paste the numbers, not adjectives.
+Pixel scans beat eyeballing for frames and corners (`standard_deviation` per row: a frozen screen reads `0` everywhere). Tools: on the Linux box (X11, real) use the `linux-build` skill's flow — `assistant shot` (capture), `assistant ocr` (text), `assistant click/type` (real input) — and `scrot`/`xwd`/`compare` on X11 hardware; on Wayland-with-a-real-GPU use `gnome-screenshot` where it works. Paste the numbers, not adjectives.
 
 Next: [Troubleshooting →](./troubleshooting.md)

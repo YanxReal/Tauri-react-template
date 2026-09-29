@@ -29,8 +29,10 @@
 | `make dev-android-emulator` | arranca `$ANDROID_AVD` + `tauri android dev --target $ANDROID_TARGET` |
 | `make gen-apple` | `scripts/Xcode/apple-xcode.sh` — regen `gen/apple` (init del CLI vendoreado, branding-aware) |
 | `make gen-android` | `scripts/Android/android-autogen.sh` — regen `gen/android` (init del CLI vendoreado, branding-aware, Linux/Win/macOS) |
-| `make build-linux` | `scripts/build-linux.sh --remote --debug --fetch` en `ubuntu-arm` (`LINUX_REMOTE`/`LINUX_DIR` lo cambian) |
-| `make dev-linux` | `scripts/build-linux.sh --remote --dev` (hot reload en la caja) |
+| `make build-linux` | **skill linux-build**: sync (rsync, sin `.git`) + build debug rápido + run + verificación `assistant` en `ubuntu-arm` (`LINUX_REMOTE`/`LINUX_DIR` lo cambian) |
+| `make linux-release` | ídem, bundle release (deb) + fetch a `./dist-linux` (`LINUX_BUNDLES` cambia la lista) |
+| `make build-windows` | `scripts/build-windows.sh --debug` (cargo-xwin; `WINDOWS_BUNDLES`/`WINDOWS_EXTRA` lo cambian) |
+| `make dev-linux` | skill linux-build `--remote --dev` (hot reload en la caja) |
 | `make linux-logs` / `make linux-stop` | sigue / mata el dev server o la app en remoto |
 | `make install-tauri-cli` | Compila `src-tauri/vendor/tauri-cli-2.12.0` (2.12.0 stock + 3 retoques: fallback standalone, target `_Apple`) → `~/.cargo/bin/cargo-tauri` |
 | `make install-skills` | Instala todas las agent skills del proyecto (macOS/Linux; en Windows corre `scripts\install-skills.cmd`) |
@@ -38,85 +40,74 @@
 | `make lint` / `make build` | alias |
 | `make help` / `make doctor` | lista comandos / revisa toolchain |
 
-Shells por OS: `scripts/build-linux.sh` (+ `build-linux.cmd` en Windows), `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`, `scripts/Android/android-autogen.sh`.
+Shells por OS: **Linux → la skill `linux-build`** (`.claude/skills/linux-build/scripts/linux-build.sh`, solo SSH, ver abajo), `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`, `scripts/Android/android-autogen.sh`.
 
-## Build Linux (`scripts/build-linux.sh`)
+## Build Linux (skill `linux-build`)
 
-Construye los bundles de Linux y puede compilar **y lanzar** la app en una caja Linux por
-SSH. Dos backends: `--remote [HOST]` (empuja por SSH y compila allí) y `--native` (compila en
-un host Linux). Sin flag de modo: nativo en Linux, remoto si la caja responde — y si la caja
-no está accesible el script para con instrucciones en vez de compilar en otro sitio.
+El build de Linux ocurre **solo por SSH**, en la caja Ubuntu-arm-docker (Docker en
+macOS/Windows; Linux no es nativo allí, así que `webkit2gtk` + los bundlers de Linux no
+pueden correr en local). El flujo viaja como una **skill de agente** (`.claude/skills/linux-build/`),
+que sustituye al viejo `scripts/build-linux.sh` del repo — se instala en todos lados con `make
+install-skills`. La skill nunca clona el repo en la caja ni gestiona el contenedor:
+sincroniza las fuentes por SSH con `rsync` (**sin `.git`** — la caja es un target de build,
+no un repo), mientras `node_modules/` y `target/` quedan cacheados en la caja, así los
+rebuilds son incrementales (segundos).
 
 | Flag | Efecto |
 |------|--------|
-| `--remote [HOST]` | rsync → caja SSH (por defecto `$LINUX_BUILD_REMOTE` o `ubuntu-arm`) |
-| `--native` | compila en este host (debe ser Linux) |
-| `--release` / `--debug` | perfil de compilación (release por defecto; debug es mucho más rápido) |
+| `--remote [HOST]` | caja SSH (por defecto `$LINUX_BUILD_REMOTE` o `ubuntu-arm`) |
+| `--release` / `--debug` | release (por defecto, con bundle) o debug rápido (debug = `--no-bundle` salvo que des `--bundles`) |
 | `--dev` | `tauri dev` (Vite + app, hot reload) en vez de un bundle; implica `--debug` |
-| `--run` | tras compilar, lanza la app en el display indicado |
+| `--run` | tras compilar, lanza la app en la sesión GUI de la caja (vía su wrapper `dev` de sesión; los runs debug auto-arrancan Vite — el binario debug carga `devUrl :1420`) |
+| `--verify` | tras `--run`: `assistant windows` + `assistant shot` + `assistant ocr` en la caja, y trae el PNG a `./dist-linux/linux-verify.png` |
 | `--bundles LIST` | `deb` (por defecto) \| `appimage` \| `rpm` \| `all` |
 | `--target ARCH` | `aarch64` \| `x86_64` \| un triple de rust (debe coincidir con la caja) |
-| `--display :N` | display X para `--dev`/`--run` (por defecto `:1`) |
 | `--fetch` | copia los bundles de vuelta a `./dist-linux` |
 | `--sync-only` / `--no-sync` | solo empuja las fuentes / reutiliza lo que ya hay en remoto |
-| `--logs` / `--stop` | sigue / mata el dev server o la app en remoto (solo remoto) |
+| `--logs` / `--stop` | sigue / mata el dev server o la app en remoto |
 
 ```bash
-./scripts/build-linux.sh --remote --dev                  # compila + lanza en la caja
-./scripts/build-linux.sh --remote --debug --run          # build rápido y lanza
-./scripts/build-linux.sh --remote --release --bundles all --fetch
-./scripts/build-linux.sh                                 # auto: remoto, o nativo en Linux
-./scripts/build-linux.sh --native                        # fuerza un build local en Linux
+make build-linux                      # sync + build debug rápido + run + verify
+make linux-release                    # bundle release .deb + fetch
+make linux-release LINUX_BUNDLES=appimage
+make dev-linux                        # hot reload en la caja
+make linux-logs / make linux-stop     # sigue / mata la app o el dev server remoto
 ```
 
-**Plataformas:** el build de Linux siempre ocurre en la caja Ubuntu-arm-docker por SSH —
-macOS y Windows no pueden correr `webkit2gtk` + los bundlers de Linux en local. En
-**macOS** ejecuta el `.sh` directo; en **Windows** corre `scripts\build-linux.cmd`
-(localiza Git Bash; necesita cliente OpenSSH, rsync opcional). El flag `--native`
-solo funciona en un host Linux y aborta en el resto.
-
-El backend remoto usa `pnpm tauri` (la CLI fijada en `devDependencies`, así que no hay paso
-`cargo install tauri-cli`) y espera que la caja tenga Rust, Node 24 y las cabeceras de
-desarrollo de WebKitGTK/GTK. Cubre todo el ciclo por SSH: build (release o debug), `--dev`,
-`--run`, `--logs` y `--stop`. El sync usa `rsync` si ambos extremos lo tienen y cae a `tar`
-si no.
-
-Como la caja mantiene `node_modules` y `target/` en disco, los rebuilds son incrementales
-(segundos) y `--dev` da Vite + hot reload; se descartó un backend de contenedor por build
-porque nunca podría ejecutar la app para probarla.
+El script usa `pnpm tauri` (la CLI fijada en `devDependencies` — no hay paso `cargo install
+tauri-cli`) y espera que la caja tenga Rust, Node 24 y las cabeceras de desarrollo de
+WebKitGTK/GTK. El sync usa `rsync` si ambos extremos lo tienen y cae a `tar` si no.
 
 ## La caja Linux
 
-La caja actual es **[Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)** (repo aparte): escritorio Ubuntu 26.04 + GNOME 50 (Wayland) en Docker para arm64, con noVNC, VNC nativo, SSH y toolchain Tauri v2 lista. Ahí es donde se compila y se mira la app ahora.
+La caja actual es **[Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)** (repo aparte): Ubuntu 26.04 + **Cinnamon 6.4 en X11** (Xvfb `:1`) en Docker para arm64, con noVNC, VNC nativo (multi-cliente `x11vnc`), SSH y toolchain Tauri v2 lista. Ahí es donde se compila y se mira la app ahora.
 
 | | |
 |---|---|
 | Repo | [YanxReal/Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) (`make install`) |
 | noVNC / VNC / SSH | `http://localhost:6080/vnc.html` · `localhost:5902` · `ssh ubuntu-arm` (alias en `~/.ssh/config`, usuario `admin`, clave) |
 | Ruta del proyecto | `/workspace/Tauri-react-template` (bind `./workspace`) |
-| Lanzar apps GUI | wrapper `dev <cmd>` (inyecta `WAYLAND_DISPLAY` + bus de sesión) |
+| Lanzar apps GUI | wrapper `dev <cmd>` (inyecta `DISPLAY=:1` + `XAUTHORITY` + `DBUS_SESSION_BUS_ADDRESS`) |
+| Control para IA | CLI `assistant` — `shot`/`region` (captura X11 real), `ocr`, `click`/`type`/`key` (input `xdotool` real), `windows`/`winmove`, `record`, `wd` (GTK aislado) |
 
-Apúntala con el script de este repo (sync + build). Ojo: `--run`/`--dev` asumen un `DISPLAY` X11, así que en esta caja Wayland lanza vía `dev`:
-
-```bash
-./scripts/build-linux.sh --remote ubuntu-arm --debug
-# luego en la caja (sin GPU — render por software):
-WEBKIT_DISABLE_COMPOSITING_MODE=1 LIBGL_ALWAYS_SOFTWARE=1 dev ./src-tauri/target/debug/tauri-react-template
-```
+`make build-linux` cubre todo el ciclo: sync + build debug rápido + lanzamiento en la sesión
+GUI + verificación `assistant` (lista de ventanas, captura, OCR). Más fondo: la skill
+`linux-build` (`SKILL.md` + `references/box.md`).
 
 Los defaults ya son `ubuntu-arm` + `/workspace/Tauri-react-template` (el checkout
-del repo; el binario sigue en minúsculas `tauri-react-template`), así
-que `make build-linux` / `make dev-linux` no necesitan env. Cambia con
-`LINUX_BUILD_REMOTE=<host>` / `LINUX_BUILD_DIR=<dir>` si hace falta.
-La caja puede traer un pnpm más nuevo que el fijado `pnpm@10.34.5` — sin problema:
-cada install corre con `--frozen-lockfile`, así el lockfile sigue mandando.
+del repo; el nombre del binario sigue el `[package] name` de `src-tauri/Cargo.toml`),
+así que los targets make no necesitan env. Cambia con `LINUX_REMOTE=<host>` /
+`LINUX_BUILD_DIR=<dir>` si hace falta. La caja puede traer un pnpm más nuevo que el
+fijado `pnpm@10.34.5` — sin problema: cada install corre con `--frozen-lockfile`,
+así el lockfile sigue mandando.
 
 ### Caja retirada del repo (`docker/linux-gnome` + `scripts/linux-box.sh`)
 
 Eliminada: la caja X11/Xvfb `ubuntu-vnc` vivía en este repo pero se borró en
-favor de Ubuntu-arm-docker (rebuilds más rápidos, sesión Wayland real, sin
-imagen que mantener aquí). Si aún ves `ubuntu-vnc` en un viejo `~/.ssh/config`,
-borra esos dos bloques `Host` — el único alias en uso es `ubuntu-arm`.
+favor de Ubuntu-arm-docker (rebuilds más rápidos, sesión X11 real con captura e
+input reales para la IA vía `assistant`, sin imagen que mantener aquí). Si aún
+ves `ubuntu-vnc` en un viejo `~/.ssh/config`, borra esos dos bloques `Host` — el
+único alias en uso es `ubuntu-arm`.
 
 ## Cross-compile Windows (`cargo-xwin`)
 

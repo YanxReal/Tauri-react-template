@@ -66,7 +66,7 @@ AGENTS.md                       This file
 
 ### Linux box (test bed for `cfg(linux)` code)
 
-`cfg(target_os = "linux")` in `lib.rs` **never compiles on macOS** — `cargo check` here cannot catch its type errors. Current box: [Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) (`ssh ubuntu-arm`, project at `/workspace/Tauri-react-template`, GUI via `dev`). It already caught a real bug once (a `type_().name()` misuse only visible on Linux). Session recipe with measured symptoms: `docs/en/scripts.md`.
+`cfg(target_os = "linux")` in `lib.rs` **never compiles on macOS** — `cargo check` here cannot catch its type errors. Current box: [Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) (`ssh ubuntu-arm`, project at `/workspace/Tauri-react-template`, GUI via `dev`, verification via `assistant`). It already caught a real bug once (a `type_().name()` misuse only visible on Linux). Builds, runs and verification (capture/OCR/input) are the **`linux-build` skill** (`.claude/skills/linux-build/`) — SSH-only, no clone, `make build-linux` fast loop + `make linux-release`. Session recipe with measured symptoms: `docs/en/scripts.md`.
 
 ### File ownership (edit left, never right)
 

@@ -29,8 +29,10 @@
 | `make dev-android-emulator` | boot `$ANDROID_AVD` + `tauri android dev --target $ANDROID_TARGET` |
 | `make gen-apple` | `scripts/Xcode/apple-xcode.sh` — regen `gen/apple` (vendored CLI init, branding-aware) |
 | `make gen-android` | `scripts/Android/android-autogen.sh` — regen `gen/android` (vendored CLI init, branding-aware, Linux/Win/macOS) |
-| `make build-linux` | `scripts/build-linux.sh --remote --debug --fetch` on `ubuntu-arm` (`LINUX_REMOTE`/`LINUX_DIR` override) |
-| `make dev-linux` | `scripts/build-linux.sh --remote --dev` (hot reload on the box) |
+| `make build-linux` | **linux-build skill**: sync (rsync, no `.git`) + fast debug build + run + `assistant` verify on `ubuntu-arm` (`LINUX_REMOTE`/`LINUX_DIR` override) |
+| `make linux-release` | same, release bundle (deb) + fetch to `./dist-linux` (`LINUX_BUNDLES` overrides the bundle list) |
+| `make build-windows` | `scripts/build-windows.sh --debug` (cargo-xwin; `WINDOWS_BUNDLES`/`WINDOWS_EXTRA` override) |
+| `make dev-linux` | linux-build skill `--remote --dev` (hot reload on the box) |
 | `make linux-logs` / `make linux-stop` | follow / kill the remote dev server or app |
 | `make install-tauri-cli` | Builds vendored `src-tauri/vendor/tauri-cli-2.12.0` (stock 2.12.0 + 3 local tweaks: standalone fallback, `_Apple` target) → `~/.cargo/bin/cargo-tauri` |
 | `make install-skills` | Installs all project agent skills (macOS/Linux; on Windows run `scripts\install-skills.cmd`) |
@@ -38,87 +40,75 @@
 | `make lint` / `make build` | aliases |
 | `make help` / `make doctor` | list commands / check toolchain |
 
-Per-OS build shells: `scripts/build-linux.sh` (+ `build-linux.cmd` on Windows), `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`, `scripts/Android/android-autogen.sh`.
+Per-OS build shells: **Linux → the `linux-build` skill** (`.claude/skills/linux-build/scripts/linux-build.sh`, SSH-only, see below), `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`, `scripts/Android/android-autogen.sh`.
 
-## Linux build (`scripts/build-linux.sh`)
+## Linux build (skill `linux-build`)
 
-Builds the Linux bundles, and can compile **and run** the app on a Linux dev box over SSH.
-Two backends: `--remote [HOST]` (push over SSH and build there) and `--native` (build on a
-Linux host). With no mode flag: native on Linux, remote when the dev box answers — and if the
-box is unreachable the script stops with instructions instead of building anywhere else.
+The Linux build happens **over SSH only**, in the Ubuntu-arm-docker box (Docker on
+macOS/Windows; Linux is not native there, so `webkit2gtk` + the Linux bundlers can't run
+locally). The flow ships as an **agent skill** (`.claude/skills/linux-build/`), replacing the
+old in-repo `scripts/build-linux.sh` — installs everywhere with `make install-skills`. The
+skill never clones the repo into the box and never manages the container: it synchronises
+the sources over SSH with `rsync` (**without `.git`** — the box is a build target, not a
+repo), while `node_modules/` and `target/` stay cached on the box, so rebuilds are
+incremental (seconds).
 
 | Flag | Effect |
 |------|--------|
-| `--remote [HOST]` | rsync → SSH build box (default `$LINUX_BUILD_REMOTE` or `ubuntu-arm`) |
-| `--native` | build on this host (must be Linux) |
-| `--release` / `--debug` | build profile (release default; debug is much faster) |
+| `--remote [HOST]` | SSH build box (default `$LINUX_BUILD_REMOTE` or `ubuntu-arm`) |
+| `--release` / `--debug` | release (default, bundled) or fast debug profile (debug = `--no-bundle` unless `--bundles` given) |
 | `--dev` | `tauri dev` (Vite + app, hot reload) instead of a bundle; implies `--debug` |
-| `--run` | after building, launch the app on the target display |
+| `--run` | after building, launch the app in the box GUI session (via its `dev` session wrapper; debug runs auto-start Vite — the debug binary loads `devUrl :1420`) |
+| `--verify` | after `--run`: `assistant windows` + `assistant shot` + `assistant ocr` in the box, then fetch the PNG to `./dist-linux/linux-verify.png` |
 | `--bundles LIST` | `deb` (default) \| `appimage` \| `rpm` \| `all` |
 | `--target ARCH` | `aarch64` \| `x86_64` \| a rust triple (must match the box) |
-| `--display :N` | X display used by `--dev`/`--run` (default `:1`) |
 | `--fetch` | copy the built bundles back to `./dist-linux` |
 | `--sync-only` / `--no-sync` | only push the sources / reuse what is already on the remote |
-| `--logs` / `--stop` | follow / kill the remote dev server or app (remote only) |
+| `--logs` / `--stop` | follow / kill the remote dev server or app |
 
 ```bash
-./scripts/build-linux.sh --remote --dev                  # compile + run on the dev box
-./scripts/build-linux.sh --remote --debug --run          # fast build, then launch
-./scripts/build-linux.sh --remote --release --bundles all --fetch
-./scripts/build-linux.sh                                 # auto: remote, or native on Linux
-./scripts/build-linux.sh --native                        # force a local Linux build
+make build-linux                      # sync + fast debug build + run + verify
+make build-linux LINUX_BUNDLES=all    # (extras pass through LINUX_* overrides)
+make linux-release                    # release .deb bundle + fetch
+make linux-release LINUX_BUNDLES=appimage
+make dev-linux                        # hot reload on the box
+make linux-logs / make linux-stop     # follow / kill remote app or dev server
 ```
 
-**Platforms:** the Linux build always happens in the Ubuntu-arm-docker box via SSH —
-macOS and Windows can't run `webkit2gtk` + the Linux bundlers locally. On **macOS**
-run the `.sh` directly; on **Windows** run `scripts\build-linux.cmd` (locates Git
-Bash; needs an OpenSSH client, rsync optional). Flag `--native` works only on a
-Linux host and aborts elsewhere.
-
-The remote backend drives `pnpm tauri` (the CLI pinned in `devDependencies`, so no
-`cargo install tauri-cli` step) and expects the box to provide Rust, Node 24 and the
-WebKitGTK/GTK dev headers. It covers the whole loop over SSH: build (release or debug),
-`--dev`, `--run`, `--logs`, `--stop`. Sync uses `rsync` when both ends have it and falls
-back to `tar` otherwise.
-
-Because the box keeps `node_modules` and `target/` on disk, rebuilds are incremental
-(seconds) and `--dev` gives Vite + hot reload; a container-per-build backend was dropped
-in favour of this, as it could never run the app for testing.
+The script drives `pnpm tauri` (the CLI pinned in `devDependencies` — no `cargo install
+tauri-cli`) and expects the box to provide Rust, Node 24 and the WebKitGTK/GTK dev headers.
+Sync uses `rsync` when both ends have it and falls back to `tar` otherwise.
 
 ## The Linux box
 
-The current box is **[Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)** (separate repo): Ubuntu 26.04 + GNOME 50 (Wayland) desktop in Docker for arm64, with noVNC, native VNC, SSH and a ready Tauri v2 toolchain. That is where the app is compiled and looked at now.
+The current box is **[Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)** (separate repo): Ubuntu 26.04 + **Cinnamon 6.4 on X11** (Xvfb `:1`) in Docker for arm64, with noVNC, native VNC (multi-client `x11vnc`), SSH and a ready Tauri v2 toolchain. That is where the app is compiled and looked at now.
 
 | | |
 |---|---|
 | Repo | [YanxReal/Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) (`make install`) |
 | noVNC / VNC / SSH | `http://localhost:6080/vnc.html` · `localhost:5902` · `ssh ubuntu-arm` (`~/.ssh/config` alias, user `admin`, key auth) |
 | Project path | `/workspace/Tauri-react-template` (bind-mounted `./workspace`) |
-| Launch GUI apps | `dev <cmd>` wrapper (injects `WAYLAND_DISPLAY` + session bus) |
+| Launch GUI apps | `dev <cmd>` wrapper (injects `DISPLAY=:1` + `XAUTHORITY` + `DBUS_SESSION_BUS_ADDRESS`) |
+| AI control | `assistant` CLI — `shot`/`region` (real X11 capture), `ocr`, `click`/`type`/`key` (real `xdotool` input), `windows`/`winmove`, `record`, `wd` (isolated GTK) |
 
-Target it with this repo's script (sync + build). Note `--run`/`--dev` assume an X11 `DISPLAY`, so on this Wayland box launch via `dev` instead:
-
-```bash
-./scripts/build-linux.sh --remote ubuntu-arm --debug
-# then in the box (no GPU — software rendering):
-WEBKIT_DISABLE_COMPOSITING_MODE=1 LIBGL_ALWAYS_SOFTWARE=1 dev ./src-tauri/target/debug/tauri-react-template
-```
+`make build-linux` covers the whole loop: sync + fast debug build + launch in the GUI
+session + `assistant` verification (window list, screenshot, OCR). Deep background: the
+`linux-build` skill (`SKILL.md` + `references/box.md`).
 
 Defaults are already `ubuntu-arm` + `/workspace/Tauri-react-template` (the repo
-checkout; the binary itself stays lowercase `tauri-react-template`), so
-`make build-linux` / `make dev-linux` need no env. Override with
-`LINUX_BUILD_REMOTE=<host>` / `LINUX_BUILD_DIR=<dir>` when needed.
-The box may ship a newer pnpm than the pinned `pnpm@10.34.5` — harmless:
-every install runs with `--frozen-lockfile`, so the lockfile stays
-authoritative.
+checkout; the binary name follows `src-tauri/Cargo.toml` `[package] name`), so the
+make targets need no env. Override with `LINUX_REMOTE=<host>` /
+`LINUX_BUILD_DIR=<dir>` when needed. The box may ship a newer pnpm than the pinned
+`pnpm@10.34.5` — harmless: every install runs with `--frozen-lockfile`, so the
+lockfile stays authoritative.
 
 ### Retired in-repo box (`docker/linux-gnome` + `scripts/linux-box.sh`)
 
 Removed: the X11/Xvfb `ubuntu-vnc` box used to live in this repo but was
-deleted in favour of Ubuntu-arm-docker above (faster rebuilds, real Wayland
-session, no image to maintain here). If you still see `ubuntu-vnc` in an old
-`~/.ssh/config`, drop those two `Host` blocks — the only alias in use is
-`ubuntu-arm`.
+deleted in favour of Ubuntu-arm-docker above (faster rebuilds, real X11 session
+with actual capture + input for the AI via `assistant`, no image to maintain
+here). If you still see `ubuntu-vnc` in an old `~/.ssh/config`, drop those two
+`Host` blocks — the only alias in use is `ubuntu-arm`.
 
 ## Windows cross-compile (`cargo-xwin`)
 

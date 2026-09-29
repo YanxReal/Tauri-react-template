@@ -95,7 +95,7 @@ per-platform, and **iOS requires Xcode (macOS only)**. So:
 
 - Only **macOS** builds iOS (Xcode); Windows/Linux can't.
 - **macOS** and **Linux** desktop apps build only on their own OS; a macOS dev uses the
-  Linux box for Linux bundles (`scripts/build-linux.sh`).
+  Linux box for Linux bundles (`make build-linux` / `make linux-release` — the `linux-build` skill).
 - **Android** builds on all three (Android Studio SDK/NDK/JDK).
 - **Windows** cross-compiles from macOS/Linux via `cargo-xwin` (`scripts/build-windows.sh`);
   MSI + installer signing stay Windows-only.
@@ -162,9 +162,10 @@ The version you are on is tracked in `TEMPLATE_VERSION` at the repo root. The sk
 │   ├── tauri.conf.json      # base (merged with tauri.{os}.conf.json)
 │   ├── vendor/              # tauri-cli 2.12.0 + templates (see .claude/skills/tauri-cli-rebase/references/mods.md)
 │   └── Info.plist           # template for macOS + iOS
-├── scripts/                 # build-linux.sh, Xcode/, ...
+├── scripts/                 # Xcode/, Android/, build-windows.sh, ...
 ├── docs/en + docs/es        # mirrored docs (parity rule)
-└── .claude/skills/tauri-cli-rebase  # vendored CLI rebase skill + spec
+├── .claude/skills/linux-build  # Linux builds over SSH (skill) + script
+├── .claude/skills/tauri-cli-rebase  # vendored CLI rebase skill + spec
 ├── AGENTS.md                # agent contract
 ├── biome.json               # formatter + linter (no ESLint)
 ├── turbo.json               # pipeline
@@ -223,6 +224,7 @@ make dev-ios-physical     # cargo tauri ios dev + --host (USB iPhone)
 make dev-android-emulator # boot AVD + pnpm tauri android dev
 make gen-apple            # regen src-tauri/gen/apple (Xcode, branding-aware)
 make gen-android          # regen src-tauri/gen/android (branding-aware)
+make build-windows        # Windows cross-compile (cargo-xwin), debug
 make install-tauri-cli    # build vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
 make install-skills       # install all project agent skills
 make rebrand              # propagate branding.json identity everywhere
@@ -267,7 +269,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-Then test **scroll + click + no-zoom** in a real bundle per OS (`pnpm tauri:build`, `scripts/build-linux.sh`, `scripts/build-windows.sh`) — full matrix: [`docs/en/testing.md`](docs/en/testing.md). Gates run locally (no CI) — see Verification above.
+Then test **scroll + click + no-zoom** in a real bundle per OS (`pnpm tauri:build`, `make build-linux` / `make linux-release` — Linux via the `linux-build` skill —, `scripts/build-windows.sh`) — full matrix: [`docs/en/testing.md`](docs/en/testing.md). Gates run locally (no CI) — see Verification above.
 
 ---
 
@@ -281,7 +283,7 @@ Then test **scroll + click + no-zoom** in a real bundle per OS (`pnpm tauri:buil
 | `dist-linux/` | fetched (gitignored) | bundles copied back from the Linux box |
 | `scripts/.team-id` | local (gitignored) | persistent Apple Team ID |
 | `tauri-*` Docker volumes | named volumes | cargo/pnpm caches of the minimal Linux box |
-| [Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) | separate repo | current Linux box (Ubuntu 26.04 + GNOME 50, Tauri toolchain) — project at `/workspace/Tauri-react-template` |
+| [Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker) | separate repo | current Linux box (Ubuntu 26.04 + Cinnamon 6.4 on X11/Xvfb, Tauri toolchain) — project at `/workspace/Tauri-react-template` |
 
 Box volumes live in the Ubuntu-arm-docker compose project (`admin-home`, `ssh-host-keys`); this repo has no destroy target.
 

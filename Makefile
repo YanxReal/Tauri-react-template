@@ -21,14 +21,16 @@ ANDROID_TARGET ?= aarch64
 ANDROID_HOME ?= $(HOME)/Library/Android/sdk
 export PATH := $(ANDROID_HOME)/emulator:$(ANDROID_HOME)/platform-tools:$(PATH)
 
-# Linux — Ubuntu-arm-docker box (separate repo, Wayland).
-# Checkout dir uses capital T; the binary stays lowercase (see build-linux.sh).
+# Linux — Ubuntu-arm-docker box (separate repo, Cinnamon/X11), via the
+# linux-build skill's script (SSH-only; see .claude/skills/linux-build).
+# Checkout dir uses capital T; the binary follows Cargo.toml [package] name.
 LINUX_REMOTE ?= ubuntu-arm
 LINUX_DIR ?= /workspace/Tauri-react-template
+SKILL_LINUX ?= .claude/skills/linux-build/scripts/linux-build.sh
 
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator build-linux dev-linux linux-logs linux-stop gen-apple gen-android install-tauri-cli install-skills rebrand lint build
+.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator build-linux linux-release build-windows dev-linux linux-logs linux-stop gen-apple gen-android install-tauri-cli install-skills rebrand lint build
 
 help: ## Show available commands
 	@awk -F'##' '/^[a-zA-Z0-9_\\:.-]+:[ \t]*##/ { t=$$1; sub(/:[ \t]*$$/, "", t); gsub(/\\/, "", t); printf "  \033[36m%-22s\033[0m %s\n", t, $$2 }' $(MAKEFILE_LIST)
@@ -81,19 +83,28 @@ gen-apple: ## Regen Xcode project
 gen-android: ## Regen Android Studio project (android-autogen.sh)
 	scripts/Android/android-autogen.sh
 
-# Linux — Ubuntu-arm-docker box over SSH (see scripts/build-linux.sh).
-# Checkout dir is capital-T; override with LINUX_DIR=/path if needed.
-build-linux: ## Linux build (remote debug) + fetch bundles
-	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" scripts/build-linux.sh --remote --debug --fetch
+# Linux — Ubuntu-arm-docker box over SSH (skill linux-build; SSH-only, never
+# clones: rsync without .git, node_modules/target stay cached on the box).
+# `build-linux` = fast loop: sync + debug (no bundle) + run + assistant verify.
+build-linux: ## Linux fast loop on the box (sync + debug + run + verify)
+	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" $(SKILL_LINUX) --remote --debug --run --verify
+
+linux-release: ## Linux release bundle (deb) + fetch to ./dist-linux
+	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" $(SKILL_LINUX) --remote --release $(if $(LINUX_BUNDLES),--bundles $(LINUX_BUNDLES),) --fetch
+
+# Windows cross-compile via cargo-xwin (macOS/Linux; native on Windows hosts).
+# WINDOWS_BUNDLES overrides --bundles; WINDOWS_EXTRA passes extra tauri args.
+build-windows: ## Windows cross-compile (cargo-xwin) — debug
+	scripts/build-windows.sh --debug $(if $(WINDOWS_BUNDLES),--bundles $(WINDOWS_BUNDLES),) $(WINDOWS_EXTRA)
 
 dev-linux: ## Linux dev (hot reload on the box)
-	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" scripts/build-linux.sh --remote --dev
+	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" $(SKILL_LINUX) --remote --dev
 
 linux-logs: ## Follow remote dev/app log
-	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" scripts/build-linux.sh --remote --logs
+	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" $(SKILL_LINUX) --remote --logs
 
 linux-stop: ## Kill remote dev/app
-	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" scripts/build-linux.sh --remote --stop
+	LINUX_BUILD_REMOTE="$(LINUX_REMOTE)" LINUX_BUILD_DIR="$(LINUX_DIR)" $(SKILL_LINUX) --remote --stop
 
 install-tauri-cli: ## Build vendor CLI → ~/.cargo/bin/cargo-tauri
 	@echo "Building cargo-tauri 2.12.0 + local tweaks (standalone fallback, _Apple target) ..."
