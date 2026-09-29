@@ -198,6 +198,29 @@ fn set_status_bar_style(dark: bool) -> Result<(), String> {
     }
 }
 
+/// Linux: push the app's RESOLVED theme into GTK's dark preference.
+/// WebKitGTK renders its scrollbars and native form controls from the GTK
+/// theme variant — without this bridge they follow the SYSTEM theme, so a
+/// light app on a dark system (or vice versa) shows mismatched scrollbars.
+/// `gtk-application-prefer-dark-theme` is the same lever `window.setTheme()`
+/// uses; applied live on every theme change. No-op off Linux.
+#[tauri::command]
+fn set_linux_theme(dark: bool) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        use gtk::prelude::*;
+        if let Some(settings) = gtk::Settings::default() {
+            settings.set_gtk_application_prefer_dark_theme(dark);
+            eprintln!("set_linux_theme: prefer-dark={dark}");
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = dark;
+    }
+    Ok(())
+}
+
 /// Android impl: calls `MainActivity.setStatusBarDark(Z)V` over JNI (see the
 /// vendored android template + proguard keep rule). The activity is located
 /// via the app ClassLoader + a static `currentActivity` field (null when no
@@ -586,7 +609,8 @@ pub fn run() {
             platform_info,
             start_window_resize,
             window_effects_set,
-            set_status_bar_style
+            set_status_bar_style,
+            set_linux_theme
         ])
         .setup(|app| {
             // Forced centering on desktop — `center:true` in tauri.conf is not
@@ -599,7 +623,17 @@ pub fn run() {
                 let _ = window.center();
             }
 
-            // Linux: frameless window (`decorations:false`). Born hidden
+                        // Linux: frameless (`decorations:false`). GTK3 has NO overlay
+            // titlebar (macOS uses titleBarStyle:Overlay, Windows decorum):
+            // with `decorations:true` muffin always draws its own titlebar
+            // (title text + buttons) above our header, and every CSD
+            // alternative leaves a themed strip or an unpainted transparent
+            // band (4 experiments, 2026-09-29). `decorations:false` is the
+            // ONLY configuration where OUR header is the visible top bar with
+            // zero artifacts — same approach as VS Code/Chrome/Discord on GTK.
+            // The window still gets the WM title/taskbar identity
+            // (`_NET_WM_NAME`) and our inner-6px edge drives resizing.
+            // Born hidden
             // (`visible:false`), shown here already centered: no flash.
             #[cfg(target_os = "linux")]
             if let Some(window) = app.get_webview_window("main") {

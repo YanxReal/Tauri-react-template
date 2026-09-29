@@ -124,6 +124,12 @@ export function ThemeProvider({
         void invoke("set_status_bar_style", {
           dark: resolvedTheme === "dark",
         }).catch(() => {})
+        // Linux: WebKitGTK scrollbars/controls render from the GTK theme
+        // variant — push the app's resolved theme so they don't follow the
+        // system when app and system disagree. No-op off Linux.
+        void invoke("set_linux_theme", {
+          dark: resolvedTheme === "dark",
+        }).catch(() => {})
       }
 
       if (restoreTransitions) {

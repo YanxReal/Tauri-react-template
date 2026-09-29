@@ -133,10 +133,12 @@ const RESIZE_CURSOR: Record<ResizeEdge, string> = {
 /**
  * Inner-edge grip band width, in CSS px.
  *
- * 6 gives the mouse room without eating UI. Exported so tests can cover
+ * 8 gives the mouse room without eating UI. Native WM frames feel "better"
+ * mostly because their grab area is forgiving; 6 was too tight in practice
+ * (measured on the Cinnamon box, 2026-09-29). Exported so tests can cover
  * `resizeEdgeAt` without duplicating the number.
  */
-const RESIZE_BAND = 6
+const RESIZE_BAND = 8
 
 /** Edge under the pointer, or null when far from any border. */
 function resizeEdgeAt(x: number, y: number, band: number): ResizeEdge | null {
