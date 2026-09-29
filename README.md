@@ -41,7 +41,7 @@
 
 ## 🔭 Overview
 
-A private template for shipping a **native-feel desktop + mobile app** from a single React codebase. Every window is drawn per-OS (macOS Overlay traffic lights, Windows frameless + Snap Layouts, Linux frameless, unified iOS/macOS Xcode target, Android emulator), with the full matrix covered by docs, checks and scripts.
+A public template for shipping a **native-feel desktop + mobile app** from a single React codebase. Every window is drawn per-OS (macOS Overlay traffic lights, Windows frameless + Snap Layouts, Linux frameless, unified iOS/macOS Xcode target, Android emulator), with the full matrix covered by docs, checks and scripts.
 
 | | |
 |---|---|
@@ -49,7 +49,7 @@ A private template for shipping a **native-feel desktop + mobile app** from a si
 | 📐 **Native chrome** | App-drawn 44px titlebar on Win/Linux, Overlay lights on macOS |
 | 🌐 **Bilingual** | UI (i18next EN/ES) + mirrored `docs/en` + `docs/es` + agent parity rule |
 | 🤖 **Agent-ready** | `AGENTS.md` contract: invariants, parity checklist, verify gates |
-| 🧰 **Tooled** | Make-driven dev, Linux box over SSH, Xcode regen script, CI on 3 OS |
+| 🧰 **Tooled** | Make-driven dev, Linux box over SSH, Xcode regen script, weekly CI |
 
 ---
 
@@ -204,7 +204,7 @@ All settings live in env / `Makefile` vars / `.env`-style files (nothing hardcod
 | `CARGO_TAURI` | vendored `cargo-tauri` (`~/.cargo/bin`) | CLI for mobile init/build (via `make install-tauri-cli`) |
 | `IOS_DEVICE` | `iPhone 18 Pro` | Simulator/device selector |
 | `IOS_DEV_HOST` | link-local auto-detect | Dev host for physical iPhone (USB) |
-| `ANDROID_AVD` / `ANDROID_TARGET` | `Resizable_Experimental` / `aarch64` | Emulator + arch |
+| `ANDROID_AVD` / `ANDROID_DEVICE` | `Resizable_Experimental` | Emulator + target device (adb model/AVD name) |
 | `ANDROID_HOME` | `~/Library/Android/sdk` | SDK location |
 | `LINUX_BUILD_REMOTE` / `LINUX_BUILD_DIR` | `ubuntu-arm` / `/workspace/Tauri-react-template` | Linux SSH build box ([Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)) |
 | `APPLE_SIGNING_IDENTITY` / `src-tauri/keys/macos-signing-identity.txt` | — (optional) | Stable macOS signing identity |
@@ -290,9 +290,9 @@ Box volumes live in the Ubuntu-arm-docker compose project (`admin-home`, `ssh-ho
 
 ## 🔐 Security
 
-> Intended as a **private template** — defaults favor local development speed.
+> Intended as a **public starting point** — defaults favor local development speed.
 
-- **CSP**: strict `default-src 'self'` policies ship on the Windows/macOS configs; base + mobile configs use `csp: null` — tighten before any public release.
+- **CSP**: one strict `default-src 'self'` policy ships on **all four targets** (base + per-OS merged): Tauri IPC only in `connect-src`.
 - **`prevent-default`**: `Flags::debug()` keeps context menu/devtools/reload in **debug** and blocks everything (Ctrl+P/S, zoom, native menu) in **release**. Verify you test the release profile.
 - **Ports**: dev servers listen on all interfaces (`host: true`, needed for iOS LAN reload) — `1420` (Vite) + `1421` (HMR). Don't expose them beyond your LAN.
 - **Signing**: Team ID and macOS identity live in gitignored files, never in the repo.

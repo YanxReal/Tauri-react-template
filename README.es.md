@@ -1,6 +1,6 @@
 # Tauri-react-template
 
-**Starter multi-plataforma Tauri v2 + React 19** — un solo código, ventanas nativas en macOS, Windows, Linux, iOS y Android, con docs bilingües (EN/ES) y contrato para agentes.
+**Plantilla multi-plataforma Tauri v2 + React 19** — un solo código, ventanas nativas en macOS, Windows, Linux, iOS y Android, con docs bilingües (EN/ES) y contrato para agentes.
 
 [![Tauri 2](https://img.shields.io/badge/tauri-2-FFC131?logo=tauri&logoColor=white)](https://tauri.app)
 [![React 19](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
@@ -41,7 +41,7 @@
 
 ## 🔭 Resumen
 
-Plantilla privada para publicar una **app desktop + móvil con sensación nativa** desde un solo código React. Cada ventana se dibuja por SO (traffic lights Overlay en macOS, frameless + Snap Layouts en Windows, frameless en Linux, target Xcode unificado iOS/macOS, emulador Android), con la matriz completa cubierta por docs, checks y scripts.
+Plantilla pública para publicar una **app desktop + móvil con sensación nativa** desde un solo código React. Cada ventana se dibuja por SO (traffic lights Overlay en macOS, frameless + Snap Layouts en Windows, frameless en Linux, target Xcode unificado iOS/macOS, emulador Android), con la matriz completa cubierta por docs, checks y scripts.
 
 | | |
 |---|---|
@@ -49,7 +49,7 @@ Plantilla privada para publicar una **app desktop + móvil con sensación nativa
 | 📐 **Chrome nativo** | Titlebar de 44px dibujada por la app en Win/Linux, lights Overlay en macOS |
 | 🌐 **Bilingüe** | UI (i18next EN/ES) + `docs/en` + `docs/es` espejados + regla de paridad |
 | 🤖 **Lista para agentes** | Contrato `AGENTS.md`: invariantes, checklist de paridad, gates de verificación |
-| 🧰 **Con herramientas** | Dev con Make, caja Linux por SSH, script de regen de Xcode, CI en 3 SO |
+| 🧰 **Con herramientas** | Dev con Make, caja Linux por SSH, script de regen de Xcode, CI semanal |
 
 ---
 
@@ -204,7 +204,7 @@ Todo vive en env / vars de `Makefile` / ficheros estilo `.env` (nada hardcodeado
 | `CARGO_TAURI` | `cargo-tauri` vendoreado (`~/.cargo/bin`) | CLI para init/build móvil (vía `make install-tauri-cli`) |
 | `IOS_DEVICE` | `iPhone 18 Pro` | selector de simulador/dispositivo |
 | `IOS_DEV_HOST` | autodetección link-local | host dev para iPhone físico (USB) |
-| `ANDROID_AVD` / `ANDROID_TARGET` | `Resizable_Experimental` / `aarch64` | emulador + arquitectura |
+| `ANDROID_AVD` / `ANDROID_DEVICE` | `Resizable_Experimental` | emulador + device objetivo (nombre adb/AVD) |
 | `ANDROID_HOME` | `~/Library/Android/sdk` | ubicación del SDK |
 | `LINUX_BUILD_REMOTE` / `LINUX_BUILD_DIR` | `ubuntu-arm` / `/workspace/Tauri-react-template` | caja Linux de build por SSH ([Ubuntu-arm-docker](https://github.com/YanxReal/Ubuntu-arm-docker)) |
 | `APPLE_SIGNING_IDENTITY` / `src-tauri/keys/macos-signing-identity.txt` | — (opcional) | identidad estable de firma macOS |
@@ -290,9 +290,9 @@ Los volúmenes de la caja viven en el compose de Ubuntu-arm-docker (`admin-home`
 
 ## 🔐 Seguridad
 
-> Pensada como **plantilla privada** — los defaults favorecen la velocidad local.
+> Pensada como **punto de partida público** — los defaults favorecen la velocidad local.
 
-- **CSP**: políticas estrictas `default-src 'self'` en las configs Windows/macOS; base + móvil usan `csp: null` — endurecer antes de cualquier release pública.
+- **CSP**: una sola política estricta `default-src 'self'` en **los cuatro targets** (base + por-SO fusionados): solo IPC de Tauri en `connect-src`.
 - **`prevent-default`**: `Flags::debug()` conserva menú contextual/devtools/reload en **debug** y bloquea todo (Ctrl+P/S, zoom, menú nativo) en **release**. Verifica testear el perfil release.
 - **Puertos**: los dev servers escuchan en todas las interfaces (`host: true`, necesario para el reload iOS por LAN) — `1420` (Vite) + `1421` (HMR). No los expongas más allá de tu LAN.
 - **Firma**: Team ID e identidad macOS viven en ficheros gitignored, nunca en el repo.
@@ -322,7 +322,7 @@ Este roadmap solo anuncia **valor futuro para la plantilla** — nada de backlog
 operativo. Habla de lo que el *punto de partida* de tu proyecto ofrecerá a
 continuación. Lo ya entregado vive en el changelog.
 
-### Fase A — Ready for v3 (ahora → Tauri v3 estable)
+### Fase A — Listos para v3 (ahora → Tauri v3 estable)
 
 Tauri v3 está en alpha (`3.0.0-alpha.x`, sept 2026): GTK4/WebKitGTK 6.0 en
 Linux, runtimes de webview intercambiables (wry / CEF), MSRV 1.95 + edition
@@ -335,17 +335,17 @@ salto en lugar de perseguirlo:
 - **Plan Linux GTK4 documentado de antemano**: ventana frameless, banda de
   resize, bridge de tema y glass fallback rediseñados para GTK4/WebKitGTK 6.0
   antes del salto a estable.
-- **Auto-update hoy en v2**: `tauri-plugin-updater` integrado con docs de
+- **Actualización automática hoy en v2**: `tauri-plugin-updater` integrado con docs de
   firma (macOS/Linux/Windows) — los adoptantes publican updates desde el día
   uno.
 
 ### Fase B — Adopción de Tauri v3 (cuando sea estable)
 
-El item estrella. La plantilla migra a v3 como un único cambio coherente:
+El ítem estrella. La plantilla migra a v3 como un único cambio coherente:
 
-- Migración completa en un commit: runtime crates (`tauri-runtime-wry`),
+- Migración completa en un commit: crates de runtime (`tauri-runtime-wry`),
   MSRV 1.95 / edition 2024, nueva ACL, updater moderno, devtools por runtime.
-- **Rework Linux GTK4** completado y verificado en el contenedor + sesiones
+- **Reescritura Linux GTK4** completada y verificada en el contenedor + sesiones
   Wayland reales.
 - **Perfil CEF opcional** (`make init --runtime cef`): la misma renderización
   Chromium en todos los desktops para UIs complejas, empaquetado con el flujo
@@ -355,12 +355,13 @@ El item estrella. La plantilla migra a v3 como un único cambio coherente:
 
 ### Fase C — Más allá de v3
 
-- Sitio de docs bilingüe (estático, desde `docs/en` + `docs/es`) e installer
-  de scaffold (`pnpm create tauri-react-template`).
+- Sitio de docs bilingüe (estático, desde `docs/en` + `docs/es`) e instalador
+  de scaffolding (`pnpm create tauri-react-template`).
 - Runbooks de publicación en stores con las APIs de release (App Store
   Connect, Google Play, MSIX).
-- **Template AI-ready**: agent skills + MCP para que cualquier agente de IA
+- **Plantilla lista para IA**: agent skills + MCP para que cualquier agente de IA
   clone, rebrandee y publique la plantilla sin fricción.
+
 ## 📚 Documentación
 
 Las guías completas están en [`docs/es/`](docs/es/README.md) (espejo: [`docs/en/`](docs/en/README.md)) — mismas páginas, mismo orden, ambos idiomas:
