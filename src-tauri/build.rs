@@ -13,10 +13,6 @@ use std::{collections::HashMap, env, fs, path::Path};
 
 const EMBED_KEYS: &[&str] = &[
     "VITE_API_URL",
-    "SUPABASE_URL",
-    "SUPABASE_ANON_KEY",
-    "VITE_SUPABASE_URL",
-    "VITE_SUPABASE_ANON_KEY",
 ];
 
 fn main() {
@@ -115,10 +111,6 @@ fn main() {
             .ok()
             .or_else(|| file_values.get(*key).cloned());
         if let Some(value) = value {
-            // Validate Supabase URLs in release
-            if *key == "SUPABASE_URL" || *key == "VITE_SUPABASE_URL" {
-                validate_supabase_url(&value);
-            }
             println!("cargo:rustc-env={key}={value}");
         }
     }
@@ -139,22 +131,4 @@ fn which_actool() -> Result<String, ()> {
         return Ok("/Applications/Xcode.app/Contents/Developer/usr/bin/actool".to_string());
     }
     Err(())
-}
-
-fn validate_supabase_url(url: &str) {
-    let Some(rest) = url.strip_prefix("https://") else {
-        let profile = env::var("PROFILE").unwrap_or_default();
-        if profile == "release" {
-            panic!("release build embeds a non-HTTPS SUPABASE_URL ({url}) — shipped binary must use https://");
-        }
-        println!("cargo:warning=SUPABASE_URL is not HTTPS ({url}); dev-only");
-        return;
-    };
-    let Some(host) = rest.split('/').next() else {
-        panic!("malformed SUPABASE_URL ({url})");
-    };
-    let profile = env::var("PROFILE").unwrap_or_default();
-    if profile == "release" && !host.ends_with(".supabase.co") {
-        panic!("release build embeds non-supabase host ({host}) — production must point at *.supabase.co");
-    }
 }

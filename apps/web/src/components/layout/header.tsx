@@ -27,11 +27,13 @@ const HEADER_CONTROL_HOVER = "hover:bg-black/10 dark:hover:bg-white/15"
 const HEADER_HEIGHT = {
   macos: "h-[52px]",
   desktop: "h-11",
-  // Mobile grows WITH the safe-area inset: a fixed h-14 + pt-[env(...)] with
+  // Mobile grows WITH the safe-area inset: a fixed h-14 + padding with
   // border-box makes the ~59px Dynamic Island padding eat the whole 56px box,
-  // so the border-b crossed through the middle of the logo/title. The calc
-  // keeps the content row at 56px BELOW the inset (Android/web inset = 0).
-  mobile: "h-[calc(3.5rem+env(safe-area-inset-top))]",
+  // so the border-b crossed through the middle of the logo/title. The height
+  // and safe-area padding are plain CSS in globals.css (`.app-header`):
+  // Tailwind/lightningcss cannot emit raw env() (invalid `env(...)` output).
+  // The mobile height class is intentionally empty here.
+  mobile: "",
 } as const
 
 /**
@@ -78,7 +80,7 @@ export function Header() {
 
   return (
     <header
-      className={`app-header relative flex shrink-0 items-center rounded-none border-b backdrop-blur pt-[env(safe-area-inset-top)] md:sticky md:top-0 md:z-40 ${
+      className={`app-header relative flex shrink-0 items-center rounded-none border-b backdrop-blur md:sticky md:top-0 md:z-40 ${
         glassEnabled ? "border-white/20 bg-white/10" : "bg-background"
       } ${headerHeight}`}
       {...(isWinLinux ? { "data-tauri-drag-region": true } : {})}

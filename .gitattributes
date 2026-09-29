@@ -1,0 +1,35 @@
+# Default Windows path handling — force LF for everything text-ish so the
+# bash/.cmd scripts never break on Windows clones (CRLF breaks `bash`).
+* text=auto eol=lf
+
+# Scripts must stay LF even on Windows checkouts (Git Bash runs them).
+*.sh  text eol=lf
+*.cmd text eol=lf
+*.bat text eol=lf
+*.swift text eol=lf
+*.ps1 text eol=lf
+*.py  text eol=lf
+
+# Line-based formats — LF everywhere.
+*.md  text eol=lf
+*.json text eol=lf
+Makefile text eol=lf
+
+# Binary — never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.icns binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.car binary
+*.a binary
+*.so binary
+*.dylib binary
+*.dll binary
+*.exe binary
+*.deb binary
+*.rpm binary
+*.AppImage binary

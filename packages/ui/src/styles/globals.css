@@ -197,6 +197,19 @@ html.light.vibrancy body {
     --control-height: 2.25rem; /* 36px — franja Win/Linux */
   }
 
+  /* Notch/safe-area top padding for the header (iOS/Android). Plain CSS:
+     Tailwind emits invalid `env(...)` for arbitrary values and lightningcss
+     chokes on env() inside custom properties/custom rules — raw declarations
+     work. Height grows too (mobile: 3.5rem content row below the inset).
+     The platform classes (html.ios / html.android) come from title-bar.tsx. */
+  .app-header {
+    padding-top: env(safe-area-inset-top);
+  }
+  html.ios .app-header,
+  html.android .app-header {
+    height: calc(3.5rem + env(safe-area-inset-top));
+  }
+
   /* Viewport transparente: la forma redondeada del window se ve. */
   html.titlebar,
   html.titlebar body {
