@@ -34,6 +34,20 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 No hay CI — pásalos tú antes de cada push. Un gate en rojo bloquea el PR — sin excepciones. (Los cuerpos `cfg(linux)` solo compilan en la caja Linux: repite `cargo check`/`cargo test` por SSH allí cuando toques Rust.)
 
+### Checks por target (cambios de Rust)
+
+Los cuerpos `cfg(linux)`/`cfg(android)`/`cfg(windows)` nunca compilan en el
+host. Cuando cambie Rust, añade los checks baratos por target (sin enlazar):
+
+```bash
+cargo check --manifest-path src-tauri/Cargo.toml --target aarch64-apple-ios
+# windows-msvc necesita llvm-rc en PATH (tauri-winres compila el .rc):
+PATH="/opt/homebrew/opt/llvm/bin:$PATH" \
+  cargo check --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-msvc
+```
+
+`make build-linux` cubre el lado Linux de extremo a extremo.
+
 ## Matriz manual (por bundle real)
 
 La automatización no ve píxeles. Tras los gates, verifica en un **bundle real por SO** (`pnpm tauri:build`, `make build-linux` / `make linux-release` — Linux vía la skill `linux-build` —, `scripts/build-windows.sh`):

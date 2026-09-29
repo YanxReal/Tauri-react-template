@@ -34,6 +34,20 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 Run them yourself before every push (the weekly CI is a safety net, not a gate-by-push). A failing gate blocks the PR — no exceptions. (`cfg(linux)` bodies only compile in the Linux box: re-run `cargo check`/`cargo test` over SSH there when Rust changes.)
 
+### Cross-target checks (Rust changes)
+
+`cfg(linux)`/`cfg(android)`/`cfg(windows)` bodies never compile on the host.
+When Rust changes, add the cheap target checks (no linking):
+
+```bash
+cargo check --manifest-path src-tauri/Cargo.toml --target aarch64-apple-ios
+# windows-msvc needs llvm-rc on PATH (tauri-winres compiles the .rc):
+PATH="/opt/homebrew/opt/llvm/bin:$PATH" \
+  cargo check --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-msvc
+```
+
+`make build-linux` covers the Linux side end-to-end.
+
 ## Manual matrix (per real bundle)
 
 Automation cannot see pixels. After the gates, verify on a **real bundle per OS** (`pnpm tauri:build`, `make build-linux` / `make linux-release` — Linux via the `linux-build` skill —, `scripts/build-windows.sh`):
