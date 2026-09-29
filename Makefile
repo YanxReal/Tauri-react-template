@@ -54,7 +54,7 @@ SKILL_LINUX ?= .claude/skills/linux-build/scripts/linux-build.sh
 
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator build-linux linux-release build-windows dev-linux linux-logs linux-stop gen-apple gen-android install-tauri-cli install-skills rebrand lint build ci-frontend ci-rust
+.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator build-linux linux-release build-windows dev-linux linux-logs linux-stop gen-apple gen-android install-tauri-cli install-skills rebrand lint build ci-frontend ci-rust check-docs
 
 help: ## Show available commands
 	@awk -F'##' '/^[a-zA-Z0-9_\\:.-]+:[ \t]*##/ { t=$$1; sub(/:[ \t]*$$/, "", t); gsub(/\\/, "", t); printf "  \033[36m%-22s\033[0m %s\n", t, $$2 }' $(MAKEFILE_LIST)
@@ -163,3 +163,8 @@ ci-rust: ## CI: fmt + clippy + tests del backend Rust
 	cargo fmt --manifest-path src-tauri/Cargo.toml --check
 	cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 	cargo test --manifest-path src-tauri/Cargo.toml
+
+# Maintainability guards (local; kept OUT of the CI spec on purpose).
+check-docs: ## Guard: EN/ES parity + AGENTS/docs file:line anchors
+	scripts/check-docs-parity.sh
+	scripts/check-agents-anchors.sh

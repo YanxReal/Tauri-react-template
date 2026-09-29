@@ -39,6 +39,7 @@
 | `make rebrand` | Propaga la identidad de `branding.json` (nombre, versión, identifier, iconos) a todos los consumidores de escritorio; avisa de regenerar `gen/` para iOS/Android |
 | `make lint` / `make build` | alias |
 | `make ci-frontend` / `make ci-rust` | los ÚNICOS puntos de entrada del CI (`.github/workflows/ci.yml` los invoca; cualquier check nuevo primero se crea como target aquí) — typecheck+lint+test+build / fmt+clippy+test |
+| `make check-docs` | guardas de mantenibilidad (locales, fuera del spec del CI): `scripts/check-docs-parity.sh` (espejo EN/ES) + `scripts/check-agents-anchors.sh` (deriva de file:line) |
 | `make help` / `make doctor` | lista comandos / revisa toolchain |
 
 Shells por OS: **Linux → la skill `linux-build`** (`.claude/skills/linux-build/scripts/linux-build.sh`, solo SSH, ver abajo), `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`, `scripts/Android/android-autogen.sh`. Iconos de la app: `branding/icon-1024.png` es el máster (`icons.master` en `branding.json`); ambos scripts móviles corren `scripts/mobile/mobile-icons-regen.sh` tras el init (`tauri icon` → `icons/` + `gen/apple` + `gen/android`, y compone el trío de marketing iOS 1024 que la CLI no toca).
