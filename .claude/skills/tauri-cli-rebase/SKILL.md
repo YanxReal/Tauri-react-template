@@ -1,6 +1,6 @@
 ---
 name: Tauri CLI Rebase
-description: Rebase the vendored tauri-cli copy (src-tauri/vendor/tauri-cli-*) onto a NEW stock tauri-cli release by re-applying the 3 local semantic tweaks (MOD-1 fallback_options, MOD-2 unified _Apple target, MOD-3 simplified app.name path replace), then update references/mods.md, pins and docs. Use when upgrading tauri-cli or its vendored copy, when a new tauri/tauri-cli version is released, or when the vendored CLI is out of date.
+description: Rebase the vendored tauri-cli copy (src-tauri/vendor/tauri-cli-*) onto a NEW stock tauri-cli release by re-applying the 5 local modifications (MOD-1 fallback_options, MOD-2 unified _Apple target, MOD-3 simplified app.name path replace, MOD-4 Android status-bar/theme overlays, MOD-5 rustup cargo phase), then update references/mods.md, pins and docs. Use when upgrading tauri-cli or its vendored copy, when a new tauri/tauri-cli version is released, or when the vendored CLI is out of date.
 metadata:
   opencode/autoinvoke: false
 ---
@@ -25,7 +25,7 @@ that searches for an exact byte anchor fails the moment upstream reshapes it.
 
 Before touching anything, confirm the actual situation:
 
-- Read `references/mods.md` — it is the spec for the 3 tweaks and the rebase check­list.
+- Read `references/mods.md` — it is the spec for the 5 MODs and the rebase check­list.
 - Read `TEMPLATE_VERSION` and the current vendored dir name
   `src-tauri/vendor/tauri-cli-*`.
 - Determine the target stock version: the latest tauri-cli / tauri version the
@@ -76,7 +76,7 @@ in place and "hope".
 
 ---
 
-## 3. Re-apply the 3 tweaks — SEMANTICALLY (this is the core)
+## 3. Re-apply the 5 MODs — SEMANTICALLY (this is the core)
 
 For each of the local modifications in `references/mods.md`, do the following — do NOT
 paste the old block's exact text and search for it; that is the failed approach
