@@ -41,7 +41,10 @@ endif
 IOS_DEVICE ?= iPhone 18 Pro
 IOS_DEV_HOST ?= $(shell ip=$$(ifconfig en9 2>/dev/null | awk '/inet / && $$2 ~ /^169\.254\./ {print $$2; exit}'); if [ -z "$$ip" ]; then ip=$$(ifconfig 2>/dev/null | awk '/^[a-z0-9]+:/{i=$$1} /inet 169\.254\./{print $$2; exit}'); fi; echo $$ip)
 ANDROID_AVD ?= Resizable_Experimental
-ANDROID_DEVICE ?= emulator-5554
+# `tauri android dev` matches DEVICE against the adb model name or the AVD
+# name (NOT the serial): the emulator's model is sdk_gphone*_arm64, its AVD
+# name is Resizable_Experimental.
+ANDROID_DEVICE ?= Resizable_Experimental
 # `--target` exists only on `tauri android build`; `android dev` picks the ABI
 # (aarch64 on Apple Silicon) from the device itself.
 ANDROID_HOME ?= $(HOME)/Library/Android/sdk
