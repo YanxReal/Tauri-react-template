@@ -5,7 +5,7 @@
   "name": "Tauri-react-template",
   "version": "0.1.0",
   "description": "Tauri + React + Vite template — generic multi-platform (iOS/Android/desktop) with Xcode layers",
-  "authors": ["you"],
+  "authors": ["YanX Studio"],
 
   "rust": {
     "crate": "Tauri-react-template",
