@@ -13,6 +13,11 @@ include .env
 export
 endif
 
+# The vendored CLI reads APPLE_DEVELOPMENT_TEAM; .env carries DEVELOPMENT_TEAM
+# (our canonical name). Translate automatically so every make target sees it.
+APPLE_DEVELOPMENT_TEAM ?= $(DEVELOPMENT_TEAM)
+export APPLE_DEVELOPMENT_TEAM
+
 TAURI := pnpm tauri
 CARGO_TAURI := cargo tauri
 
