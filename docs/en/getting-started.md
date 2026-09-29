@@ -131,7 +131,7 @@ VS Code + `tauri-vscode` + `rust-analyzer` + `biome` + `tailwindcss`
 gh repo create Tauri-react-template --public --source=. --push
 # or (public, or create it private on GitHub first and use SSH):
 git remote add origin git@github.com:YOUR_USER/Tauri-react-template.git
-git push -u origin master
+git push -u origin main
 ```
 
 Next: [Architecture →](./architecture.md)
