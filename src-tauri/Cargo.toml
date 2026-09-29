@@ -2,7 +2,7 @@
 name = "Tauri-react-template"
 version = "0.1.0"
 description = "Tauri + React + Vite template — generic multi-platform (iOS/Android/desktop) with Xcode layers"
-authors = ["YanX Studio"]
+authors = ["Yanx Studio"]
 edition = "2021"
 rust-version = "1.85"
 

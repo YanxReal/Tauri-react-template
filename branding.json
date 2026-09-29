@@ -5,7 +5,7 @@
   "name": "Tauri-react-template",
   "version": "0.1.0",
   "description": "Tauri + React + Vite template — generic multi-platform (iOS/Android/desktop) with Xcode layers",
-  "authors": ["YanX Studio"],
+  "authors": ["Yanx Studio"],
 
   "icons": {
     "master": "branding/icon-1024.png",
@@ -40,9 +40,9 @@
 
   "bundle": {
     "category": "DeveloperTool",
-    "copyright": "Copyright © 2026 YanX Studio",
+    "copyright": "Copyright © 2026 Yanx Studio",
     "startMenuFolder": "Tauri-react-template",
-    "publisher": "YanX Studio",
+    "publisher": "Yanx Studio",
     "homepage": "https://github.com/YanxReal/Tauri-react-template"
   }
 }

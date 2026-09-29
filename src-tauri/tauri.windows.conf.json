@@ -21,9 +21,9 @@
     }
   },
   "bundle": {
-    "publisher": "YanX Studio",
+    "publisher": "Yanx Studio",
     "homepage": "https://github.com/YanxReal/Tauri-react-template",
-    "copyright": "Copyright © 2026 YanX Studio",
+    "copyright": "Copyright © 2026 Yanx Studio",
     "category": "DeveloperTool",
     "licenseFile": "LICENSE.rtf",
     "windows": {

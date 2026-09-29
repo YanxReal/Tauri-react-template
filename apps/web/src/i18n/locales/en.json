@@ -52,7 +52,7 @@
     "builtWith": "Built with Tauri, React and Vite.",
     "privacy": "Privacy",
     "terms": "Terms",
-    "copyright": "© {{year}} YanX Studio"
+    "copyright": "© {{year}} Yanx Studio"
   },
   "vibrancy": {
     "label": "Crystal effect",
