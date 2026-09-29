@@ -1,11 +1,30 @@
 {
   "_doc": "SINGLE SOURCE OF TRUTH for app identity. Edit fields, then run `make rebrand` (scripts/branding-update.sh) to propagate to configs, Cargo.toml, package.json, NSIS hooks and scripts. Xcode and Android Studio keep their OWN app icons/schemes — not managed here by design.",
-  "_notManaged": "mobile (iOS/Android) icons and Xcode schemes: managed in src-tauri/vendor template + Assets, NOT here.",
+  "_notManaged": "mobile (iOS/Android) icons and Xcode schemes: managed in src-tauri/vendor template + Assets, NOT here. icons.master feeds the mobile icon regeneration (apple-xcode.sh / android-autogen.sh run `tauri icon` post-init); the vendored templates ship neutral placeholders.",
 
   "name": "Tauri-react-template",
   "version": "0.1.0",
   "description": "Tauri + React + Vite template — generic multi-platform (iOS/Android/desktop) with Xcode layers",
   "authors": ["YanX Studio"],
+
+  "icons": {
+    "master": "branding/icon-1024.png",
+    "set": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico",
+      "icons/16x16.png",
+      "icons/48x48.png",
+      "icons/64x64.png",
+      "icons/256x256.png",
+      "icons/512x512.png",
+      "icons/icon.png",
+      "icons/icon-dark.ico",
+      "icons/icon-light.ico"
+    ]
+  },
 
   "rust": {
     "crate": "Tauri-react-template",
@@ -25,23 +44,5 @@
     "startMenuFolder": "Tauri-react-template",
     "publisher": "YanX Studio",
     "homepage": "https://github.com/YanxReal/Tauri-react-template"
-  },
-
-  "icons": {
-    "set": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico",
-      "icons/16x16.png",
-      "icons/48x48.png",
-      "icons/64x64.png",
-      "icons/256x256.png",
-      "icons/512x512.png",
-      "icons/icon.png",
-      "icons/icon-dark.ico",
-      "icons/icon-light.ico"
-    ]
   }
 }

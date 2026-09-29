@@ -99,6 +99,9 @@ echo "==> regenerating gen/android via vendored CLI init..."
 rm -rf "$GEN"
 (cd "$SRC_T" && PATH="$HOME/.cargo/bin:$PATH" "$CARGO_TAURI" android init)
 
+# --- Mobile icons: master -> icons/ + gen/android (+ gen/apple when present).
+CARGO_TAURI="$CARGO_TAURI" "$ROOT/scripts/mobile/mobile-icons-regen.sh"
+
 # --- Verify MOD-4 (status-bar MainActivity) survived the init ----------------
 # Package dir = identifier with hyphens -> underscores (Android norm).
 MAIN_PATH="$(echo "$PKG_NAME" | tr '-' '_' | sed 's/\./\//g')"

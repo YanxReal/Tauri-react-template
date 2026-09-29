@@ -73,7 +73,7 @@ AGENTS.md                       This file
 | Change… | Edit… | Never edit… |
 |---------|-------|-------------|
 | Xcode project | `src-tauri/vendor/tauri-cli-*/templates/mobile/ios/` + `apple.xcconfig` | `src-tauri/gen/` (regenerated) |
-| App icons | `src-tauri/icons/` + `Assets.xcassets` | `src-tauri/gen/apple/Assets.*` |
+| App icons | `branding/icon-1024.png` (**master**, icons.master in `branding.json`) + `src-tauri/icons/`; regen: `tauri icon` + `scripts/mobile/mobile-icons-regen.sh` (post-init in `apple-xcode.sh`/`android-autogen.sh`) | `src-tauri/gen/apple/Assets.*`, `src-tauri/gen/android/.../res/` |
 | iOS Info.plist | `src-tauri/Info.plist` (feeds macOS+iOS) | `src-tauri/gen/apple/**/Info.plist` |
 | macOS traffic lights | `lib.rs:185` (`traffic_lights_target_y`) / `lib.rs:205` (snap) — X `17.5/39.5/61.5` (`lib.rs:160`) | AppKit internals elsewhere |
 | Linux titlebar (app-drawn, frameless) | `header.tsx` + `window-controls.tsx`; `window.show()` after `center()` in `setup()` | `src-tauri/gen/` |

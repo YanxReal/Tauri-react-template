@@ -40,7 +40,7 @@
 | `make lint` / `make build` | aliases |
 | `make help` / `make doctor` | list commands / check toolchain |
 
-Per-OS build shells: **Linux → the `linux-build` skill** (`.claude/skills/linux-build/scripts/linux-build.sh`, SSH-only, see below), `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`, `scripts/Android/android-autogen.sh`.
+Per-OS build shells: **Linux → the `linux-build` skill** (`.claude/skills/linux-build/scripts/linux-build.sh`, SSH-only, see below), `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`, `scripts/Android/android-autogen.sh`. App icons: `branding/icon-1024.png` is the master (`branding.json` `icons.master`); both mobile autogen scripts run `scripts/mobile/mobile-icons-regen.sh` after init (`tauri icon` → `icons/` + `gen/apple` + `gen/android`, then composes the iOS 1024 marketing trio the CLI leaves untouched).
 
 ## Linux build (skill `linux-build`)
 

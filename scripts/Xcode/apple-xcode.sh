@@ -66,6 +66,9 @@ echo "==> regenerating gen/apple (app=$APP_NAME) via vendored CLI init..."
 rm -rf "$GEN"
 (cd "$SRC_T" && PATH="$RUSTUP_CARGO_BIN:$HOME/.cargo/bin:$PATH" "$CARGO_TAURI" ios init)
 
+# --- Mobile icons: master -> icons/ + gen/apple (+ gen/android when present).
+CARGO_TAURI="$CARGO_TAURI" "$ROOT/scripts/mobile/mobile-icons-regen.sh"
+
 # --- `_iOS` shims (cargo-mobile2 reads gen/apple/<scheme>/Info.plist) -------
 # scheme() = "<app>_iOS" in cargo-mobile; our target is the unified `_Apple`.
 mkdir -p "$GEN/${APP_NAME}_iOS"
