@@ -203,7 +203,7 @@ Todo vive en env / vars de `Makefile` / ficheros estilo `.env` (nada hardcodeado
 | `DEVELOPMENT_TEAM` / `scripts/.team-id` | — (manual en Xcode) | team de firma iOS, inyectado al regenerar |
 | `TAURI_CLI` | `@tauri-apps/cli@2.12.0` | CLI para los flujos `--build` de regen |
 | `XCODEGEN` | `xcodegen` | binario generador del proyecto Xcode |
-| `IOS_DEVICE` | `iPhone 17` | selector de simulador/dispositivo |
+| `IOS_DEVICE` | `iPhone 18 Pro` | selector de simulador/dispositivo |
 | `IOS_DEV_HOST` | autodetección link-local | host dev para iPhone físico (USB) |
 | `ANDROID_AVD` / `ANDROID_TARGET` | `Resizable_Experimental` / `aarch64` | emulador + arquitectura |
 | `ANDROID_HOME` | `~/Library/Android/sdk` | ubicación del SDK |
@@ -219,7 +219,7 @@ Todo vive en env / vars de `Makefile` / ficheros estilo `.env` (nada hardcodeado
 ```bash
 make dev                  # tauri dev (desktop)
 make dev:web              # pnpm --filter web dev
-make dev:ios              # pnpm tauri ios dev "iPhone 17" (simulador)
+make dev:ios              # pnpm tauri ios dev "iPhone 18 Pro" (simulador)
 make dev-ios-physical     # cargo tauri ios dev + --host (iPhone USB)
 make dev-android-emulator # arranca AVD + pnpm tauri android dev
 make gen-apple            # regen src-tauri/gen/apple (Xcode, branding-aware)

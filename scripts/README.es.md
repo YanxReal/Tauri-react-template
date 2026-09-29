@@ -170,7 +170,7 @@ vendoreado (stock + 3 retoques locales: fallback standalone, target `_Apple`
 
 ```bash
 make install-tauri-cli   # compila vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
-cargo tauri ios dev "iPhone 17"
+cargo tauri ios dev "iPhone 18 Pro"
 ```
 
 Para operaciones stock puntuales (sin retoques locales):
@@ -186,7 +186,7 @@ El dev frontend de `apps/web` escucha en TODAS las interfaces (`host: true` en
 `vite.config.ts`): `tauri ios dev` negocia el devUrl con una IP de red del
 host y debe poder consultar el server en esa IP.
 
-- **iPhone físico**: `tauri ios dev --host 192.168.x.x "iPhone 17"` →
+- **iPhone físico**: `tauri ios dev --host 192.168.x.x "iPhone 18 Pro"` →
   build+archive+export+install vía xcodebuild/devicectl + hot reload de Rust
   (watcher del CLI). La config `hotreload` del proyecto usa la misma forma: si
   el parent no está vivo, la phase lo abre en Terminal con `--host <LAN>`

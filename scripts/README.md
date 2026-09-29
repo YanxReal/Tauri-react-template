@@ -169,7 +169,7 @@ target — see `.claude/skills/tauri-cli-rebase/references/mods.md`):
 
 ```bash
 make install-tauri-cli   # builds vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
-cargo tauri ios dev "iPhone 17"
+cargo tauri ios dev "iPhone 18 Pro"
 ```
 
 For one-off stock operations (no local tweaks needed):
@@ -185,7 +185,7 @@ The `apps/web` dev frontend listens on ALL interfaces (`host: true` in
 `vite.config.ts`): `tauri ios dev` negotiates devUrl on a host LAN IP and
 must reach the server on that IP.
 
-- **Physical iPhone**: `tauri ios dev --host 192.168.x.x "iPhone 17"` →
+- **Physical iPhone**: `tauri ios dev --host 192.168.x.x "iPhone 18 Pro"` →
   build+archive+export+install via xcodebuild/devicectl + Rust hot reload
   (CLI watcher). The project's `hotreload` config uses the same shape: if the
   parent is not alive, the phase opens it in Terminal with `--host <LAN>`
