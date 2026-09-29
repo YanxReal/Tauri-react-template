@@ -44,7 +44,14 @@ fi
 
 # Development Team: fed to the vendored CLI via APPLE_DEVELOPMENT_TEAM (the
 # only var it reads). Source of truth is .env -> DEVELOPMENT_TEAM, fallback
-# scripts/.team-id. NEVER hardcoded here.
+# scripts/.team-id. NEVER hardcoded here. .env is loaded automatically:
+# the Makefile includes+exports it; direct script runs source it here.
+if [ -f "$ROOT/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "$ROOT/.env"
+  set +a
+fi
 TEAM="${DEVELOPMENT_TEAM:-}"
 if [ -z "$TEAM" ] && [ -f "$ROOT/scripts/.team-id" ]; then
   TEAM="$(tr -d '[:space:]' < "$ROOT/scripts/.team-id")"

@@ -4,6 +4,15 @@
 # 3 local tweaks (standalone fallback + _Apple target); see
 # src-tauri/vendor/tauri-cli-2.12.0/templates/mobile/ios/project.yml.
 
+# Personal env (.env is gitignored): DEVELOPMENT_TEAM (iOS signing),
+# ANDROID_HOME/NDK_HOME (if custom), app vars. Loaded into make AND
+# exported to recipe shells, so `make dev-ios-physical` etc. see them
+# automatically. Never commit .env.
+ifneq (,$(wildcard .env))
+include .env
+export
+endif
+
 TAURI := pnpm tauri
 CARGO_TAURI := cargo tauri
 
