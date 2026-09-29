@@ -106,6 +106,11 @@ See [`docs/en/getting-started.md`](docs/en/getting-started.md) for the full matr
 
 ## 🚀 Quick Start
 
+**Use this template** (recommended): GitHub generates a fresh repository
+with today's files and a clean history —
+[`Use this template`](https://github.com/new?template_owner=YanxReal&template_name=Tauri-react-template).
+Cloning works too:
+
 ```bash
 # 0. Toolchain
 node --version   # v24.x

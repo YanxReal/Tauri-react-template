@@ -106,6 +106,11 @@ Ver [`docs/es/getting-started.md`](docs/es/getting-started.md) para la matriz co
 
 ## 🚀 Inicio rápido
 
+**Usa esta plantilla** (recomendado): GitHub genera un repositorio nuevo
+con los ficheros actuales y un historial limpio —
+[`Use this template`](https://github.com/new?template_owner=YanxReal&template_name=Tauri-react-template).
+Clonar también funciona:
+
 ```bash
 # 0. Toolchain
 node --version   # v24.x
