@@ -44,13 +44,15 @@
     "note": "Componentes listos para que empieces a construir al instante.",
     "greetButton": "Saludar desde Rust",
     "greetFallback": "API de Tauri no disponible en el navegador",
-    "tauriNote": "Prueba la API de Tauri: {{message}}"
+    "tauriNote": "Prueba la API de Tauri: {{message}}",
+    "greeted": "¡Hola, {name}! ¡Te ha saludado Rust!"
   },
   "footer": {
     "rights": "Todos los derechos reservados.",
     "builtWith": "Hecho con Tauri, React y Vite.",
     "privacy": "Privacidad",
-    "terms": "Términos"
+    "terms": "Términos",
+    "copyright": "© {{year}} YanX Studio"
   },
   "vibrancy": {
     "label": "Efecto cristal",

@@ -32,20 +32,11 @@ export function App() {
 
   async function handleGreet() {
     try {
-      const message = await invoke<string>("greet", { name: "Tauri" })
-      // Translate the backend reply when the UI is in Spanish. Anchored at
-      // the start: a bare `includes` would also match a user name
-      // containing "Hello,".
-      const translated =
-        i18n.language.startsWith("es") && message.startsWith("Hello,")
-          ? message
-              .replace(/^Hello,/, "¡Hola,")
-              .replace(
-                "You've been greeted from Rust!",
-                "¡Te ha saludado Rust!"
-              )
-          : message
-      setGreet(translated)
+      // Kept as an IPC demo (the catch path exercises the error fallback),
+      // but the DISPLAY text is always keyed — never string-replace the
+      // backend reply (brittle and locale-fixed).
+      await invoke<string>("greet", { name: "Tauri" })
+      setGreet(t("status.greeted", { name: "Tauri" }))
     } catch {
       setGreet(t("status.greetFallback"))
     }
