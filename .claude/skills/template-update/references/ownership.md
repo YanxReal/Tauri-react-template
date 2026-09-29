@@ -33,6 +33,8 @@ is treated as user-customized (see below) even if it "belongs" to a template-own
 - `apps/web/src/**` (App.tsx, layout/, pages, hooks/, components the user added)
 - `src-tauri/src/**` (lib.rs, platform.rs — the user's commands and native logic)
 - `.env`, `.env.local`, `.env.*`, `scripts/.team-id`, `scripts/.env*`
+- `branding.json` + `branding/` (identity: name, version, authors, `icons.master` —
+  the user's brand; the template only ever reads these, never writes them)
 - Any file/path the user created that is not in the template's `git ls-files`
 
 ### B-adjacent (interface the user's code consumes) — high care
@@ -112,4 +114,5 @@ If any box is left unticked, the update is NOT safe to ship — fix it before §
 
 Never let the template overwrite these with the template's own values:
 `crate`, `libName`, `productName`, `identifier`, `windowTitle`, `binary`, `appleScheme`,
-`androidPackage`. Use `scripts/detect-identifiers.sh` before and after to confirm no drift.
+`androidPackage`, plus `branding.json` (name, version, authors, `icons.master`) and
+`branding/icon-1024.png`. Use `scripts/detect-identifiers.sh` before and after to confirm no drift.

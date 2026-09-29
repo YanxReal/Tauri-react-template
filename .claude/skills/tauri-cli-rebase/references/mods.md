@@ -96,8 +96,16 @@ the rustup fallback, drop MOD-5.
 Unified `project.yml` (single `_Apple` target, debug/hotreload/release configs,
 Terminal-opening hotreload phase, `__TAURI_DEVELOPMENT_TEAM__` sentinel),
 `apple.xcconfig`, `ExportOptions-{appstore,developerid}.plist`,
-`{{app.name}}_Apple/` entitlements, `Assets.xcassets` icons, and the Android
-`ic_launcher_*` files.
+`{{app.name}}_Apple/` entitlements, and the **neutral placeholder** icon sets:
+`templates/mobile/ios/Assets.xcassets/AppIcon.appiconset/**` (21 PNGs) and the
+Android `res/**/ic_launcher*` PNGs (16) — flat gray, deliberately brand-less.
+Real icons NEVER live in the templates: after every `tauri ios|android init`,
+`scripts/mobile/mobile-icons-regen.sh` (called by `apple-xcode.sh` and
+`android-autogen.sh`) regenerates `icons/` + `gen/apple` + `gen/android` from
+`branding.json` `icons.master` (`branding/icon-1024.png`) via `tauri icon`, then
+composes the iOS 1024 marketing trio (light/dark/tinted) that this CLI version
+does not generate. A rebase therefore overlays the OLD neutral placeholders as-is
+— never any brand-specific artwork.
 
 Ported upstream into our `project.yml`: `{{ shell-escape tauri-binary }}` +
 quoted vars on the `xcode-script` line (spaces-in-paths fix). NOT ported
@@ -108,8 +116,16 @@ from sources entirely.
 
 1. Download the stock crate of the target version; extract as a sibling.
 2. Re-apply MOD-1/2/3 semantically (see `SKILL.md` §3).
-3. Overlay `templates/mobile/ios/` + the 3 Android icon files from the old
-   vendor; `diff` stock-vs-ours `project.yml` for portable upstream fixes.
+3. Overlay `templates/mobile/ios/` + `templates/mobile/android/` from the old
+   vendor (project.yml, xcconfig, entitlements, and the NEUTRAL placeholder
+   icon sets — keep them brand-less); `diff` stock-vs-ours `project.yml` for
+   portable upstream fixes. MOD-4 (`MainActivity.kt`) and MOD-5 (`project.yml`
+   rustup cargo phase) are part of the same overlay.
+3b. Icon flow note: post-init icon regeneration lives in `scripts/mobile/`
+    (outside the CLI) — after a rebase, verify `apple-xcode.sh` /
+    `android-autogen.sh` still call `mobile-icons-regen.sh` and that a fresh
+    `gen/` carries the user's `branding/icon-1024.png` (spot-check the iOS
+    AppIcon-1024 PNG hash against the composite reference).
 4. Delete the old vendor dir. Update pins: `package.json` (`@tauri-apps/cli`),
    `scripts/Xcode/apple-xcode.sh` (`TPL`, `TAURI_CLI`), `Makefile`
    `install-tauri-cli`, `scripts/README.md`.

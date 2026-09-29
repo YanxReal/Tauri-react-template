@@ -86,8 +86,13 @@ translation, never adds its own locale, and never drops a language the user has.
 
 ### 3b. **Identity**
 Preserve and NEVER re-brand: `productName`, `identifier`, `crate`/`lib_name`, bundle IDs, window
-titles. The template adds its architecture under the user's identity — it never gets renamed to
-`tauri-react-template`.
+titles, and `branding.json` (name, version, authors, `icons.master`) with its
+`branding/icon-1024.png` master. The template adds its architecture under the user's identity —
+it never gets renamed to `tauri-react-template`.
+After the adoption apply, regenerate the mobile icons from the USER's master:
+`scripts/mobile/mobile-icons-regen.sh` (post-init step that `apple-xcode.sh`/`android-autogen.sh`
+already run; `tauri icon <master>` + the iOS 1024 trio composite). If the user has no 1024 master,
+ask for one before touching `gen/`.
 
 ### 3c. **User code**
 Pages, hooks, React components the user wrote, their `#[tauri::command]`s, their Rust logic in

@@ -17,7 +17,8 @@ These are what the template CAN offer. During adoption each cape lands in one of
 | **UI / components** | `packages/ui/src/components/**` (shadcn + glass-*), `packages/ui/src/lib/utils.ts`, `packages/ui/src/styles/globals.css` (as the theme startup), `packages/ui/vitest.config.ts`, `apps/web/vite.config.ts` alias |
 | **Native feel** | `src-tauri/tauri.conf.json` + `tauri.{macos,windows,linux,ios,android}.conf.json` (guards), `src-tauri/src/lib.rs` native commands/setup, `capabilities/`, `index.html` viewport/meta, `globals.css` guards |
 | **i18n** | `apps/web/src/i18n/config.ts`, `locales/en.json` + `locales/es.json` (template's own two), the i18n key contract the template uses |
-| **Tooling / skills / docs** | `scripts/**`, `Makefile`, `.claude/skills/**`, `docs/{en,es}/**`, root `README*.md`, `CHANGELOG.md`, `.github/**`, `rust-toolchain.toml`, `biome.json`, `pnpm-workspace.yaml`, `turbo.json`, `tsconfig*` |
+| **Tooling / skills / docs** | `scripts/**` (incl. `scripts/mobile/**` icon pipeline), `Makefile`, `.claude/skills/**`, `docs/{en,es}/**`, root `README*.md`, `CHANGELOG.md`, `.github/**`, `rust-toolchain.toml`, `biome.json`, `pnpm-workspace.yaml`, `turbo.json`, `tsconfig*` |
+| **Identity** (user-owned, never replaced) | `branding.json` (name, version, authors, `icons.master`) + `branding/icon-1024.png` (the icon master that `scripts/mobile/mobile-icons-regen.sh` feeds on) |
 
 ---
 
@@ -81,6 +82,9 @@ If any box is left unticked after adoption, do not ship — fix it before §7.
 ## 6. Identifier fields that must be preserved
 
 `crate`, `libName`, `productName`, `identifier`, `windowTitle`, `binary`, `appleScheme`,
-`androidPackage`. Use `scripts/detect-identifiers.sh` (from the `template-update`/`tauri-cli-rebase`
+`androidPackage`, plus `branding.json` (name, version, authors, `icons.master`) and
+`branding/icon-1024.png`. Use `scripts/detect-identifiers.sh` (from the `template-update`/`tauri-cli-rebase`
 skill dirs, or reproduce it) before and after to confirm no drift. The user's project is NEVER
-rebranded to `tauri-react-template`.
+rebranded to `tauri-react-template`. After adoption, verify the icon master is the USER's image
+and run the mobile icon regeneration (`scripts/mobile/mobile-icons-regen.sh`) so `gen/` assets
+carry their brand, not the template placeholders.
