@@ -1,6 +1,10 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Base application theme (night). -->
     <style name="Theme.{{snake-case app.name}}" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
+        <!-- Night window background = the frontend's dark background token
+             (oklch(0.145 0 0) = zinc-950 #18181B); no M3 purple flash. -->
+        <item name="android:windowBackground">@color/tauri_window_bg</item>
+        <item name="android:statusBarColor">@color/tauri_window_bg</item>
+        <item name="android:navigationBarColor">@color/tauri_window_bg</item>
     </style>
 </resources>

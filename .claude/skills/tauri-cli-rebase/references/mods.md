@@ -56,19 +56,30 @@ now-unused `ffi::OsString` / `path::{Component, PathBuf}` imports go with it.
 
 ## MOD-4 — Android status-bar contrast for edge-to-edge
 
-**Where:** `templates/mobile/android/app/src/main/MainActivity.kt` (+ `app/proguard-rules.pro`).
+**Where:** `templates/mobile/android/app/src/main/MainActivity.kt`
+(+ `app/proguard-rules.pro`), plus the window-theme overlays in
+`templates/mobile/android/app/src/main/res/` (`values/themes.xml`,
+`values-night/themes.xml`, `values-v31/themes.xml` splash, `colors.xml` +
+`values-night/colors.xml` `tauri_window_bg` = the frontend's light/dark
+background tokens — kills the Material3 lavender/purple launch flash).
 
 Stock calls `enableEdgeToEdge()` and nothing else. Ours adds
 `applyStatusBarContrast(night, caller)` (called from `onCreate`/`onResume`/
-`onWindowFocusChanged`/`onConfigurationChanged` with the system night state)
-plus `setStatusBarDark(isDark)` — invoked from Rust over JNI with the
+`onWindowFocusChanged`/`onConfigurationChanged`) plus
+`setStatusBarDark(isDark)` — invoked from Rust over JNI with the
 frontend's RESOLVED theme (see `set_status_bar_style` in the app's `lib.rs`).
-Why both: the activity declares `uiMode` in `configChanges`, so a live system
-flip fires neither recreate nor `onResume` (flags would go stale); and the app
-has its own theme override (toggle/D key), so system-following flags alone
-paint invisible icons when app and system disagree. `setStatusBarDark` hops to
-the UI thread internally, so the Rust caller thread doesn't matter; the
-proguard keep rule preserves its name for release (R8).
+The frontend's choice is **persisted in `lastJsNight`** and `resolvedNight()`
+(= `lastJsNight` when set, else the system state): returning from the
+background re-applies the APP theme, not the system one — otherwise a light
+app on a dark system (or vice versa) gets invisible icons every time the
+user re-enters (the system resets the bars appearance while app is away).
+Why both paths exist: the activity declares `uiMode` in `configChanges`, so
+a live system flip fires neither recreate nor `onResume` (flags would go
+stale); and the app has its own theme override (toggle/D key/localStorage),
+so system-following flags alone paint invisible icons when app and system
+disagree. `setStatusBarDark` hops to the UI thread internally, so the Rust
+caller thread doesn't matter; the proguard keep rule preserves its name for
+release (R8).
 
 **Porting notes:** template files, not CLI source — overlay them from the old
 vendor onto the new stock (same as the iOS `project.yml`). If upstream adds an

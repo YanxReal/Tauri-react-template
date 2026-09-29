@@ -1,6 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Theme.{{snake-case app.name}}" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
+        <!-- Window background matches the app's frontend background token
+             (light: oklch(1 0 0) = #FFFFFF) so the pre-webview frames and the
+             status-bar area are never the Material3 default (lavender/purple)
+             flash at launch. enableEdgeToEdge makes the bars transparent once
+             the webview attaches; this covers the frames before that. -->
+        <item name="android:windowBackground">@color/tauri_window_bg</item>
+        <item name="android:statusBarColor">@color/tauri_window_bg</item>
+        <item name="android:navigationBarColor">@color/tauri_window_bg</item>
     </style>
 </resources>
