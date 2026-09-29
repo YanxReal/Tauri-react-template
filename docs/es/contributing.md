@@ -28,9 +28,33 @@ Matriz completa: [Testing](./testing.md).
 pnpm typecheck && pnpm lint && pnpm test && pnpm build
 cargo check --manifest-path src-tauri/Cargo.toml
 cargo fmt --manifest-path src-tauri/Cargo.toml --check
+make check-docs                       # paridad EN/ES + anclas AGENTS/docs
 ```
 
+`make check-docs` también está en el hook de pre-commit — falla antes del
+`git commit` si un espejo se rompe o una ancla `file:line` deriva.
+
 Más un bundle real por SO (scroll + click + no-zoom) — ver la matriz manual en [Testing](./testing.md).
+
+## Política de versiones
+
+La versión del repo vive en `TEMPLATE_VERSION` + el tag `vX.Y.Z` (ambos deben
+ir en sincronía). El changelog (EN+ES) registra cada cambio.
+
+- **Suba `TEMPLATE_VERSION` + tag ante cualquier cambio que una app
+  downstream deba saber**: ganchos nuevos de Makefile/scripts/skills, firmas
+  de comandos cambiadas, cambios de esquema de config, cambios de
+  invariantes (AGENTS §4), cambios de iconos/identidad, pines de dependencias
+  que alteren comportamiento.
+- **Patch (x.y.Z)**: fixes solo de docs, tooling o no de comportamiento —
+  sube solo si un downstream lo necesita (también pueden fijarse a un commit).
+- **Minor (x.Y.0)**: capacidad nueva que no rompe a los adoptantes.
+- **Major (X.0.0)**: cambios que rompen a los adoptantes (renames, targets
+  eliminados, layout de ficheros cambiado). Al subir: corre `make rebrand`,
+  regenera los árboles móviles `gen/`, gates + `make check-docs`, y vuelve a
+  verificar un bundle real por SO.
+- Tag con mensaje: `git tag -a vX.Y.Z -m "..."` y sube los tags
+  (`git push --tags`).
 
 ## Añadir una página a docs
 
@@ -47,6 +71,12 @@ pnpm dlx shadcn@latest add <component> -c apps/web
 ```
 
 Documenta los componentes nuevos en ambos árboles.
+
+> **Nota de dependencia a largo plazo:** `packages/ui/components.json`
+> referencia el registro externo einui (`ui.eindev.ir`) — solo hace falta para
+> AÑADIR componentes nuevos. Todo lo ya commiteado es autocontenido; si el
+> registro muriera, sigue usando el set commiteado y escribe los componentes
+> nuevos a mano con el mismo estilo (o espeja el registro en local).
 
 ## Reportar issues
 

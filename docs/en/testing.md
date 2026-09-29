@@ -50,6 +50,20 @@ Automation cannot see pixels. After the gates, verify on a **real bundle per OS*
 
 Always test the **release** profile too: `prevent-default` (`Flags::debug()`) only blocks webview defaults there.
 
+## Weekly CI (`.github/workflows/ci.yml`)
+
+Gates also run **once a week** (Monday 18:00 UTC) plus manual dispatch — it
+only invokes `make ci-frontend` / `make ci-rust` on ubuntu-latest (desktop
+targets only; mobile + native bundles stay manual).
+
+- **Manual run**: `gh workflow run ci.yml` then `gh run watch`.
+- **A red Monday**: the workflow ran `fmt`/`clippy`/`test`/typecheck against
+  the current `main` — a red job means gates drifted since the last green
+  run. Fix the reported target locally (or in the box for `cfg(linux)`
+  issues), re-run the gates, then re-dispatch until green. Do NOT silence
+  the job to make it pass.
+- Free-tier friendly by design: no push/PR triggers, ~4-5 min/week.
+
 ## Screenshots as evidence
 
 Pixel scans beat eyeballing for frames and corners (`standard_deviation` per row: a frozen screen reads `0` everywhere). Tools: on the Linux box (X11, real) use the `linux-build` skill's flow — `assistant shot` (capture), `assistant ocr` (text), `assistant click/type` (real input) — and `scrot`/`xwd`/`compare` on X11 hardware; on Wayland-with-a-real-GPU use `gnome-screenshot` where it works. Paste the numbers, not adjectives.

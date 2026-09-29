@@ -28,9 +28,32 @@ Full matrix: [Testing](./testing.md).
 pnpm typecheck && pnpm lint && pnpm test && pnpm build
 cargo check --manifest-path src-tauri/Cargo.toml
 cargo fmt --manifest-path src-tauri/Cargo.toml --check
+make check-docs                       # EN/ES parity + AGENTS/docs anchors
 ```
 
+`make check-docs` is also wired into the pre-commit hook — it fails before `git
+commit` on a broken mirror or a drifted `file:line`anchor.
+
 Plus a real bundle per OS (scroll + click + no-zoom) — see the manual matrix in [Testing](./testing.md).
+
+## Versioning policy
+
+The repo version lives in `TEMPLATE_VERSION` + the `vX.Y.Z` tag (both must
+stay in sync). The changelog (EN+ES) records every change.
+
+- **Bump `TEMPLATE_VERSION` + tag on any change a downstream app must know
+  about**: new Makefile/script/skill hooks, changed command signatures,
+  config schema changes, invariant changes (AGENTS §4), icon/identity flow
+  changes, dependency pins that alter behavior.
+- **Patch (x.y.Z)**: doc-only, tooling-only or non-behavioral fixes — bump
+  only if a downstream needs the fix (they can also pin to a commit).
+- **Minor (x.Y.0)**: new capability that does not break adopters.
+- **Major (X.0.0)**: breaking changes for adopters (renames, removed targets,
+  changed file layout). When bumping: run `make rebrand`, regenerate the
+  mobile `gen/` trees, gates + `make check-docs`, and re-verify one real
+  bundle per OS.
+- Tag with a message: `git tag -a vX.Y.Z -m "..."` and push tags
+  (`git push --tags`).
 
 ## Adding a page to docs
 
@@ -47,6 +70,12 @@ pnpm dlx shadcn@latest add <component> -c apps/web
 ```
 
 Document new components in both trees.
+
+> **Long-term dependency note:** `packages/ui/components.json` references the
+> external einui registry (`ui.eindev.ir`) — it is only needed to add NEW
+> components. Everything already committed is self-contained; if the registry
+> ever dies, keep using the committed set and hand-write any new components in
+> the same style (or mirror the registry locally).
 
 ## Reporting issues
 

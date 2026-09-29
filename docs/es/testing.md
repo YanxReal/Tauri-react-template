@@ -50,6 +50,21 @@ La automatización no ve píxeles. Tras los gates, verifica en un **bundle real 
 
 Testea siempre también el perfil **release**: `prevent-default` (`Flags::debug()`) solo bloquea los defaults del webview ahí.
 
+## CI semanal (`.github/workflows/ci.yml`)
+
+Los gates también corren **una vez por semana** (lunes 18:00 UTC) más dispatch
+manual — solo invoca `make ci-frontend` / `make ci-rust` en ubuntu-latest
+(solo targets desktop; móvil y bundles nativos siguen manuales).
+
+- **Run manual**: `gh workflow run ci.yml` y luego `gh run watch`.
+- **Un lunes en rojo**: el workflow corrió `fmt`/`clippy`/`test`/typecheck
+  contra el `main` actual — un job rojo significa que los gates derivaron
+  desde el último run verde. Arregla el target reportado en local (o en la
+  caja para temas `cfg(linux)`), re-corre los gates y re-dispatch hasta
+  verde. NO silencies el job para que pase.
+- Amable con la cuenta gratuita por diseño: sin triggers push/PR, ~4-5
+  min/semana.
+
 ## Capturas como evidencia
 
 Los barridos de píxeles ganan al ojo para marcos y esquinas (`standard_deviation` por fila: una pantalla congelada da `0` en todas). Herramientas: en la caja Linux (X11, real) usa el flujo de la skill `linux-build` — `assistant shot` (captura), `assistant ocr` (texto), `assistant click/type` (input real) — y `scrot`/`xwd`/`compare` en hardware X11; en Wayland con GPU real usa `gnome-screenshot` donde funcione. Pega números, no adjetivos.
