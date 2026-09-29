@@ -318,15 +318,41 @@ Full table: [`docs/en/troubleshooting.md`](docs/en/troubleshooting.md)
 
 ## 🗺️ Roadmap
 
-- [ ] **Linux edge-resize**: confirm serial-vs-detection on X11 (already box-verified via the `linux-build` skill), then on Wayland; fix + verify all 8 edges
-- [ ] **Linux frameless on real hardware**: extend verification beyond the box (X11/llvmpipe) to NVIDIA/Wayland + X11 sessions
-- [ ] **No-zoom / scroll verification recipes** in the `linux-build` skill (AGENTS §5 gate: scroll + click + no-zoom on the real Linux bundle)
-- [ ] **iOS physical-device pipeline** end-to-end (Team ID + iPhone over USB)
-- [ ] **Android release bundle** + store-metadata path
-- [ ] **Linux glass fallback (Plan A)** — specified in `docs/en/native-feel.md`, not implemented
+This roadmap is about the **template**, not the demo app: everything here is
+something the *starting point* of your project should offer out of the box.
+What is already shipped lives in the changelog — this page only lists what is
+left to build.
 
----
+### Phase 1 — Keep the promise (short term)
 
+- **Real releases on all 5 OS**: Android release APK (R8, signing, multi-ABI)
+  + store-metadata path; macOS notarization; Windows NSIS signed builds.
+- **Linux, completed**: Wayland edge-resize verification (X11 already
+  box-verified) and the documented glass fallback (Plan A in
+  `docs/en/native-feel.md`).
+- **Release checklist 5-OS** published in `docs/en/testing.md`, so every
+  version bump is verifiable by anyone.
+
+### Phase 2 — From clone to ship (mid term)
+
+- **One-command project ops**: `make rebrand` already exists; a companion
+  `make bump-version` keeps version + tag in sync (per `contributing.md`).
+- **Painless CLI upgrades**: the `tauri-cli-rebase` skill becomes a
+  `make upgrade-cli` flow that rebases the vendored CLI automatically.
+- **Update-ready template**: `tauri-plugin-updater` integrated with signing
+  docs for macOS/Linux/Windows.
+- **Optional starter modules** (login, settings, persistence) opt-in — the
+  starting point stays minimal, the common paths are one command away.
+- **E2E UI checks per OS** running on the virtualized environments the
+  tooling already uses (box, VMs).
+
+### Phase 3 — Ecosystem (long term)
+
+- Bilingual docs site (static, from `docs/en` + `docs/es`).
+- Scaffold installer (`pnpm create tauri-react-template`).
+- Store publishing runbooks (App Store Connect, Google Play, MSIX).
+- **Tauri v3 migration** once stable — the template moves together, with the
+  vendored-CLI rebase flow upgraded in the same change.
 ## 📚 Documentation
 
 Full guides live in [`docs/en/`](docs/en/README.md) (mirror: [`docs/es/`](docs/es/README.md)) — same pages, same order, both languages:

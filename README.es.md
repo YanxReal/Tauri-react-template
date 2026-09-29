@@ -318,15 +318,44 @@ Tabla completa: [`docs/es/troubleshooting.md`](docs/es/troubleshooting.md)
 
 ## 🗺️ Roadmap
 
-- [ ] **Resize del borde en Linux**: confirmar serial-vs-detección en X11 (ya verificado en la caja vía la skill `linux-build`), luego en Wayland; fix + verificar los 8 bordes
-- [ ] **Frameless Linux en hardware real**: extender la verificación más allá de la caja (X11/llvmpipe) a sesiones NVIDIA/Wayland + X11
-- [ ] **Recetas de verificación no-zoom / scroll** en la skill `linux-build` (gate de AGENTS §5: scroll + click + no-zoom en el bundle Linux real)
-- [ ] **Pipeline de iPhone físico** end-to-end (Team ID + iPhone por USB)
-- [ ] **Bundle release Android** + ruta de metadatos de tienda
-- [ ] **Fallback de glass Linux (Plan A)** — especificado en `docs/es/native-feel.md`, no implementado
+Este roadmap habla de la **plantilla**, no de la app de demo: todo lo que hay
+aquí es algo que el *punto de partida* de tu proyecto debería ofrecer sin
+esfuerzo. Lo que ya está hecho vive en el changelog — esta página solo lista
+lo que queda por construir.
 
----
+### Fase 1 — Cumplir la promesa (corto plazo)
 
+- **Releases reales en los 5 SO**: APK release de Android (R8, firma,
+  multi-ABI) + ruta de metadatos de store; notarización macOS; builds NSIS
+  firmados en Windows.
+- **Linux, completado**: verificación de edge-resize en Wayland (X11 ya
+  verificado en la caja) y el glass fallback documentado (Plan A en
+  `docs/es/native-feel.md`).
+- **Checklist de release 5-SO** publicada en `docs/es/testing.md`, para que
+  cada bump de versión sea verificable por cualquiera.
+
+### Fase 2 — De clonar a publicar (medio plazo)
+
+- **Operaciones de proyecto a un comando**: `make rebrand` ya existe; un
+  `make bump-version` hermano mantiene versión + tag en sincronía (según
+  `contributing.md`).
+- **Upgrades de CLI sin dolor**: la skill `tauri-cli-rebase` se convierte en
+  un flujo `make upgrade-cli` que rebasea el CLI vendoreado automáticamente.
+- **Template listo para updates**: `tauri-plugin-updater` integrado con docs
+  de firma para macOS/Linux/Windows.
+- **Módulos starter opcionales** (login, ajustes, persistencia) opt-in — el
+  punto de partida se queda mínimo, los caminos comunes están a una orden de
+  distancia.
+- **Checks E2E de UI por SO** en los entornos virtualizados que el tooling ya
+  usa (caja, VMs).
+
+### Fase 3 — Ecosistema (largo plazo)
+
+- Sitio de docs bilingüe (estático, desde `docs/en` + `docs/es`).
+- Installer de scaffold (`pnpm create tauri-react-template`).
+- Runbooks de publicación en stores (App Store Connect, Google Play, MSIX).
+- **Migración a Tauri v3** cuando sea estable — la plantilla se mueve junta,
+  con el flujo de rebase del CLI vendoreado actualizado en el mismo cambio.
 ## 📚 Documentación
 
 Las guías completas están en [`docs/es/`](docs/es/README.md) (espejo: [`docs/en/`](docs/en/README.md)) — mismas páginas, mismo orden, ambos idiomas:

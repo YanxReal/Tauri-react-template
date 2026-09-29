@@ -254,6 +254,8 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 - **Robustez frontend + guard endurecido**: script de tema pre-hydration en `index.html` (fija la clase `light`/`dark` guardada/sistema antes de que pinte el bundle — sin flash de tema equivocado; misma lógica que `ThemeProvider`), un `ErrorBoundary` con claves i18n (class component, instancia compartida de i18n, fallback con recarga; +2 tests) montado en `main.tsx`, deps sin uso `date-fns`/`zod` fuera de `packages/ui`, y `scripts/check-agents-anchors.sh` ahora verifica además que el símbolo citado junto a un ancla `file:line` esté definido a ±10 líneas (cazó las claims obsoletas de `build.rs:135` en getting-started.md + `.env.example`, ya corregidas).
 - **Anclas re-fijadas**: cada `lib.rs:NNN` de AGENTS + docs re-resuelta contra el fichero actual (la inserción de env_logger desplazó ~+7 líneas; entradas antiguas citaban tres eras distintas), más las refs de `header.tsx`, `window-controls.tsx`, `globals.css`, `App.tsx`, `Cargo.toml` y `capabilities/default.json`. Se probó un auto-fixer ingenuo y se revirtió (corrompió 9 ficheros y resolvió símbolos a menciones en comentarios) — el pase final usó pares de líneas explícitos y verificados.
 
+- **Roadmap reescrito** (README EN+ES): la lista vieja seguía mostrando items hechos como TODO (iOS físico, Linux X11, recetas E2E) — vergonzoso tras v0.1.0. Nuevo: fases temáticas sin fechas, planteadas como lo que la PLANTILLA ofrece al punto de partida de un proyecto (no la app demo), con la migración a Tauri v3 como item final de largo plazo; lo entregado se referencia al changelog.
+
 ## Lecciones para futuros cambios
 
 - Si ves `// HuLa fix`, esa línea sobrevivió a múltiples bugs de plataforma. Lee el commit antes de tocarla.

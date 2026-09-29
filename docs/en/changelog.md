@@ -254,6 +254,8 @@ Windows is frameless again (`tauri.windows.conf.json:12` → `decorations: false
 - **Frontend robustness + guard hardening**: pre-hydration theme script in `index.html` (sets the stored/system `light`/`dark` class before the bundle paints — no wrong-theme flash; same logic as `ThemeProvider`), a keyed `ErrorBoundary` (class component, shared i18n instance, reload fallback; +2 tests) wired in `main.tsx`, unused `date-fns`/`zod` deps dropped from `packages/ui`, and `scripts/check-agents-anchors.sh` now also verifies that the symbol cited next to a `file:line` anchor is defined within ±10 lines (it caught the stale `build.rs:135` claims in getting-started.md + `.env.example`, now fixed).
 - **Anchors re-pinned**: every `lib.rs:NNN` across AGENTS + docs re-resolved against the current file (the env_logger insertion shifted ~+7 lines; older entries cited three different eras), plus `header.tsx`, `window-controls.tsx`, `globals.css`, `App.tsx`, `Cargo.toml` and `capabilities/default.json` refs. A naive auto-fixer was tried and reverted (it corrupted 9 files and mis-resolved symbols to comment mentions) — the final pass used explicit verified line pairs.
 
+- **Roadmap rewritten** (README EN+ES): the old list still showed done items as TODO (iOS physical, Linux X11, E2E recipes) — embarrassing after v0.1.0. New one: thematic phases without dates, framed as what the TEMPLATE offers the starting point of a project (not the demo app), with Tauri v3 migration as the long-term final item; shipped items referenced to the changelog.
+
 ## Lessons for future changes
 
 - If you see `// HuLa fix`, that line survived multiple platform bugs. Read the commit before touching it.
