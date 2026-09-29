@@ -318,41 +318,48 @@ Full table: [`docs/en/troubleshooting.md`](docs/en/troubleshooting.md)
 
 ## 🗺️ Roadmap
 
-This roadmap is about the **template**, not the demo app: everything here is
-something the *starting point* of your project should offer out of the box.
-What is already shipped lives in the changelog — this page only lists what is
-left to build.
+This roadmap only announces **future value for the template** — nothing here
+is operational backlog. It is about what the *starting point* of your project
+will offer next. What is already shipped lives in the changelog.
 
-### Phase 1 — Keep the promise (short term)
+### Phase A — Ready for v3 (now → Tauri v3 stable)
 
-- **Real releases on all 5 OS**: Android release APK (R8, signing, multi-ABI)
-  + store-metadata path; macOS notarization; Windows NSIS signed builds.
-- **Linux, completed**: Wayland edge-resize verification (X11 already
-  box-verified) and the documented glass fallback (Plan A in
-  `docs/en/native-feel.md`).
-- **Release checklist 5-OS** published in `docs/en/testing.md`, so every
-  version bump is verifiable by anyone.
+Tauri v3 is in alpha (`3.0.0-alpha.x`, Sept 2026): GTK4/WebKitGTK 6.0 on
+Linux, swappable webview runtimes (wry / CEF), MSRV 1.95 + edition 2024,
+modern updater and ACL. Everything below keeps the template ahead of the jump
+instead of catching up:
 
-### Phase 2 — From clone to ship (mid term)
+- **Two release lines**: `main` stays on stable v2, a `v3-preview` branch
+  tracks the v3 alphas/betas so the migration is exercised continuously (the
+  container + VMs already verify every reload).
+- **Linux GTK4 plan documented in advance**: frameless window, resize band,
+  app theme bridge and glass fallback are re-designed for GTK4/WebKitGTK 6.0
+  before the stable jump.
+- **Auto-update today on v2**: `tauri-plugin-updater` integrated with signing
+  docs (macOS/Linux/Windows) — adopters ship updates from day one.
 
-- **One-command project ops**: `make rebrand` already exists; a companion
-  `make bump-version` keeps version + tag in sync (per `contributing.md`).
-- **Painless CLI upgrades**: the `tauri-cli-rebase` skill becomes a
-  `make upgrade-cli` flow that rebases the vendored CLI automatically.
-- **Update-ready template**: `tauri-plugin-updater` integrated with signing
-  docs for macOS/Linux/Windows.
-- **Optional starter modules** (login, settings, persistence) opt-in — the
-  starting point stays minimal, the common paths are one command away.
-- **E2E UI checks per OS** running on the virtualized environments the
-  tooling already uses (box, VMs).
+### Phase B — Tauri v3 adoption (when stable)
 
-### Phase 3 — Ecosystem (long term)
+The headline item. The template moves to v3 as one coherent change:
 
-- Bilingual docs site (static, from `docs/en` + `docs/es`).
-- Scaffold installer (`pnpm create tauri-react-template`).
-- Store publishing runbooks (App Store Connect, Google Play, MSIX).
-- **Tauri v3 migration** once stable — the template moves together, with the
-  vendored-CLI rebase flow upgraded in the same change.
+- Full migration in one commit: runtime crates (`tauri-runtime-wry`), MSRV
+  1.95 / edition 2024, new ACL, modern updater, per-runtime devtools.
+- **Linux GTK4 rework** completed and verified in the container + real
+  Wayland sessions.
+- **Optional CEF profile** (`make init --runtime cef`): the same Chromium
+  rendering on every desktop for complex UIs, packaged with the vendored-CLI
+  rebase flow.
+- Vendored CLI v3 + `tauri-cli-rebase` skill updated, 5-OS matrix
+  re-verified on real bundles.
+
+### Phase C — Beyond v3
+
+- Bilingual docs site (static, from `docs/en` + `docs/es`) and a scaffold
+  installer (`pnpm create tauri-react-template`).
+- Store publishing runbooks using the release APIs (App Store Connect,
+  Google Play, MSIX).
+- **AI-ready template**: agent skills + MCP so any AI agent can clone,
+  rebrand, and publish the template with zero friction.
 ## 📚 Documentation
 
 Full guides live in [`docs/en/`](docs/en/README.md) (mirror: [`docs/es/`](docs/es/README.md)) — same pages, same order, both languages:

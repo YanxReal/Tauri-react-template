@@ -318,44 +318,49 @@ Tabla completa: [`docs/es/troubleshooting.md`](docs/es/troubleshooting.md)
 
 ## 🗺️ Roadmap
 
-Este roadmap habla de la **plantilla**, no de la app de demo: todo lo que hay
-aquí es algo que el *punto de partida* de tu proyecto debería ofrecer sin
-esfuerzo. Lo que ya está hecho vive en el changelog — esta página solo lista
-lo que queda por construir.
+Este roadmap solo anuncia **valor futuro para la plantilla** — nada de backlog
+operativo. Habla de lo que el *punto de partida* de tu proyecto ofrecerá a
+continuación. Lo ya entregado vive en el changelog.
 
-### Fase 1 — Cumplir la promesa (corto plazo)
+### Fase A — Ready for v3 (ahora → Tauri v3 estable)
 
-- **Releases reales en los 5 SO**: APK release de Android (R8, firma,
-  multi-ABI) + ruta de metadatos de store; notarización macOS; builds NSIS
-  firmados en Windows.
-- **Linux, completado**: verificación de edge-resize en Wayland (X11 ya
-  verificado en la caja) y el glass fallback documentado (Plan A en
-  `docs/es/native-feel.md`).
-- **Checklist de release 5-SO** publicada en `docs/es/testing.md`, para que
-  cada bump de versión sea verificable por cualquiera.
+Tauri v3 está en alpha (`3.0.0-alpha.x`, sept 2026): GTK4/WebKitGTK 6.0 en
+Linux, runtimes de webview intercambiables (wry / CEF), MSRV 1.95 + edition
+2024, updater y ACL modernos. Todo esto mantiene la plantilla por delante del
+salto en lugar de perseguirlo:
 
-### Fase 2 — De clonar a publicar (medio plazo)
+- **Dos líneas de release**: `main` sigue en v2 estable y una rama
+  `v3-preview` persigue las alphas/betas de v3 para que la migración se
+  ejercite continuamente (el contenedor + VMs ya verifican cada recarga).
+- **Plan Linux GTK4 documentado de antemano**: ventana frameless, banda de
+  resize, bridge de tema y glass fallback rediseñados para GTK4/WebKitGTK 6.0
+  antes del salto a estable.
+- **Auto-update hoy en v2**: `tauri-plugin-updater` integrado con docs de
+  firma (macOS/Linux/Windows) — los adoptantes publican updates desde el día
+  uno.
 
-- **Operaciones de proyecto a un comando**: `make rebrand` ya existe; un
-  `make bump-version` hermano mantiene versión + tag en sincronía (según
-  `contributing.md`).
-- **Upgrades de CLI sin dolor**: la skill `tauri-cli-rebase` se convierte en
-  un flujo `make upgrade-cli` que rebasea el CLI vendoreado automáticamente.
-- **Template listo para updates**: `tauri-plugin-updater` integrado con docs
-  de firma para macOS/Linux/Windows.
-- **Módulos starter opcionales** (login, ajustes, persistencia) opt-in — el
-  punto de partida se queda mínimo, los caminos comunes están a una orden de
-  distancia.
-- **Checks E2E de UI por SO** en los entornos virtualizados que el tooling ya
-  usa (caja, VMs).
+### Fase B — Adopción de Tauri v3 (cuando sea estable)
 
-### Fase 3 — Ecosistema (largo plazo)
+El item estrella. La plantilla migra a v3 como un único cambio coherente:
 
-- Sitio de docs bilingüe (estático, desde `docs/en` + `docs/es`).
-- Installer de scaffold (`pnpm create tauri-react-template`).
-- Runbooks de publicación en stores (App Store Connect, Google Play, MSIX).
-- **Migración a Tauri v3** cuando sea estable — la plantilla se mueve junta,
-  con el flujo de rebase del CLI vendoreado actualizado en el mismo cambio.
+- Migración completa en un commit: runtime crates (`tauri-runtime-wry`),
+  MSRV 1.95 / edition 2024, nueva ACL, updater moderno, devtools por runtime.
+- **Rework Linux GTK4** completado y verificado en el contenedor + sesiones
+  Wayland reales.
+- **Perfil CEF opcional** (`make init --runtime cef`): la misma renderización
+  Chromium en todos los desktops para UIs complejas, empaquetado con el flujo
+  de rebase del CLI vendoreado.
+- CLI vendoreado v3 + skill `tauri-cli-rebase` actualizada, matriz 5-SO
+  re-verificada en bundles reales.
+
+### Fase C — Más allá de v3
+
+- Sitio de docs bilingüe (estático, desde `docs/en` + `docs/es`) e installer
+  de scaffold (`pnpm create tauri-react-template`).
+- Runbooks de publicación en stores con las APIs de release (App Store
+  Connect, Google Play, MSIX).
+- **Template AI-ready**: agent skills + MCP para que cualquier agente de IA
+  clone, rebrandee y publique la plantilla sin fricción.
 ## 📚 Documentación
 
 Las guías completas están en [`docs/es/`](docs/es/README.md) (espejo: [`docs/en/`](docs/en/README.md)) — mismas páginas, mismo orden, ambos idiomas:
