@@ -14,7 +14,7 @@ ifneq ($(strip $(MACOS_SIGNING_IDENTITY)),)
 endif
 
 # iOS — Mac link-local IP on the USB network (what the iPhone can reach)
-IOS_DEVICE ?= iPhone 17
+IOS_DEVICE ?= iPhone 18 Pro
 IOS_DEV_HOST ?= $(shell ip=$$(ifconfig en9 2>/dev/null | awk '/inet / && $$2 ~ /^169\.254\./ {print $$2; exit}'); if [ -z "$$ip" ]; then ip=$$(ifconfig 2>/dev/null | awk '/^[a-z0-9]+:/{i=$$1} /inet 169\.254\./{print $$2; exit}'); fi; echo $$ip)
 ANDROID_AVD ?= Resizable_Experimental
 ANDROID_TARGET ?= aarch64

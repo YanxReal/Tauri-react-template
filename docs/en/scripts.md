@@ -24,8 +24,8 @@
 |--------|--------|
 | `make dev` | `tauri dev` (desktop), respects `APPLE_SIGNING_IDENTITY` |
 | `make dev:web` | `pnpm --filter web dev` |
-| `make dev:ios` | `pnpm tauri ios dev "iPhone 17"` (simulator, uses `IOS_DEVICE`) |
-| `make dev-ios-physical` | `cargo tauri ios dev "iPhone 17" --host $(IOS_DEV_HOST)` (needs `make install-tauri-cli`) |
+| `make dev:ios` | `pnpm tauri ios dev "iPhone 18 Pro"` (simulator, uses `IOS_DEVICE`) |
+| `make dev-ios-physical` | `cargo tauri ios dev "iPhone 18 Pro" --host $(IOS_DEV_HOST)` (needs `make install-tauri-cli`) |
 | `make dev-android-emulator` | boot `$ANDROID_AVD` + `tauri android dev --target $ANDROID_TARGET` |
 | `make gen-apple` | `scripts/Xcode/apple-xcode.sh` — regen `gen/apple` (vendored CLI init, branding-aware) |
 | `make gen-android` | `scripts/Android/android-autogen.sh` — regen `gen/android` (vendored CLI init, branding-aware, Linux/Win/macOS) |

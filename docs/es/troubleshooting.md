@@ -71,7 +71,7 @@ Xcode lista simuladores vía `devicectl` — `cargo-mobile2` anterior a 0.22.5 l
 
 ```bash
 make install-tauri-cli
-cargo tauri ios dev "iPhone 17"   # no pnpm tauri (el binario local trae los retoques _Apple)
+cargo tauri ios dev "iPhone 18 Pro"   # no pnpm tauri (el binario local trae los retoques _Apple)
 ```
 
 Para device físico usa `make dev-ios-physical` (necesita `--host 169.254.x.x`).

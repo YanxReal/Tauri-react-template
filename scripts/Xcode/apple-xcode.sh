@@ -51,9 +51,20 @@ if [ -z "$TEAM" ] && [ -f "$ROOT/scripts/.team-id" ]; then
 fi
 [ -n "$TEAM" ] && export APPLE_DEVELOPMENT_TEAM="$TEAM"
 
+# rustup's cargo is required for iOS cross builds (Homebrew-only cargo lacks
+# the iOS std). Prefer the rustup proxy/shim wherever it lives — ~/.cargo/bin
+# normally, Homebrew's rustup keg otherwise. Never fall through to a bare
+# Homebrew cargo for `ios init|build`.
+RUSTUP_CARGO_BIN=""
+if [ -x "$HOME/.cargo/bin/cargo" ]; then
+  RUSTUP_CARGO_BIN="$HOME/.cargo/bin"
+elif [ -x "/opt/homebrew/opt/rustup/bin/cargo" ]; then
+  RUSTUP_CARGO_BIN="/opt/homebrew/opt/rustup/bin"
+fi
+
 echo "==> regenerating gen/apple (app=$APP_NAME) via vendored CLI init..."
 rm -rf "$GEN"
-(cd "$SRC_T" && PATH="$HOME/.cargo/bin:$PATH" "$CARGO_TAURI" ios init)
+(cd "$SRC_T" && PATH="$RUSTUP_CARGO_BIN:$HOME/.cargo/bin:$PATH" "$CARGO_TAURI" ios init)
 
 # --- `_iOS` shims (cargo-mobile2 reads gen/apple/<scheme>/Info.plist) -------
 # scheme() = "<app>_iOS" in cargo-mobile; our target is the unified `_Apple`.
@@ -74,12 +85,15 @@ echo "  shims: ${APP_NAME}_iOS/Info.plist + xcscheme"
 
 if [ "${1:-}" = "--build" ]; then
   echo "==> building iOS simulator (vendored CLI)..."
-  (cd "$SRC_T" && PATH="$HOME/.cargo/bin:$PATH" "$CARGO_TAURI" ios build --debug --target aarch64-sim) || exit 1
+  (cd "$SRC_T" && PATH="$RUSTUP_CARGO_BIN:$HOME/.cargo/bin:$PATH" "$CARGO_TAURI" ios build --debug --target aarch64-sim) || exit 1
   echo "✓ iOS simulator OK: $GEN/build/arm64-sim/${APP_NAME}.app"
   echo "==> building macOS host (My Mac)..."
+  # No team configured → ad-hoc sign locally. These must be command-line
+  # build settings (env vars alone are ignored by this Xcode generation).
   xcodebuild -project "$GEN/${APP_NAME}.xcodeproj" \
     -scheme "${APP_NAME}_Apple" \
     -configuration Debug -destination 'platform=macOS,arch=arm64' \
-    -quiet build || exit 1
+    CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
+    build || exit 1
   echo "✓ macOS host OK"
 fi

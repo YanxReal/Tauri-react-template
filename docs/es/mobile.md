@@ -75,7 +75,7 @@ Instálalo una vez por clon:
 
 ```bash
 make install-tauri-cli   # compila vendor/tauri-cli → ~/.cargo/bin/cargo-tauri
-cargo tauri ios dev "iPhone 17"
+cargo tauri ios dev "iPhone 18 Pro"
 ```
 
 `pnpm tauri ios dev` (Node CLI 2.12.0) es stock — vale para flujos de sim, pero le faltan los retoques `_Apple`/standalone, así que los flujos de dispositivo y Xcode usan `cargo tauri`.
