@@ -97,6 +97,12 @@ for std` on `aarch64-apple-ios-sim`. Ours prepends the rustup proxy when
 present (`$HOME/.cargo/bin` or `/opt/homebrew/opt/rustup/bin`) so the right
 cargo runs.
 
+**Also ours (same phase):** the LIB source path is a `lib*.a` glob, NOT a
+hardcoded crate name — the crate's `[lib] name` changes with every rebrand and
+the old lowercase hardcode only worked on case-insensitive APFS. The linked
+name is the CLI constant `libapp.a` (`LIB_OUTPUT_FILE_NAME`, `mobile/ios/mod.rs`),
+never the crate's.
+
 **Porting notes:** the phase is embedded in the CLI binary (`include_dir!`) —
 after editing the template, REBUILD it (`make install-tauri-cli`), clear
 DerivedData, then re-init (`scripts/Xcode/apple-xcode.sh`). If upstream carries

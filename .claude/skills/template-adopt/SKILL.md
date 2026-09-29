@@ -96,7 +96,7 @@ ask for one before touching `gen/`.
 
 ### 3c. **User code**
 Pages, hooks, React components the user wrote, their `#[tauri::command]`s, their Rust logic in
-`lib.rs`/`platform.rs`, their `.env*`, their `capabilities/` — all read-only unless explicitly
+`lib.rs`/`platform/**`, their `.env*`, their `capabilities/` — all read-only unless explicitly
 consented per file.
 
 ---
