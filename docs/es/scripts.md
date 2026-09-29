@@ -38,6 +38,7 @@
 | `make install-skills` | Instala todas las agent skills del proyecto (macOS/Linux; en Windows corre `scripts\install-skills.cmd`) |
 | `make rebrand` | Propaga la identidad de `branding.json` (nombre, versión, identifier, iconos) a todos los consumidores de escritorio; avisa de regenerar `gen/` para iOS/Android |
 | `make lint` / `make build` | alias |
+| `make ci-frontend` / `make ci-rust` | los ÚNICOS puntos de entrada del CI (`.github/workflows/ci.yml` los invoca; cualquier check nuevo primero se crea como target aquí) — typecheck+lint+test+build / fmt+clippy+test |
 | `make help` / `make doctor` | lista comandos / revisa toolchain |
 
 Shells por OS: **Linux → la skill `linux-build`** (`.claude/skills/linux-build/scripts/linux-build.sh`, solo SSH, ver abajo), `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`, `scripts/Android/android-autogen.sh`. Iconos de la app: `branding/icon-1024.png` es el máster (`icons.master` en `branding.json`); ambos scripts móviles corren `scripts/mobile/mobile-icons-regen.sh` tras el init (`tauri icon` → `icons/` + `gen/apple` + `gen/android`, y compone el trío de marketing iOS 1024 que la CLI no toca).
@@ -150,9 +151,14 @@ biome check --write .   # directo
 - `.husky/pre-commit` → `lint-staged`
 - `lint-staged:25` — `*.{ts,tsx,js,jsx,json,jsonc,css}` → `biome check --write --no-errors-on-unmatched`
 
-## CI (eliminado)
+## CI (semanal, amable con la cuenta gratuita)
 
-Sin workflows de CI — solo consumían recursos de GitHub. Los mismos gates corren en local (ver [Testing](./testing.md)); Husky + lint-staged vigilan cada commit.
+`.github/workflows/ci.yml` corre **una vez por semana** (lunes 18:00 UTC) más
+`workflow_dispatch` manual — nunca en push/PR. Solo invoca targets del
+Makefile: `make ci-frontend` (typecheck + lint + test + build) y `make
+ci-rust` (fmt + clippy + test) en ubuntu-latest; móvil y bundles nativos de
+Tauri quedan fuera del CI (el pipeline de 5 OS corre en la máquina/caja del
+mantenedor). Husky + lint-staged siguen vigilando cada commit.
 
 ## Pines Node / pnpm
 

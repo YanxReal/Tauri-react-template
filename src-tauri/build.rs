@@ -11,9 +11,7 @@
 
 use std::{collections::HashMap, env, fs, path::Path};
 
-const EMBED_KEYS: &[&str] = &[
-    "VITE_API_URL",
-];
+const EMBED_KEYS: &[&str] = &["VITE_API_URL"];
 
 fn main() {
     tauri_build::build();

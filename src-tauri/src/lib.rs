@@ -623,7 +623,7 @@ pub fn run() {
                 let _ = window.center();
             }
 
-                        // Linux: frameless (`decorations:false`). GTK3 has NO overlay
+            // Linux: frameless (`decorations:false`). GTK3 has NO overlay
             // titlebar (macOS uses titleBarStyle:Overlay, Windows decorum):
             // with `decorations:true` muffin always draws its own titlebar
             // (title text + buttons) above our header, and every CSD

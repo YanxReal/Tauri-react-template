@@ -22,7 +22,7 @@
 | **Stack** | Tauri v2 (runtime 2.12, CLI 2.12) + React 19.3 + Vite 8.3 + Tailwind v4.3 (`@tailwindcss/vite`) + TypeScript 7.0 strict + Turborepo 2.11 + Biome 2.5 + Vitest 5 + i18next (EN/ES). Rust stable 1.85+, `window-vibrancy 0.8`, `tauri-plugin-prevent-default`, `plugin-opener`. |
 | **Monorepo** | `apps/web` (Vite `:1420`, `@` → `src`) + `packages/ui` (shadcn, `@workspace/ui/*`) + `src-tauri` (Rust, per-OS configs). |
 | **Docs** | `docs/en/` + `docs/es/` mirrored, parity enforced (§3). `docs/README.md` is the router; root has `README.md` (EN) + `README.es.md` (ES). |
-| **Quality** | Biome, Husky + lint-staged, `cargo fmt` + `clippy` (`await_holding_lock: deny`, `Cargo.toml:76`). No CI — gates run locally ([Testing](docs/en/testing.md)). |
+| **Quality** | Biome, Husky + lint-staged, `cargo fmt` + `clippy` (`await_holding_lock: deny`, `Cargo.toml:76`). Weekly scheduled CI (`.github/workflows/ci.yml`, Mon 18:00 UTC + dispatch) runs `make ci-frontend`/`ci-rust` (ubuntu; desktop only) — gates also run locally ([Testing](docs/en/testing.md)). |
 | **History** | `git log` from `455897d` is the design rationale. Skim it (`--oneline --reverse`) before touching native-feel, vibrancy, or mobile. Milestones below. |
 
 Key milestones (chronological — why non-obvious code exists):

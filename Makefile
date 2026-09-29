@@ -54,7 +54,7 @@ SKILL_LINUX ?= .claude/skills/linux-build/scripts/linux-build.sh
 
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator build-linux linux-release build-windows dev-linux linux-logs linux-stop gen-apple gen-android install-tauri-cli install-skills rebrand lint build
+.PHONY: help doctor dev dev\:web dev\:ios dev-ios-physical dev-android-emulator build-linux linux-release build-windows dev-linux linux-logs linux-stop gen-apple gen-android install-tauri-cli install-skills rebrand lint build ci-frontend ci-rust
 
 help: ## Show available commands
 	@awk -F'##' '/^[a-zA-Z0-9_\\:.-]+:[ \t]*##/ { t=$$1; sub(/:[ \t]*$$/, "", t); gsub(/\\/, "", t); printf "  \033[36m%-22s\033[0m %s\n", t, $$2 }' $(MAKEFILE_LIST)
@@ -150,3 +150,16 @@ lint: ## Biome check
 
 build: ## Turbo build
 	pnpm build
+
+# ---------------------------------------------------------------------------
+# CI targets — the ONLY source the weekly workflow calls (see
+# .github/workflows/ci.yml). Any new check: add a target here first, then the
+# job just invokes it. Mobile + native Tauri builds stay OUT of CI (local/box).
+# ---------------------------------------------------------------------------
+ci-frontend: ## CI: typecheck + lint + test + build del frontend
+	pnpm typecheck && pnpm lint && pnpm test && pnpm build
+
+ci-rust: ## CI: fmt + clippy + tests del backend Rust
+	cargo fmt --manifest-path src-tauri/Cargo.toml --check
+	cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+	cargo test --manifest-path src-tauri/Cargo.toml

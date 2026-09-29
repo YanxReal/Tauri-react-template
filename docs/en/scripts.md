@@ -38,6 +38,7 @@
 | `make install-skills` | Installs all project agent skills (macOS/Linux; on Windows run `scripts\install-skills.cmd`) |
 | `make rebrand` | Propagates `branding.json` identity (name, version, identifier, icons) to all desktop consumers; warns to regenerate `gen/` for iOS/Android |
 | `make lint` / `make build` | aliases |
+| `make ci-frontend` / `make ci-rust` | the ONLY CI entry points (`.github/workflows/ci.yml` calls these; any new check first becomes a target here) — typecheck+lint+test+build / fmt+clippy+test |
 | `make help` / `make doctor` | list commands / check toolchain |
 
 Per-OS build shells: **Linux → the `linux-build` skill** (`.claude/skills/linux-build/scripts/linux-build.sh`, SSH-only, see below), `scripts/build-windows.sh`, `scripts/Xcode/apple-xcode.sh`, `scripts/Android/android-autogen.sh`. App icons: `branding/icon-1024.png` is the master (`branding.json` `icons.master`); both mobile autogen scripts run `scripts/mobile/mobile-icons-regen.sh` after init (`tauri icon` → `icons/` + `gen/apple` + `gen/android`, then composes the iOS 1024 marketing trio the CLI leaves untouched).
@@ -151,9 +152,14 @@ biome check --write .   # direct
 - `.husky/pre-commit` → `lint-staged`
 - `lint-staged:25` — `*.{ts,tsx,js,jsx,json,jsonc,css}` → `biome check --write --no-errors-on-unmatched`
 
-## CI (removed)
+## CI (weekly, free-tier friendly)
 
-No CI workflows — they only burned GitHub resources. The same gates run locally (see [Testing](./testing.md)); Husky + lint-staged guard every commit.
+`.github/workflows/ci.yml` runs **once a week** (Monday 18:00 UTC) plus manual
+`workflow_dispatch` — never on push/PR. It only invokes Makefile targets:
+`make ci-frontend` (typecheck + lint + test + build) and `make ci-rust`
+(fmt + clippy + test) on ubuntu-latest; mobile and native Tauri bundles stay
+out of CI (the 5-OS pipeline runs on the maintainer's machine / Linux box).
+Husky + lint-staged still guard every commit.
 
 ## Node / pnpm pinning
 

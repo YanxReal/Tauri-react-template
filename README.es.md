@@ -269,7 +269,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-Y testear **scroll + click + no-zoom** en un bundle real por SO (`pnpm tauri:build`, `make build-linux` / `make linux-release` — Linux vía la skill `linux-build` —, `scripts/build-windows.sh`) — matriz completa: [`docs/es/testing.md`](docs/es/testing.md). Los gates corren en local (sin CI) — ver Verificación arriba.
+Y testear **scroll + click + no-zoom** en un bundle real por SO (`pnpm tauri:build`, `make build-linux` / `make linux-release` — Linux vía la skill `linux-build` —, `scripts/build-windows.sh`) — matriz completa: [`docs/es/testing.md`](docs/es/testing.md). Un CI semanal programado (`.github/workflows/ci.yml`, lunes 18:00 UTC + dispatch manual) corre los gates JS+Rust vía `make ci-frontend` / `make ci-rust`; los gates también corren en local — ver Verificación arriba.
 
 ---
 
@@ -362,7 +362,7 @@ cargo check --manifest-path src-tauri/Cargo.toml
 # abre PR con el checklist de paridad
 ```
 
-Reglas que importan: **paridad bilingüe de docs** (cada cambio `en/` necesita su espejo `es/`), **no editar `src-tauri/gen/`**, **invariantes multiplataforma** (`AGENTS.md` §4.3). Los gates corren en local.
+Reglas que importan: **paridad bilingüe de docs** (cada cambio `en/` necesita su espejo `es/`), **no editar `src-tauri/gen/`**, **invariantes multiplataforma** (`AGENTS.md` §4.3). Los gates corren semanal en CI + en local.
 
 ---
 
