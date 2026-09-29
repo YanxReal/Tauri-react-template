@@ -6,17 +6,23 @@ Rust + Tauri v2. Entradas: `src-tauri/src/lib.rs:382` (`run()`) y `src-tauri/src
 
 ## Comandos
 
-Registrados en `lib.rs:419`:
+Registrados en `lib.rs:607`:
 
 ```rust
-tauri::generate_handler![greet, platform_info, window_effects_set]
+tauri::generate_handler![
+  greet, platform_info, start_window_resize,
+  window_effects_set, set_status_bar_style, set_linux_theme
+]
 ```
 
 | Comando | Firma | Descripción |
 |---------|-------|-------------|
 | `greet` | `fn greet(name: &str) -> String` | Devuelve saludo (demo) — `lib.rs:12` |
 | `platform_info` | `fn platform_info() -> String` | Devuelve `platform::current_platform()` — `lib.rs:17` |
-| `window_effects_set` | `fn window_effects_set(window, enabled: bool, dark: Option<bool>) -> Result<(), String>` | Aplica/limpia translucidez nativa — `lib.rs:125` |
+| `window_effects_set` | `fn window_effects_set(window, enabled: bool, dark: Option<bool>) -> Result<(), String>` | Aplica/limpia translucidez nativa — `lib.rs:169` |
+| `start_window_resize` | `fn start_window_resize(window, direction: String) -> Result<(), String>` | Linux frameless: mapea un nombre de borde GDK a `begin_resize_drag` — `lib.rs:131` |
+| `set_status_bar_style` | `fn set_status_bar_style(dark: bool) -> Result<(), String>` | Android: contraste de iconos de la status bar vía JNI (`MainActivity.setStatusBarDark`) — `lib.rs:189` |
+| `set_linux_theme` | `fn set_linux_theme(dark: bool) -> Result<(), String>` | Linux: empuja el tema resuelto de la app a GTK (`gtk-application-prefer-dark-theme`) para que scrollbars/controles de WebKitGTK sigan a la app, no al sistema — `lib.rs:208` |
 
 Uso en frontend (`apps/web/src/App.tsx:34`):
 

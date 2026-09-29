@@ -36,7 +36,7 @@ Verify: `pnpm typecheck && pnpm lint && pnpm build` + test scroll / click / no-z
 
 Native translucency toggle:
 
-- **Rust** (`lib.rs:31`): `window-vibrancy = "0.8"` crate. Sync command `window_effects_set {enabled, dark?}` (`lib.rs:125`) — vibrancy (`NSVisualEffectView`) on macOS, Mica on Windows 11; Linux/mobile return `unsupported` (no-op). Must be **sync** (main thread).
+- **Rust** (`lib.rs:31`): `window-vibrancy = "0.8"` crate. Sync command `window_effects_set {enabled, dark?}` (`lib.rs:169`) — vibrancy (`NSVisualEffectView`) on macOS, Mica on Windows 11; Linux/mobile return `unsupported` (no-op). Must be **sync** (main thread).
 - **Frontend** (`apps/web/src/components/vibrancy-provider.tsx` + `glass-cards-provider.tsx`): `VibrancyProvider` + `useVibrancy()` persistence in `localStorage` (`vibrancy`), `GlassCardsProvider` (`glass-cards`). `html.vibrancy` toggles `globals.css:177` transparent body. `dark` follows the theme (Mica tint).
 - **Toggles**: two INDEPENDENT switches in `GlassControls` (`apps/web/src/components/layout/glass-controls.tsx`) — `VibrancyToggle` (`vibrancy-toggle.tsx`, native material, hidden if `!supported`: Linux/mobile/browser) and `GlassCardsToggle` (`glass-cards-toggle.tsx`, the web `glass-*` components, disabled on Linux). They used to be one combined switch; now any mix is valid (vibrancy + solid cards, glass cards on an opaque window, both). Default **OFF** each.
 - **CSS** (`globals.css:177`, `286`): `html.vibrancy .app-shell { background: color-mix(... 32%) }` (42% in light), macOS header `backdrop-blur(16px)`; Windows `Mica` provides material; Linux disables blur.
@@ -49,7 +49,7 @@ Two rules, both load-bearing:
 2. **Scrollbars are native — never style `::-webkit-scrollbar`.** Those pseudo-elements force classic scrollbars (reserved gutter + arrow buttons) and kill the platform overlay behaviour. Instead each OS uses its native overlay:
    - **Windows:** `"scrollBarStyle": "fluentOverlay"` in `tauri.windows.conf.json:13` — the WebView2 Fluent overlay scrollbar (thin pill, auto-hides, floats over the content). Requires WebView2 Runtime ≥ 125.0.2535.41; it is a no-op on older runtimes and unsupported off-Windows. Tauri's own docs note that "CSS styles that modify the scrollbar are applied on top of the native appearance", so adding webkit rules on top would defeat it.
    - **macOS:** the WebKit overlay scrollbars, unchanged — auto-hide on trackpad, and when macOS is set to "always show scrollbars" they only affect the content, never the header.
-   - **Linux:** WebKitGTK follows the GTK setting `gtk-overlay-scrolling` (on by default in GNOME). With it off you get the theme's classic scrollbar — inside the content area only, header untouched.
+   - **Linux:** WebKitGTK follows the GTK setting `gtk-overlay-scrolling` (on by default in GNOME). With it off you get the classic scrollbar — inside the content area only, header untouched. The bar's COLORS follow the GTK theme variant, so `set_linux_theme` (theme provider → Rust → `gtk-application-prefer-dark-theme`) keeps them on the APP's theme even when app and system disagree.
 
 Both are checked by `window-controls`-adjacent invariants: see the `Scrollbars` row in `AGENTS.md` before touching `.app-shell` / `.app-scroll` or adding scrollbar CSS.
 

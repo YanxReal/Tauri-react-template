@@ -56,7 +56,7 @@
 ## Frontera Frontend → Backend
 
 - El frontend llama a Rust vía `invoke` (`App.tsx:35`).
-- Comandos registrados en `lib.rs:422`: `greet`, `platform_info`, `start_window_resize`, `window_effects_set`.
+- Comandos registrados en `lib.rs:607`: `greet`, `platform_info`, `start_window_resize`, `window_effects_set`, `set_status_bar_style`, `set_linux_theme`.
 - Plugins: `tauri_plugin_opener`, `tauri_plugin_prevent_default` (`Flags::debug()` — ver [Sensación nativa](./native-feel.md)).
 
 ## Capas de config (Tauri)
