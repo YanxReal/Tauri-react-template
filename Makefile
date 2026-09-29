@@ -14,12 +14,22 @@ export
 endif
 
 # The vendored CLI reads APPLE_DEVELOPMENT_TEAM; .env carries DEVELOPMENT_TEAM
-# (our canonical name). Translate automatically so every make target sees it.
-APPLE_DEVELOPMENT_TEAM ?= $(DEVELOPMENT_TEAM)
+# (our canonical name). Fallback when .env is absent: scripts/.team-id
+# (gitignored, one Team ID per line). Translate automatically for every target.
+APPLE_DEVELOPMENT_TEAM ?= $(if $(strip $(DEVELOPMENT_TEAM)),$(strip $(DEVELOPMENT_TEAM)),$(shell cat scripts/.team-id 2>/dev/null))
 export APPLE_DEVELOPMENT_TEAM
 
 TAURI := pnpm tauri
 CARGO_TAURI := cargo tauri
+
+# rustup's cargo/rustc are REQUIRED for iOS/Android cross builds (Homebrew's
+# cargo lacks the target std, and rust-toolchain.toml is only honoured by
+# rustup). Prepend the rustup bin dir so every recipe's bare `cargo`/`rustc`
+# resolve through rustup; the phase scripts add the same guard internally.
+RUSTUP_BIN := $(if $(wildcard $(HOME)/.cargo/bin/cargo),$(HOME)/.cargo/bin,$(if $(wildcard /opt/homebrew/opt/rustup/bin/cargo),/opt/homebrew/opt/rustup/bin,))
+ifneq ($(strip $(RUSTUP_BIN)),)
+export PATH := $(RUSTUP_BIN):$(PATH)
+endif
 
 # Stable macOS signing identity (optional, avoids Keychain prompts)
 MACOS_SIGNING_IDENTITY := $(shell cat src-tauri/keys/macos-signing-identity.txt 2>/dev/null)
