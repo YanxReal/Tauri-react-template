@@ -56,6 +56,17 @@ ir en sincronía). El changelog (EN+ES) registra cada cambio.
 - Tag con mensaje: `git tag -a vX.Y.Z -m "..."` y sube los tags
   (`git push --tags`).
 
+### Avisos upstream (Dependabot)
+
+Dependabot marca `glib < 0.20` (medium, unsoundness en `glib::VariantStrIter`)
+en la rama por defecto. Es **de frontera upstream**: glib llega por todo el
+stack GTK 0.18 que `tauri 2.12` arrastra en Linux (`gtk 0.18.2` ←
+`tao`/`wry`/`muda`/`webkit2gtk`). Subir glib por su cuenta rompe la alineación
+de minors de gtk-rs y el build Linux — NO ejecutes
+`cargo update -p glib --precise 0.20`. Se resuelve cuando tauri/tao suban su
+stack GTK; re-revisa tras cada subida de tauri
+(`cargo tree -i glib --target x86_64-unknown-linux-gnu`).
+
 ## Añadir una página a docs
 
 1. Crea `docs/en/<page>.md` + `docs/es/<page>.md` juntas.

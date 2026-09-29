@@ -55,6 +55,17 @@ stay in sync). The changelog (EN+ES) records every change.
 - Tag with a message: `git tag -a vX.Y.Z -m "..."` and push tags
   (`git push --tags`).
 
+### Upstream advisories (Dependabot)
+
+Dependabot flags `glib < 0.20` (medium, `glib::VariantStrIter` unsoundness) on
+the default branch. It is **upstream-bound**: glib arrives through the whole
+GTK 0.18 stack that `tauri 2.12` pulls on Linux (`gtk 0.18.2` ←
+`tao`/`wry`/`muda`/`webkit2gtk`). Bumping glib alone breaks the gtk-rs minor
+alignment and the Linux build — do NOT run
+`cargo update -p glib --precise 0.20`. It resolves when tauri/tao bump their
+GTK stack; re-check after each tauri upgrade
+(`cargo tree -i glib --target x86_64-unknown-linux-gnu`).
+
 ## Adding a page to docs
 
 1. Create `docs/en/<page>.md` + `docs/es/<page>.md` together.
