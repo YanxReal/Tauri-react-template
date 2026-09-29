@@ -103,3 +103,13 @@ Script flags (`.claude/skills/linux-build/scripts/linux-build.sh --help`): `--re
 ## 8. Deliverable
 
 A Linux verification is complete when: the chosen profile built on the box (debug binary or release bundle), the app launched (visible in `assistant windows`), a PNG landed in `dist-linux/linux-verify.png` (or `/workspace/ai/`), and no new failures were introduced. Report paths + OCR/status lines, not adjectives — per AGENTS.md §5, "paste the numbers".
+
+## 9. Desktop runtime is client-side (protected)
+
+The box is a build target — it never edits the repo and there is no `gen/`
+on Linux: the desktop runtime (`lib.rs` frameless/resize/guards,
+`tauri.linux.conf.json`, `header.tsx`+`window-controls.tsx`) is plain source
+on the host, synced read-only. The skill must never suggest moving any of it
+into a generated bucket or "regenerating" it; `rsync` only overwrites what the
+host sends (`--exclude .git`, `--exclude src-tauri/gen`). After any build,
+`git status` on the host must show no diffs outside `dist-linux/`.

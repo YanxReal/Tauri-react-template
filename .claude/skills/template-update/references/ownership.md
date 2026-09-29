@@ -108,6 +108,23 @@ From `AGENTS.md` §4. Re-verify in the **updated** repo:
 
 If any box is left unticked, the update is NOT safe to ship — fix it before §7.
 
+## 5b. Desktop native-feel — no regen layer (protected like mobile, differently)
+
+Desktop windows behavior does NOT come from `gen/` (that is mobile + Xcode
+skeleton only). It lives in **plain repo source** that the template update must
+merge, never "regenerate" or overwrite:
+
+- `src-tauri/src/lib.rs` (traffic lights/snap/X consts, vibrancy, Linux resize +
+  frameless, Windows decorum, `prevent-default` flags)
+- `src-tauri/tauri.{macos,windows,linux}.conf.json` guard keys
+- `apps/web/src/components/layout/{header,window-controls,native-chrome}.tsx`
+- `src-tauri/Assets.xcassets` + `src-tauri/build.rs`
+
+There is no `mods.md` for these: they are the user's runtime (merge rules §3/
+`B` apply). Protection rule: after ANY step of an update, `git diff` on those
+paths must show only intentional template merges — never a silent replace, and
+never a move into a "generated" bucket.
+
 ---
 
 ## 6. Identifier fields the skill must protect

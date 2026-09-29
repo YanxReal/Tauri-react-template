@@ -118,6 +118,27 @@ composes the iOS 1024 marketing trio (light/dark/tinted) that this CLI version
 does not generate. A rebase therefore overlays the OLD neutral placeholders as-is
 — never any brand-specific artwork.
 
+## Desktop runtime — OUT OF SCOPE (protected, never touched by a rebase)
+
+The CLI regen ONLY produces the mobile/Xcode layers (`gen/apple`,
+`gen/android`) and the generated `icons/` set. The DESKTOP runtime — where the
+native feel actually lives — has NO regen layer and must NEVER be modified by
+this skill or by an upgrade:
+
+- `src-tauri/src/lib.rs` (traffic lights + snap + `TRAFFIC_LIGHTS_X`, vibrancy
+  `window_effects_set`, Linux resize edges + frameless setup, Windows decorum
+  `DWMWCP_ROUND`, `prevent-default` flags, status-bar JNI) — plain repo source
+- `src-tauri/tauri.{macos,windows,linux}.conf.json` + `tauri.conf.json` guards
+- `apps/web/src/components/layout/*` (`header.tsx`, `window-controls.tsx`,
+  `native-chrome.ts`), `assets`/`globals.css` window layer
+- `src-tauri/Assets.xcassets` + `src-tauri/build.rs` (macOS icon compile)
+
+**Rebase checklist addition:** after re-applying the MODs and regenerating
+`gen/`, verify `git status` shows NO diffs outside
+`src-tauri/vendor/**`, `src-tauri/gen/**` (ignored), `src-tauri/icons/**`
+(regenerated) and the files this skill intentionally bumps (pins/docs). Any
+diff in the desktop list above is a regression — revert it before shipping.
+
 Ported upstream into our `project.yml`: `{{ shell-escape tauri-binary }}` +
 quoted vars on the `xcode-script` line (spaces-in-paths fix). NOT ported
 (already covered): `excludes: ["**/*.a"]` — our template omits `Externals`

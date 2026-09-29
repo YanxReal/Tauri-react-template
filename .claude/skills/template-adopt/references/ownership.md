@@ -77,6 +77,18 @@ From `AGENTS.md` §4. Re-verify in the ADOPTED repo:
 
 If any box is left unticked after adoption, do not ship — fix it before §7.
 
+### 5b. Desktop native-feel — adopted as source, never "regenerated"
+
+The mobile layers are generated from vendored templates (`gen/`, `MOD`s,
+`tauri-cli-rebase`). The DESKTOP native feel is NOT generated: `lib.rs`
+(traffic lights/vibrancy/Linux resize+decorum/`prevent-default`),
+`tauri.{macos,windows,linux}.conf.json` guards,
+`apps/web/src/components/layout/*`, `Assets.xcassets` + `build.rs` are adopted
+as plain source (buckets `merge`/`skip/user`, §2–§3). Adoption must NEVER move
+them into a generated bucket or gate them behind a regen flow; the user's
+values win on any collision and the invariant checks above are the shipping
+gate (same rule as `template-update` §5b).
+
 ---
 
 ## 6. Identifier fields that must be preserved

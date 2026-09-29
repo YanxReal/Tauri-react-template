@@ -181,6 +181,13 @@ After the new vendor passes gates:
    - `.claude/skills/tauri-cli-rebase/` if it references a version.
    - `Makefile` → any `tauri-cli-<V>` in `install-tauri-cli`.
    - `src-tauri/Cargo.toml` → `tauri` / `tauri-build` if bumped.
+3. **PROTECT the desktop runtime (hard gate):** the rebase only legitimately
+   touches `src-tauri/vendor/**`, `src-tauri/icons/**` (regenerated) and pins
+  /docs. `git status --short` must show NO diffs in the desktop source list
+   (`src-tauri/src/lib.rs`, `tauri.{macos,windows,linux}.conf.json`,
+   `apps/web/src/components/layout/*`, `Assets.xcassets`, `build.rs`) — see
+   "Desktop runtime — OUT OF SCOPE" in `references/mods.md`. Any diff there is
+   a regression: revert before continuing.
 3. **Update `references/mods.md`**: reflect the new base version, update the porting notes /
    line hints / `BASES` + any diff noted in the overlay step. Keep the `MOD-1/2/3`
    intents intact.
