@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    Tauri_react_template_lib::run()
+    Tauri_react_template_lib::run();
 }

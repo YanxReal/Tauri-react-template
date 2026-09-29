@@ -14,7 +14,7 @@ pub mod platform;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+    format!("Hello, {name}! You've been greeted from Rust!")
 }
 
 #[tauri::command]
@@ -108,14 +108,14 @@ impl std::str::FromStr for ResizeEdge {
 
     fn from_str(direction: &str) -> Result<Self, Self::Err> {
         match direction {
-            "North" => Ok(ResizeEdge::North),
-            "South" => Ok(ResizeEdge::South),
-            "East" => Ok(ResizeEdge::East),
-            "West" => Ok(ResizeEdge::West),
-            "NorthWest" => Ok(ResizeEdge::NorthWest),
-            "NorthEast" => Ok(ResizeEdge::NorthEast),
-            "SouthWest" => Ok(ResizeEdge::SouthWest),
-            "SouthEast" => Ok(ResizeEdge::SouthEast),
+            "North" => Ok(Self::North),
+            "South" => Ok(Self::South),
+            "East" => Ok(Self::East),
+            "West" => Ok(Self::West),
+            "NorthWest" => Ok(Self::NorthWest),
+            "NorthEast" => Ok(Self::NorthEast),
+            "SouthWest" => Ok(Self::SouthWest),
+            "SouthEast" => Ok(Self::SouthEast),
             _ => Err(format!("unknown direction: {direction}")),
         }
     }
@@ -127,6 +127,9 @@ impl std::str::FromStr for ResizeEdge {
 /// decorate a frameless window), so the app detects the edge
 /// (`useWindowResizeEdges`) and it ends here, in GTK's `begin_resize_drag`.
 /// On other platforms the WM handles it.
+/// Command args must be owned (serde/CommandArg); the reference suggestions do
+/// not apply on every OS (on Linux the body borrows, macOS consumes).
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 fn start_window_resize(window: tauri::WebviewWindow, direction: String) -> Result<(), String> {
     #[cfg(target_os = "linux")]
@@ -165,6 +168,8 @@ fn start_window_resize(window: tauri::WebviewWindow, direction: String) -> Resul
     }
 }
 
+// Command args must be owned (serde); the reference suggestion does not apply.
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 fn window_effects_set(
     window: tauri::WebviewWindow,
@@ -185,6 +190,10 @@ fn window_effects_set(
 /// system and vice versa — the system-following native flags alone would then
 /// paint invisible icons. No-op everywhere else (desktop/iOS draw their own
 /// chrome), so the frontend calls it unconditionally.
+/// Frontend contract: commands return `Result` so the caller's `.catch()`
+/// works uniformly on every OS (clippy's `unnecessary_wraps`/`missing_const`
+/// suggestions do not apply — the wrapped path is real on Android/Linux).
+#[allow(clippy::unnecessary_wraps, clippy::missing_const_for_fn)]
 #[tauri::command]
 fn set_status_bar_style(dark: bool) -> Result<(), String> {
     #[cfg(target_os = "android")]
@@ -199,11 +208,12 @@ fn set_status_bar_style(dark: bool) -> Result<(), String> {
 }
 
 /// Linux: push the app's RESOLVED theme into GTK's dark preference.
-/// WebKitGTK renders its scrollbars and native form controls from the GTK
+/// `WebKitGTK` renders its scrollbars and native form controls from the GTK
 /// theme variant — without this bridge they follow the SYSTEM theme, so a
 /// light app on a dark system (or vice versa) shows mismatched scrollbars.
 /// `gtk-application-prefer-dark-theme` is the same lever `window.setTheme()`
 /// uses; applied live on every theme change. No-op off Linux.
+#[allow(clippy::unnecessary_wraps, clippy::missing_const_for_fn)]
 #[tauri::command]
 fn set_linux_theme(dark: bool) -> Result<(), String> {
     #[cfg(target_os = "linux")]
@@ -211,7 +221,7 @@ fn set_linux_theme(dark: bool) -> Result<(), String> {
         use gtk::prelude::*;
         if let Some(settings) = gtk::Settings::default() {
             settings.set_gtk_application_prefer_dark_theme(dark);
-            eprintln!("set_linux_theme: prefer-dark={dark}");
+            log::info!("set_linux_theme: prefer-dark={dark}");
         }
     }
     #[cfg(not(target_os = "linux"))]
@@ -324,7 +334,9 @@ fn set_android_status_bar_dark(dark: bool) -> Result<(), String> {
 }
 
 /// Desktop-Apple shell entry for the unified `tauri-react-template_Apple`
-/// Xcode target (see `src-tauri/tauri.macos.conf.json` + `Assets.xcassets`).
+/// Xcode target.
+///
+/// See `src-tauri/tauri.macos.conf.json` + `Assets.xcassets`.
 /// The Xcode project's `main.mm` calls `start_app()` via FFI. On iOS the
 /// symbol comes from `tauri::mobile_entry_point` (cfg `mobile`); here it is
 /// exported for macOS so one `staticlib` serves both destinations.
@@ -335,7 +347,7 @@ fn set_android_status_bar_dark(dark: bool) -> Result<(), String> {
 #[cfg(target_os = "macos")]
 #[no_mangle]
 pub extern "C" fn start_app() {
-    run()
+    run();
 }
 
 /// Target X position of each macOS traffic light (Close / Miniaturize /
@@ -382,7 +394,7 @@ fn traffic_lights_target_y(btn: &objc2_app_kit::NSButton, size: f64) -> f64 {
 }
 
 /// Adjusts the native macOS traffic lights (lower + grow). Reaches the
-/// standard window buttons via `NSWindow` (typed AppKit) and edits their
+/// standard window buttons via `NSWindow` (typed `AppKit`) and edits their
 /// `frame` in bulk: `grow` enlarges each dot
 /// alrededor de su centro y la `y` se fija de forma absoluta para centrarlos
 /// verticalmente en la banda del header (`TRAFFIC_LIGHTS_CENTER_Y`),
@@ -392,6 +404,8 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
     use objc2_app_kit::{NSAutoresizingMaskOptions, NSWindow, NSWindowButton};
     use objc2_foundation::NSRect;
 
+    const NATIVE_SIZE: f64 = NATIVE_DOT_SIZE;
+    const GROWN_SIZE: f64 = NATIVE_SIZE + 3.0;
     let grow = 3.0_f64; // grow each dot ~3px
     let shift_right = 16.0_f64; // nudge left (19->16)
 
@@ -399,7 +413,7 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
         return;
     };
     let Some(ns_window) =
-        (unsafe { objc2::rc::Retained::<NSWindow>::retain(ptr as *mut NSWindow) })
+        (unsafe { objc2::rc::Retained::<NSWindow>::retain(ptr.cast::<NSWindow>()) })
     else {
         return;
     };
@@ -407,8 +421,6 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
     // Avoid cumulative drift on live-resize: AppKit resets to ~12px, we grow
     // to ~15px. If already grown, do not add again (keeps dots from walking
     // right until they disappear).
-    const NATIVE_SIZE: f64 = NATIVE_DOT_SIZE;
-    const GROWN_SIZE: f64 = NATIVE_SIZE + 3.0;
     let window_height = ns_window.frame().size.height;
 
     for button in [
@@ -457,7 +469,6 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
             continue;
         }
         let extra_gap = match button {
-            NSWindowButton::CloseButton => 0.0,
             NSWindowButton::MiniaturizeButton => 2.0,
             NSWindowButton::ZoomButton => 4.0,
             _ => 0.0,
@@ -488,7 +499,7 @@ fn needs_traffic_lights_update(window: &tauri::WebviewWindow) -> bool {
         return false;
     };
     let Some(ns_window) =
-        (unsafe { objc2::rc::Retained::<NSWindow>::retain(ptr as *mut NSWindow) })
+        (unsafe { objc2::rc::Retained::<NSWindow>::retain(ptr.cast::<NSWindow>()) })
     else {
         return false;
     };
@@ -541,20 +552,20 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
         let name_resize_ref: &objc2_foundation::NSNotificationName =
             std::mem::transmute(&*name_resize);
         let name_move_ref: &objc2_foundation::NSNotificationName = std::mem::transmute(&*name_move);
-        let _obs1 = center.addObserverForName_object_queue_usingBlock(
+        let obs1 = center.addObserverForName_object_queue_usingBlock(
             Some(name_resize_ref),
             None,
             None,
             &block_resize,
         );
-        let _obs2 = center.addObserverForName_object_queue_usingBlock(
+        let obs2 = center.addObserverForName_object_queue_usingBlock(
             Some(name_move_ref),
             None,
             None,
             &block_move,
         );
-        std::mem::forget(_obs1);
-        std::mem::forget(_obs2);
+        std::mem::forget(obs1);
+        std::mem::forget(obs2);
         std::mem::forget(block_resize);
         std::mem::forget(block_move);
         std::mem::forget(name_resize);
@@ -563,6 +574,13 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
     REGISTERED.with(|s| s.borrow_mut().insert(label));
 }
 
+/// Application entry point (desktop `main.rs` and, on mobile, the
+/// `tauri::mobile_entry_point` macro).
+///
+/// # Panics
+///
+/// Panics if the application cannot initialize or its event loop exits with
+/// an error (the `.expect` at the end of this function).
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Linux: frameless window (`decorations:false` + `transparent:false` in
@@ -692,7 +710,7 @@ pub fn run() {
                 // 3) NSNotificationCenter for DidResize/DidMove (macOS 26+ needs this: Resized arrives late)
                 ensure_traffic_lights_observer(&window);
                 // 4) 60fps live-resize polling in CommonModes (fires during NSEventTrackingRunLoopMode)
-                let w2 = window.clone();
+                let w2 = window;
                 let block = block2::RcBlock::new(
                     move |_timer: std::ptr::NonNull<objc2_foundation::NSTimer>| {
                         // Only while live-resizing and needing an update (avoids redundant setFrame)

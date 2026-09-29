@@ -3,8 +3,8 @@
 //! - On Android targets: passes `-Wl,-z,max-page-size=16384` so the .so is
 //!   16 KB-page compatible (Android 15+ shows no compatibility warning).
 //! - On macOS: compiles `Assets.xcassets/AppIcon` via `actool` so the .app uses
-//!   the theme-aware AppIcon (instead of just icon.icns). Works without Xcode
-//!   (skips with warning) and is ignored on other platforms.
+//!   the theme-aware `AppIcon` (instead of just `icon.icns`). Works without
+//!   Xcode (skips with warning) and is ignored on other platforms.
 //! - Embeds public env vars from `src-tauri/.env` or process env so desktop +
 //!   mobile bundles carry them without a runtime .env. Extend the `EMBED_KEYS`
 //!   list for your own vars.
@@ -60,15 +60,15 @@ fn main() {
                     ])
                     .output();
                 if let Ok(out) = output {
-                    if !out.status.success() {
-                        println!(
-                            "cargo:warning=actool failed for Assets.xcassets: {}",
-                            String::from_utf8_lossy(&out.stderr)
-                        );
-                    } else {
+                    if out.status.success() {
                         println!(
                             "cargo:rustc-env=TAURI_ASSETS_CAR={}",
                             out_dir.join("Assets.car").display()
+                        );
+                    } else {
+                        println!(
+                            "cargo:warning=actool failed for Assets.xcassets: {}",
+                            String::from_utf8_lossy(&out.stderr)
                         );
                     }
                 }

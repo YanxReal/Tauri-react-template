@@ -27,7 +27,10 @@ pub mod iOS;
 pub mod macOS;
 
 /// Generic runtime platform detection helper (handy for logs).
-pub fn current_platform() -> &'static str {
+/// Runtime platform tag ("macos", "windows", "linux", "ios",
+/// "android", or "web" for anything else).
+#[must_use]
+pub const fn current_platform() -> &'static str {
     #[cfg(target_os = "android")]
     return "android";
     #[cfg(target_os = "ios")]
