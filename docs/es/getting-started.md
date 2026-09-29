@@ -106,10 +106,9 @@ make dev-android-emulator   # arranca AVD + android dev
 ### Variables de entorno
 
 Las vars públicas se incrustan al compilar vía `src-tauri/build.rs`
-(`EMBED_KEYS`): `VITE_API_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
-`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`. Ponlas en `src-tauri/.env`
-(gitignored) o como env del proceso. En **release**, `SUPABASE_URL` debe ser
-`https://*.supabase.co` o el build hace panic (`build.rs:135`).
+(`EMBED_KEYS`): `VITE_API_URL`. Ponla en `src-tauri/.env` (gitignored) o como
+env del proceso. Extiende `EMBED_KEYS` en `build.rs` para tus propias vars
+públicas.
 
 ## Build
 

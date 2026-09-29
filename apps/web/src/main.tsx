@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client"
 import "@workspace/ui/globals.css"
 import "./i18n/config.ts"
 import { AppProviders } from "@/components/app-providers.tsx"
+import { ErrorBoundary } from "@/components/error-boundary.tsx"
 import { App } from "./App.tsx"
 
 // --- Native-app feel (multi-OS) ---------------------------------------------
@@ -49,7 +50,9 @@ if (!root) throw new Error("Root element not found")
 createRoot(root).render(
   <StrictMode>
     <AppProviders>
-      <App />
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
     </AppProviders>
   </StrictMode>
 )

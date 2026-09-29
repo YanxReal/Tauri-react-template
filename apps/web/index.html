@@ -21,6 +21,23 @@
     <meta property="og:type" content="website" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <title>Tauri React Template</title>
+    <!-- Pre-hydration theme: set the stored/system theme class before the
+         bundle paints (the ThemeProvider re-applies the same logic at mount;
+         keep both in sync — storageKey "theme" lives in theme-provider.tsx). -->
+    <script>
+      (() => {
+        try {
+          const stored = localStorage.getItem("theme") || "system"
+          const dark =
+            stored === "dark" ||
+            (stored === "system" &&
+              matchMedia("(prefers-color-scheme: dark)").matches)
+          document.documentElement.classList.add(dark ? "dark" : "light")
+        } catch {
+          /* no storage (private mode): ThemeProvider still applies the class */
+        }
+      })()
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app. / Necesitas habilitar JavaScript para ejecutar esta app.</noscript>

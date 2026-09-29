@@ -10,7 +10,7 @@
 - Landmarks semánticos: `<header><nav><main><section><footer>` + skip-link + nav etiquetada + `role=status` para el output de greet.
 - `Header` — nav, toggle de idioma, toggle de tema, `GlassControls` (vibrancy + tarjetas glass, dos switches independientes); renderiza `WindowControls` en Win/Linux.
 - `Hero` / `Features` — secciones de marketing, keys i18n.
-- Sección `status` — demo de `invoke("greet")` con traducción ES (`App.tsx:37`) y fallback glass-vs-sólido (`effectiveGlass`).
+- Sección `status` — demo de `invoke("greet")` con traducción ES (`App.tsx:37`) y fallback glass-vs-sólido (`effectiveGlass`, `App.tsx:26`).
 
 `main.tsx:1` arranca los providers (anidados `Theme → Vibrancy → GlassCards → App`, compuestos una sola vez en `app-providers.tsx:14` — también los usa `App.test.tsx`) más la config [i18n](./i18n.md) y `globals.css`. `TitleBar` monta las clases `html.titlebar*` (ver [Estilos](./styling.md)).
 

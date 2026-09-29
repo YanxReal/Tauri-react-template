@@ -61,5 +61,10 @@
   },
   "app": {
     "skipToContent": "Saltar al contenido"
+  },
+  "error": {
+    "title": "Algo salió mal",
+    "body": "La interfaz encontró un error inesperado. Recarga para continuar.",
+    "reload": "Recargar"
   }
 }

@@ -105,10 +105,8 @@ make dev-android-emulator   # boot AVD + android dev
 ### Environment variables
 
 Public vars are embedded at compile time by `src-tauri/build.rs` (`EMBED_KEYS`):
-`VITE_API_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `VITE_SUPABASE_URL`,
-`VITE_SUPABASE_ANON_KEY`. Provide them via `src-tauri/.env` (gitignored) or
-process env. In **release**, `SUPABASE_URL` must be `https://*.supabase.co`
-or the build panics (`build.rs:135`).
+`VITE_API_URL`. Provide it via `src-tauri/.env` (gitignored) or process env.
+Extend `EMBED_KEYS` in `build.rs` for your own public vars.
 
 ## Build
 

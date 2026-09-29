@@ -61,5 +61,10 @@
   },
   "app": {
     "skipToContent": "Skip to content"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "body": "The interface hit an unexpected error. Reload to continue.",
+    "reload": "Reload"
   }
 }
