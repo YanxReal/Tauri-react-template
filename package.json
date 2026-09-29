@@ -34,5 +34,7 @@
     "lint-staged": "^17.6.0",
     "turbo": "^2.11.5",
     "typescript": "^7.0.2"
-  }
+  },
+  "description": "Tauri + React + Vite template — generic multi-platform (iOS/Android/desktop) with Xcode layers",
+  "author": "YanX Studio"
 }

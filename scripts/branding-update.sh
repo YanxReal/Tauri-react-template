@@ -2,8 +2,9 @@
 # ---------------------------------------------------------------------------
 # branding-update.sh — propagate every identity value from branding.json (repo
 # root) to all consumers. SINGLE SOURCE OF TRUTH: edit branding.json, run this,
-# and the name / version / identifier / binary / icons / bundle meta are synced
-# everywhere. Xcode + Android Studio icons/schemes are NOT managed here.
+# and the name / version / identifier / binary / icons / bundle meta / authors
+# / description are synced everywhere. Xcode + Android Studio icons/schemes
+# are NOT managed here.
 #
 # Usage:
 #   make rebrand      # or: scripts/branding-update.sh
@@ -37,6 +38,8 @@ STARTMENU="$(read_brand "['bundle']['startMenuFolder']")"
 PUBLISHER="$(read_brand "['bundle']['publisher']")"
 HOMEPAGE="$(read_brand "['bundle']['homepage']")"
 ICONS_JSON="$(python3 -c "import json;d=json.load(open('$BRAND'))['icons']['set'];print(json.dumps(d))")"
+AUTHORS_JSON="$(python3 -c "import json,shlex;d=json.load(open('$BRAND'))['authors'];print(json.dumps(d))")"
+AUTHOR_FIRST="$(python3 -c "import json;d=json.load(open('$BRAND'))['authors'];print(d[0] if d else '')")"
 
 # set_json_field FILE DOTPATH JSONLITERAL — set one nested JSON value, preserve rest.
 # Supports dict keys and numeric list indices in the dot-path (e.g. app.windows.0.title).
@@ -100,14 +103,18 @@ set_json_field "$ROOT/src-tauri/tauri.windows.conf.json" "bundle.windows.nsis.st
 NPM_NAME="$(echo "$NAME" | tr '[:upper:]' '[:lower:]')"
 set_json_field "$ROOT/package.json" "name" "\"$NPM_NAME\""
 set_json_field "$ROOT/package.json" "version" "\"$VER\""
+set_json_field "$ROOT/package.json" "description" "\"$DESC\""
+if [[ -n "$AUTHOR_FIRST" ]]; then
+  set_json_field "$ROOT/package.json" "author" "\"$AUTHOR_FIRST\""
+fi
 
-# Cargo.toml: package name, version, [[bin]] name, [lib] name.
+# Cargo.toml: package name, version, description, authors, [[bin]] name, [lib] name.
 if [[ "$DRY" == "1" ]]; then
-  echo "  [dry-run] would update Cargo.toml [package]/[[bin]]/[lib] + version"
+  echo "  [dry-run] would update Cargo.toml [package]/[[bin]]/[lib] + version + description + authors"
 else
-  python3 - "$ROOT/src-tauri/Cargo.toml" "$CRATE" "$VER" "$LIB" "$BINARY" <<'PY'
-import re, sys, pathlib
-f, crate, ver, lib, binary = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5]
+  python3 - "$ROOT/src-tauri/Cargo.toml" "$CRATE" "$VER" "$LIB" "$BINARY" "$DESC" "$AUTHORS_JSON" <<'PY'
+import re, sys, pathlib, json
+f, crate, ver, lib, binary, desc, authors_json = sys.argv[1:8]
 p = pathlib.Path(f); s = p.read_text(encoding="utf-8")
 
 def set_block(regex, value):
@@ -119,8 +126,13 @@ set_block(r'\[package\]', crate)
 set_block(r'\[\[bin\]\]', binary)
 set_block(r'\[lib\]', lib)
 s = re.sub(r'(?m)^\s*version\s*=\s*"[^"]+"', f'version = "{ver}"', s, count=1)
+s = re.sub(r'(?m)^\s*description\s*=\s*"[^"]*"', f'description = "{desc}"', s, count=1)
+authors = json.loads(authors_json)
+if authors:
+    toml_authors = '[' + ', '.join('"' + a.replace('"', r'\"') + '"' for a in authors) + ']'
+    s = re.sub(r'(?m)^\s*authors\s*=\s*\[[^\]]*\]', f'authors = {toml_authors}', s, count=1)
 p.write_text(s, encoding="utf-8")
-print("  updated Cargo.toml [package]/[[bin]]/[lib] names + version")
+print("  updated Cargo.toml [package]/[[bin]]/[lib] names + version + description + authors")
 PY
 fi
 
@@ -134,15 +146,10 @@ else
     echo "warning: lib call not confirmed in main.rs" >&2; }
 fi
 
-# build-linux.sh: APP_NAME + pkill patterns.
-if [[ "$DRY" == "1" ]]; then
-  echo "  [dry-run] would update build-linux.sh APP_NAME to $BINARY"
-else
-  sed -i '' "s/^APP_NAME=.*/APP_NAME=\"$BINARY\"/" "$ROOT/scripts/build-linux.sh"
-  sed -i '' -e "s#target/\[[dr]\]ebug/[A-Za-z-]*#target/[d]ebug/$BINARY#g" \
-             -e "s#target/\[[dr]\]elease/[A-Za-z-]*#target/[r]elease/$BINARY#g" \
-    "$ROOT/scripts/build-linux.sh"
-fi
+# Linux builds: the `linux-build` skill's script derives APP_NAME from
+# Cargo.toml [package] at runtime, so the box binary/pkill patterns follow
+# the rebrand automatically via the Cargo.toml update above. Nothing to patch
+# here (scripts/build-linux.sh was absorbed into the skill).
 
 # --- Mobile (Xcode / Android) -------------------------------------------------
 # The mobile app NAME and identifier are resolved by the vendored CLI at
