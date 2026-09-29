@@ -20,6 +20,7 @@
 | [Troubleshooting](./troubleshooting.md) | Stuck? | Symptom → fix tables |
 | [Contributing](./contributing.md) | Contributors | Conventions, parity, gates |
 | [Changelog](./changelog.md) | Curious | Full evolution, commit by commit |
+| [Tauri v3 Preview](./v3-preview.md) | Roadmap | Preview branch: gradual v3 adoption (alpha tracking) |
 
 ## Stack at a glance
 

@@ -335,8 +335,9 @@ modern updater and ACL. Everything below keeps the template ahead of the jump
 instead of catching up:
 
 - **Two release lines**: `main` stays on stable v2, a `v3-preview` branch
-  tracks the v3 alphas/betas so the migration is exercised continuously (the
-  container + VMs already verify every reload).
+  tracks the v3 alphas/betas ([preview plan](docs/en/v3-preview.md)) so the
+  migration is exercised continuously (the container + VMs already verify
+  every reload).
 - **Linux GTK4 plan documented in advance**: frameless window, resize band,
   app theme bridge and glass fallback are re-designed for GTK4/WebKitGTK 6.0
   before the stable jump.

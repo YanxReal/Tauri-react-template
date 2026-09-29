@@ -20,6 +20,7 @@
 | [Solución de problemas](./troubleshooting.md) | ¿Atascado? | Tablas síntoma → arreglo |
 | [Contribuir](./contributing.md) | Contribuidores | Convenciones, paridad, gates |
 | [Changelog](./changelog.md) | Curiosos | Evolución completa, commit a commit |
+| [Vista previa de Tauri v3](./v3-preview.md) | Roadmap | Rama preview: adopción gradual de v3 (seguimiento de alphas) |
 
 ## Stack de un vistazo
 

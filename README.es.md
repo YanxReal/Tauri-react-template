@@ -335,8 +335,9 @@ Linux, runtimes de webview intercambiables (wry / CEF), MSRV 1.95 + edition
 salto en lugar de perseguirlo:
 
 - **Dos líneas de release**: `main` sigue en v2 estable y una rama
-  `v3-preview` persigue las alphas/betas de v3 para que la migración se
-  ejercite continuamente (el contenedor + VMs ya verifican cada recarga).
+  `v3-preview` persigue las alphas/betas de v3 ([plan de preview](docs/es/v3-preview.md))
+  para que la migración se ejercite continuamente (el contenedor + VMs ya
+  verifican cada recarga).
 - **Plan Linux GTK4 documentado de antemano**: ventana frameless, banda de
   resize, bridge de tema y glass fallback rediseñados para GTK4/WebKitGTK 6.0
   antes del salto a estable.

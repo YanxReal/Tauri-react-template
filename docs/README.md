@@ -28,3 +28,4 @@ Ambos árboles están **espejados y deben mantenerse en paridad**. Ver [`AGENTS.
 | Troubleshooting | [`en/troubleshooting.md`](./en/troubleshooting.md) | [`es/troubleshooting.md`](./es/troubleshooting.md) |
 | Contributing | [`en/contributing.md`](./en/contributing.md) | [`es/contributing.md`](./es/contributing.md) |
 | Changelog | [`en/changelog.md`](./en/changelog.md) | [`es/changelog.md`](./es/changelog.md) |
+| Tauri v3 Preview | [`en/v3-preview.md`](./en/v3-preview.md) | [`es/v3-preview.md`](./es/v3-preview.md) |
