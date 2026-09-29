@@ -319,11 +319,12 @@ Full table: [`docs/en/troubleshooting.md`](docs/en/troubleshooting.md)
 
 ## 🗺️ Roadmap
 
-- [ ] Right-edge resize on Wayland: confirm serial-vs-detection, then fix + verify all 8 edges
-- [ ] Verify frameless Linux on real hardware (NVIDIA/Wayland + X11 sessions)
-- [ ] iOS physical-device pipeline end-to-end (Team ID + USB iPhone)
-- [ ] Android release bundle + store metadata path
-- [ ] Plan A degraded glass on Linux (spec'd in native-feel, not implemented)
+- [ ] **Linux edge-resize**: confirm serial-vs-detection on X11 (already box-verified via the `linux-build` skill), then on Wayland; fix + verify all 8 edges
+- [ ] **Linux frameless on real hardware**: extend verification beyond the box (X11/llvmpipe) to NVIDIA/Wayland + X11 sessions
+- [ ] **No-zoom / scroll verification recipes** in the `linux-build` skill (AGENTS §5 gate: scroll + click + no-zoom on the real Linux bundle)
+- [ ] **iOS physical-device pipeline** end-to-end (Team ID + iPhone over USB)
+- [ ] **Android release bundle** + store-metadata path
+- [ ] **Linux glass fallback (Plan A)** — specified in `docs/en/native-feel.md`, not implemented
 
 ---
 

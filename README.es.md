@@ -319,11 +319,12 @@ Tabla completa: [`docs/es/troubleshooting.md`](docs/es/troubleshooting.md)
 
 ## 🗺️ Roadmap
 
-- [ ] Resize del borde derecho en Wayland: confirmar serial-vs-detección, luego fix + verificar los 8 bordes
-- [ ] Verificar frameless Linux en hardware real (sesiones NVIDIA/Wayland + X11)
-- [ ] Pipeline de iPhone físico end-to-end (Team ID + iPhone USB)
-- [ ] Bundle release Android + ruta de metadatos de tienda
-- [ ] Plan A de glass degradado en Linux (especificado en native-feel, no implementado)
+- [ ] **Resize del borde en Linux**: confirmar serial-vs-detección en X11 (ya verificado en la caja vía la skill `linux-build`), luego en Wayland; fix + verificar los 8 bordes
+- [ ] **Frameless Linux en hardware real**: extender la verificación más allá de la caja (X11/llvmpipe) a sesiones NVIDIA/Wayland + X11
+- [ ] **Recetas de verificación no-zoom / scroll** en la skill `linux-build` (gate de AGENTS §5: scroll + click + no-zoom en el bundle Linux real)
+- [ ] **Pipeline de iPhone físico** end-to-end (Team ID + iPhone por USB)
+- [ ] **Bundle release Android** + ruta de metadatos de tienda
+- [ ] **Fallback de glass Linux (Plan A)** — especificado en `docs/es/native-feel.md`, no implementado
 
 ---
 
