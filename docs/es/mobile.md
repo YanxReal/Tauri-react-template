@@ -24,6 +24,15 @@ scripts/Android/android-autogen.sh        # regen gen/android (proyecto Studio +
 make gen-apple / make gen-android         # alias
 ```
 
+**Los iconos son parte del regen.** `branding/icon-1024.png` es el máster
+(`icons.master` en `branding.json`); ambos scripts corren
+`scripts/mobile/mobile-icons-regen.sh` justo tras el `init` — `tauri icon`
+regenera `icons/` + `gen/apple` + `gen/android` desde el máster y el script
+compone el trío de marketing iOS 1024 (light/dark/tinted) que el CLI no genera.
+Los templates vendoreados llevan placeholders neutros, así que un `gen/` fresco
+nunca arrastra arte ajeno; para rebrandear se reemplaza el máster, jamás los
+sets generados.
+
 ## iOS — target unificado Xcode (iOS + macOS en uno)
 
 `scripts/Xcode/apple-xcode.sh` es el entrypoint (ver `scripts/README.es.md:46`):
