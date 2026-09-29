@@ -18,7 +18,8 @@
 #   scripts/install-skills.sh --global       # install into ~/.claude/skills + ~/.config/opencode/skills
 #   scripts/install-skills.sh --dest DIR     # custom destination (copies <repo>/.claude/skills into DIR)
 #   scripts/install-skills.sh --list         # show which skills are installed where
-#   scripts/install-skills.sh --verify       # check installs match source (no-op write)
+#   scripts/install-skills.sh --verify       # content-aware: hash-compare EVERY file
+#                                             # of every skill vs the source (MISSING/STALE/EXTRA)
 #   scripts/install-skills.sh --dry-run      # show what would be copied, change nothing
 #
 # Platforms:
@@ -120,21 +121,51 @@ case "$MODE" in
 esac
 
 # ---------------------------------------------------- verify mode (read-only) --
+# Content-aware: every file of every skill must exist AND match the source
+# hash (not just SKILL.md presence). Reported: MISSING / STALE / EXTRA.
+file_hash() { # portable md5: macOS `md5 -q`, Linux/Git Bash `md5sum`
+  if command -v md5 >/dev/null 2>&1; then md5 -q "$1" 2>/dev/null
+  else md5sum "$1" 2>/dev/null | cut -d' ' -f1; fi
+}
+
+skill_dir_mismatches() {
+  local src="$1" dest="$2" name bad=0
+  src="${src%/}"   # the discovery glob adds a trailing slash; normalize
+  name="$(basename "$src")"
+  local destdir="$dest/$name"
+  if [[ ! -d "$destdir" ]]; then
+    log "verify: $name — MISSING en $dest"
+    return 1
+  fi
+  local rel
+  while IFS= read -r f; do
+    rel="${f#"$src"/}"
+    if [[ ! -e "$destdir/$rel" ]]; then
+      bad=1
+      log "verify: $name/$rel — MISSING en $dest"
+    elif [[ "$(file_hash "$f")" != "$(file_hash "$destdir/$rel")" ]]; then
+      bad=1
+      log "verify: $name/$rel — STALE (diffiere del source; re-run install)"
+    fi
+  done < <(find "$src" -type f | sort)
+  while IFS= read -r f; do
+    rel="${f#"$destdir"/}"
+    if [[ ! -e "$src/$rel" ]]; then
+      log "verify: $name/$rel — EXTRA en $dest (ya no está en el source)"
+    fi
+  done < <(find "$destdir" -type f 2>/dev/null | sort)
+  [[ "$bad" == "0" ]] && log "verify: $name — ✓ sincronizada"
+  return $bad
+}
+
 verify_dest() {
-  local dest="$1" missing=0
+  local dest="$1" ec=0
   [[ -d "$dest" ]] || { log "verify: $dest — MISSING ($(basename "$dest") no instaladas)"; return 1; }
   for d in "${skills[@]}"; do
-    local name="$(basename "$d")"
-    if [[ ! -f "$dest/$name/SKILL.md" ]]; then
-      missing=1
-      log "verify: $name — FALTA en $dest/$name"
-    fi
+    skill_dir_mismatches "$d" "$dest" || ec=1
   done
-  if [[ "$missing" == "0" ]]; then
-    log "verify: ${#skills[@]} skills presentes en $dest ✓"
-    return 0
-  fi
-  return 1
+  [[ "$ec" == "0" ]] && log "verify: ${#skills[@]} skills sincronizadas en $dest ✓"
+  return $ec
 }
 
 if [[ "$VERIFY" == "1" ]]; then
