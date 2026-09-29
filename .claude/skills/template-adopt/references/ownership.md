@@ -42,7 +42,7 @@ Detection: use `git diff`/`git status` and `scripts/detect-project.sh`. When uns
 1. **Configs** (`tauri*.conf.json`): union the template's new keys with the user's; KEEP the user's
    `productName`, `identifier`, `app.windows[].title`, `bundle.targets`/icons, and any value they
    intentionally set. Never restore the template's identity.
-2. **Rust sources** (`lib.rs`, `platform.rs`): never overwrite. Add any missing template command
+2. **Rust sources** (`lib.rs`, `platform/**`): never overwrite. Add any missing template command
    ONLY if it doesn't collide with the user's. On any collision → stop and ask.
 3. **Frontend roots** (`main.tsx`, `App.tsx`, `globals.css`, `index.html`): add the template's
    guards/layers without removing the user's. If the user already has the same guard with different

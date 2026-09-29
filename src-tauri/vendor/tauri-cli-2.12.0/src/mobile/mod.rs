@@ -1006,7 +1006,9 @@ mod tests {
 
     drop(handle);
     assert!(!server_file.exists());
-    assert!(fetch_options(target, tauri_dir.path()).is_err());
+    // MOD-1 (this fork): with the options file gone, fetch_options falls
+    // back to the standalone options instead of erroring.
+    assert!(fetch_options(target, tauri_dir.path()).is_ok());
   }
 
   #[cfg(unix)]

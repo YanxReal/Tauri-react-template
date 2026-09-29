@@ -10,7 +10,7 @@ way to improve it is a clear PR or a reproducible bug report.
 - **PRs:** follow the [pull request template](.github/pull_request_template.md).
   Keep the EN/ES docs mirrored and the gates green (`pnpm lint/test/build`,
   `cargo fmt/clippy` — see `AGENTS.md` §5).
-- The repo has **no CI**: gates run locally by design (see `docs/en/testing.md`).
+- CI is **weekly only** (`.github/workflows/ci.yml`, Monday 18:00 UTC + manual dispatch, `make ci-frontend`/`ci-rust`); gates otherwise run locally by design (see `docs/en/testing.md`).
 
 TL;DR: fork → branch → change (remember: edit the vendored **templates**, never
 `src-tauri/gen/`) → run the gates → PR.

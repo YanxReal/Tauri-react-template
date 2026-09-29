@@ -33,7 +33,7 @@ Patrón del shell de ventana (`globals.css:209`):
 - `html.titlebar` / `html.titlebar-mac` / `html.titlebar-win` / `html.linux` — montadas por el componente `TitleBar` (solo Tauri desktop).
 - `html.titlebar body { background: transparent }` — la forma de la ventana es nativa.
 - `.app-shell` — el **shell de la ventana**: `height: 100dvh; overflow: hidden; background: var(--background)`. Recorta todo (header incluido) y **no scrollea**. macOS lo redondea vía CSS (`border-radius: 10px`) por la titlebar Overlay transparente. Linux y Windows van frameless (`decorations: false`) así que ambos quedan cuadrados — DWM redondea Windows, Linux conserva las esquinas cuadradas del sistema por diseño. Sin marco GTK, sin radio. Nunca añadas `margin` aquí: un inset dejaría esquinas cortadas.
-- `.app-scroll` (`globals.css:231`) — el **contenedor de scroll** (`flex: 1 1 auto; min-height: 0; overflow-y: auto`) y el **único** en desktop. Envuelve `main` + `Footer`, es decir solo el contenido. El header vive **fuera**: es la barra de título, así que la barra de scroll no puede robarle ancho ni pintarse encima de los caption buttons. En la build web el div es inerte y scrollea el documento, por eso el header mantiene `md:sticky`.
+- `.app-scroll` (`globals.css:250`) — el **contenedor de scroll** (`flex: 1 1 auto; min-height: 0; overflow-y: auto`) y el **único** en desktop. Envuelve `main` + `Footer`, es decir solo el contenido. El header vive **fuera**: es la barra de título, así que la barra de scroll no puede robarle ancho ni pintarse encima de los caption buttons. En la build web el div es inerte y scrollea el documento, por eso el header mantiene `md:sticky`.
 - **Las barras de scroll son nativas y no se estilan.** No hay reglas `::-webkit-scrollbar` a propósito: forzarían barras clásicas (carril + flechas) y matarían el overlay. Windows usa `scrollBarStyle: "fluentOverlay"` (`tauri.windows.conf.json:13`), macOS mantiene su overlay auto-oculto y Linux WebKitGTK sigue `gtk-overlay-scrolling` — las tres son pastillas finas flotando sobre el borde del contenido.
 
 ## Sistema glass / cristal
@@ -50,7 +50,7 @@ Cadena de providers: `VibrancyProvider` (`vibrancy-provider.tsx` — `localStora
 
 `globals.css:132` — `* { user-select:none; -webkit-user-drag:none }` salvo inputs; `html,body { touch-action: pan-x pan-y }` (scroll nativo, sin pinch-zoom).
 
-`globals.css:258` — veto Linux: `backdrop-filter: none !important` en `.app-header` / `.app-shell` (el blur de WebKitGTK es caro y da glitches). En Linux no hay marco GTK (frameless + opaco); `.app-shell` queda cuadrado. `globals.css:253` oculta además la titlebar que decorum inyecta en Windows.
+`globals.css:258` — veto Linux: `backdrop-filter: none !important` en `.app-header` / `.app-shell` (el blur de WebKitGTK es caro y da glitches). En Linux no hay marco GTK (frameless + opaco); `.app-shell` queda cuadrado. `globals.css:272` oculta además la titlebar que decorum inyecta en Windows.
 
 Ver `docs/es/native-feel.md` para el fundamento completo por OS.
 

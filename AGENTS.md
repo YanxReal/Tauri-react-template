@@ -22,7 +22,7 @@
 | **Stack** | Tauri v2 (runtime 2.12, CLI 2.12) + React 19.3 + Vite 8.3 + Tailwind v4.3 (`@tailwindcss/vite`) + TypeScript 7.0 strict + Turborepo 2.11 + Biome 2.5 + Vitest 5 + i18next (EN/ES). Rust stable 1.85+, `window-vibrancy 0.8`, `tauri-plugin-prevent-default`, `plugin-opener`. |
 | **Monorepo** | `apps/web` (Vite `:1420`, `@` → `src`) + `packages/ui` (shadcn, `@workspace/ui/*`) + `src-tauri` (Rust, per-OS configs). |
 | **Docs** | `docs/en/` + `docs/es/` mirrored, parity enforced (§3). `docs/README.md` is the router; root has `README.md` (EN) + `README.es.md` (ES). |
-| **Quality** | Biome, Husky + lint-staged, `cargo fmt` + `clippy` (`await_holding_lock: deny`, `Cargo.toml:76`). Weekly scheduled CI (`.github/workflows/ci.yml`, Mon 18:00 UTC + dispatch) runs `make ci-frontend`/`ci-rust` (ubuntu; desktop only) — gates also run locally ([Testing](docs/en/testing.md)). |
+| **Quality** | Biome, Husky + lint-staged, `cargo fmt` + `clippy` (`await_holding_lock: deny`, `Cargo.toml:84`). Weekly scheduled CI (`.github/workflows/ci.yml`, Mon 18:00 UTC + dispatch) runs `make ci-frontend`/`ci-rust` (ubuntu; desktop only) — gates also run locally ([Testing](docs/en/testing.md)). |
 | **History** | `git log` from `455897d` is the design rationale. Skim it (`--oneline --reverse`) before touching native-feel, vibrancy, or mobile. Milestones below. |
 
 Key milestones (chronological — why non-obvious code exists):
@@ -53,7 +53,7 @@ apps/web/src/main.tsx           Providers + native guards (drag, zoom, opener) �
 apps/web/src/i18n/config.ts     i18next init (en/es, localStorage) — config.ts:14
 apps/web/vite.config.ts         Vite + Tailwind + alias + host:true + vitest — vite.config.ts:8
 packages/ui/src/styles/globals.css  Theme/tokens/shell source of truth — globals.css:11
-src-tauri/src/lib.rs            Commands + vibrancy + traffic lights + decorum — lib.rs:169, lib.rs:368, lib.rs:620
+src-tauri/src/lib.rs            Commands + vibrancy + traffic lights + decorum — lib.rs:174, lib.rs:403, lib.rs:682
 src-tauri/tauri.conf.json       Base config (merged with tauri.{os}.conf.json)
 src-tauri/Info.plist            Template source for macOS+iOS Info.plist (gen/ is autogen)
 scripts/Xcode/apple-xcode.sh    Regen of src-tauri/gen/apple (vendored CLI init) — never edit gen/
@@ -75,9 +75,9 @@ AGENTS.md                       This file
 | Xcode project | `src-tauri/vendor/tauri-cli-*/templates/mobile/ios/` + `apple.xcconfig` | `src-tauri/gen/` (regenerated) |
 | App icons | `branding/icon-1024.png` (**master**, icons.master in `branding.json`) + `src-tauri/icons/`; regen: `tauri icon` + `scripts/mobile/mobile-icons-regen.sh` (post-init in `apple-xcode.sh`/`android-autogen.sh`) | `src-tauri/gen/apple/Assets.*`, `src-tauri/gen/android/.../res/` |
 | iOS Info.plist | `src-tauri/Info.plist` (feeds macOS+iOS) | `src-tauri/gen/apple/**/Info.plist` |
-| macOS traffic lights | `lib.rs:348` (`traffic_lights_target_y`) / `lib.rs:368` (adjust/snap) — X `17.5/39.5/61.5` (`lib.rs:324`) | AppKit internals elsewhere |
+| macOS traffic lights | `lib.rs:383` (`traffic_lights_target_y`) / `lib.rs:403` (adjust/snap) — X `17.5/39.5/61.5` (`lib.rs:359`) | AppKit internals elsewhere |
 | Linux titlebar (app-drawn, frameless) | `header.tsx` + `window-controls.tsx`; `window.show()` after `center()` in `setup()` | `src-tauri/gen/` |
-| Windows overlay (decorum) | `tauri.windows.conf.json:12` + `lib.rs:620` (`DWMWCP_ROUND`) + `window-controls.tsx` | `src-tauri/gen/` |
+| Windows overlay (decorum) | `tauri.windows.conf.json:12` + `lib.rs:682` (`DWMWCP_ROUND`) + `window-controls.tsx` | `src-tauri/gen/` |
 | CLI behavior | `src-tauri/vendor/tauri-cli-*/src/mobile/` (then rebuild) | crates.io copy (use the `tauri-cli-rebase` skill flow) |
 
 ---
@@ -115,15 +115,15 @@ Earned through painful commits (§1). Removing any row reintroduces its platform
 |-----------|-------|------|-------------------|
 | `dragDropEnabled:false` + `zoomHotkeysEnabled:false` in **every** desktop `windows[]` | `tauri.conf.json:21`, `tauri.macos.conf.json:16`, `tauri.windows.conf.json:15`, `tauri.linux.conf.json:14` | `c9ae1a4` | File drag-drop / pinch-keyboard zoom back |
 | `viewport user-scalable=no, maximum-scale=1.0` + `touch-action: pan-x pan-y` + `user-select:none` | `index.html:5`, `globals.css:137`, `globals.css:148` | `c9ae1a4` | Double-tap zoom, select-everywhere, scroll jank (mobile first) |
-| `window_effects_set` stays **sync** (main thread) | `lib.rs:169` | `f997723` | `window-vibrancy` off-thread panic |
-| `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` | `lib.rs:556` | `93657d3` | Yellow blur glitches + RAM blow-up (NVIDIA/Wayland) |
-| `titleBarStyle: Overlay` + `hiddenTitle` + 3-mechanism live-resize fix | `tauri.macos.conf.json`, `lib.rs:368` (`adjust_macos_traffic_lights`) | `938f89a` | Traffic-light flicker/jump on resize |
-| Traffic-light `y` from button **superview** (`isFlipped()` + height), target `MACOS_HEADER_BAND / 2` = 26px | `lib.rs:348` (`traffic_lights_target_y`), `lib.rs:330` (`MACOS_HEADER_BAND`) | measured macOS 26 | Dots land ~9px off |
-| Traffic-light X `17.5/39.5/61.5` | `lib.rs:324` (`TRAFFIC_LIGHTS_X`) | measured macOS | Dots misaligned |
+| `window_effects_set` stays **sync** (main thread) | `lib.rs:174` | `f997723` | `window-vibrancy` off-thread panic |
+| `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` before `Builder` | `lib.rs:607` | `93657d3` | Yellow blur glitches + RAM blow-up (NVIDIA/Wayland) |
+| `titleBarStyle: Overlay` + `hiddenTitle` + 3-mechanism live-resize fix | `tauri.macos.conf.json`, `lib.rs:403` (`adjust_macos_traffic_lights`) | `938f89a` | Traffic-light flicker/jump on resize |
+| Traffic-light `y` from button **superview** (`isFlipped()` + height), target `MACOS_HEADER_BAND / 2` = 26px | `lib.rs:383` (`traffic_lights_target_y`), `lib.rs:365` (`MACOS_HEADER_BAND`) | measured macOS 26 | Dots land ~9px off |
+| Traffic-light X `17.5/39.5/61.5` | `lib.rs:359` (`TRAFFIC_LIGHTS_X`) | measured macOS | Dots misaligned |
 | Linux = frameless (`decorations:false`) + opaque, square corners **by design**; app header IS the 44px titlebar; inner **8px** edge drives `begin_resize_drag` + dblclick maximizes; GTK prefer-dark follows the APP theme (`set_linux_theme`) so scrollbars/controls never mismatch | `tauri.linux.conf.json:11`, `native-chrome.ts` (`RESIZE_BAND`), `lib.rs` (`set_linux_theme`) | 2026-09-27 decision; 2026-09-29 refinements | No content-edge resize (WM gives none); `decorations:true` on GTK3 brings muffin's native titlebar (4 experiments — do not retry); scrollbars follow the system theme again |
-| Windows = frameless + decorum + caption buttons + `DWMWCP_ROUND`; `[data-tauri-decorum-tb]` hidden | `lib.rs:620` (`DWMWCP_ROUND`), `window-controls.tsx` | decorum overlay | Missing controls or a 32px overlay bar |
-| Scroll container = content only (`.app-shell` clips, `.app-scroll` scrolls `main` + `Footer`); overlay scrollbars from the OS, never CSS | `globals.css:215`/`globals.css:231`, `App.tsx:52` | scrollbar overlay work | Classic bar back, header width stolen, caption buttons covered |
-| `prevent-default` with `Flags::debug()` | `lib.rs:572` (`.with_flags(…Flags::debug())`) | `c9ae1a4` | Menus/devtools leak into release (or lost in debug) |
+| Windows = frameless + decorum + caption buttons + `DWMWCP_ROUND`; `[data-tauri-decorum-tb]` hidden | `lib.rs:682` (`DWMWCP_ROUND`), `window-controls.tsx` | decorum overlay | Missing controls or a 32px overlay bar |
+| Scroll container = content only (`.app-shell` clips, `.app-scroll` scrolls `main` + `Footer`); overlay scrollbars from the OS, never CSS | `globals.css:234`/`globals.css:250`, `App.tsx:46` | scrollbar overlay work | Classic bar back, header width stolen, caption buttons covered |
+| `prevent-default` with `Flags::debug()` | `lib.rs:623` (`.with_flags(…Flags::debug())`) | `c9ae1a4` | Menus/devtools leak into release (or lost in debug) |
 | `host: true` in Vite config | `vite.config.ts:25` | `10a74e4` | `tauri ios dev` LAN health-check fails |
 
 **Pre-push checklist (UI/Rust):** all affected targets reasoned about · guards still `false` everywhere · viewport/touch/select intact · `window_effects_set` sync · Linux env vars set · Windows frameless+decorum intact · header outside scroller, no scrollbar CSS added.
@@ -133,7 +133,7 @@ Earned through painful commits (§1). Removing any row reintroduces its platform
 ## 5. Style, i18n, generated code, verification
 
 - **JS/TS:** Biome (2 spaces, 80 cols, `asNeeded`, double quotes, `useImportType: error`). `pnpm lint:fix` before commit. No drive-by reformats.
-- **Rust:** `cargo fmt` + `clippy` (`await_holding_lock: deny`, `Cargo.toml:76`). Never `.await` under a `MutexGuard`.
+- **Rust:** `cargo fmt` + `clippy` (`await_holding_lock: deny`, `Cargo.toml:84`). Never `.await` under a `MutexGuard`.
 - **i18n:** user strings via `t()` only; keep `en.json`/`es.json` key-synced; `Header` toggle syncs `document.documentElement.lang` (`App.tsx:29`); new locale = copy `en.json`, register in `i18n/config.ts:20`.
 - **Never edit `src-tauri/gen/`** (autogen, gitignored). Xcode changes go in the **template**, then `scripts/Xcode/apple-xcode.sh`.
 - **Verify** (run what your change touches):

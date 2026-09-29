@@ -1,7 +1,7 @@
 #!/bin/bash
-# Unified dev helper for the iOS/macOS hotreload modes (one file, two roles).
+# Unified dev helper for the iOS/macOS dev flows (one file, two roles).
 #
-#   server   (default)  Visible Vite server for the template hotreload mode
+#   server   (default)  Visible Vite server for the template dev flow
 #                       WITHOUT a `tauri ios dev` parent. The Xcode "Build
 #                       Rust Code" phase opens this via `open -a Terminal`
 #                       when nothing listens on :1420, so HMR runs with
@@ -10,8 +10,8 @@
 #   parent               Visible Terminal running `tauri ios dev --open` (the
 #                       full-IPC parent). Opens Vite through its
 #                       beforeDevCommand and serves options over IPC until
-#                       the window closes. Manual use for the hotreload
-#                       config that needs the real parent.
+#                       the window closes. Manual use for a dev build that
+#                       needs the real parent.
 #
 # Usage:
 #   ./xcode-dev.command [server|parent]   (default: server)
@@ -34,7 +34,7 @@ case "$MODE" in
   -h|--help)
     echo "Usage: ./xcode-dev.command [server|parent]   (default: server)"
     echo ""
-    echo "  server   Visible Vite dev server (Xcode hotreload WITHOUT parent)."
+    echo "  server   Visible Vite dev server (Xcode dev flow WITHOUT a parent)."
     echo "  parent   Visible 'tauri ios dev --open' full-IPC parent (manual)."
     exit 0
     ;;

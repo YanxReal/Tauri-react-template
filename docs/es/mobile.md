@@ -48,13 +48,15 @@ Qué hace:
 - Resuelve el sentinel `DEVELOPMENT_TEAM` → Team ID real (ver abajo) → vendored CLI `ios init`
 - Target único `tauri-react-template_Apple` cuyo `SUPPORTED_PLATFORMS = macosx iphoneos iphonesimulator` vía `apple.xcconfig` y ramifica en `PLATFORM_NAME` en la fase "Build Rust Code".
 
-### Tres configs de build (XcodeGen)
+### Dos configs de build (XcodeGen)
+
+La vieja config `hotreload` se retiró en el rebase a tauri-cli 2.12 — `debug`
+es el flujo dev/HMR ahora (consume el dev server de Vite).
 
 | Config | macOS | iOS |
 |--------|-------|-----|
-| `debug` | standalone con frontend embebido (`custom-protocol`) | igual — standalone, rápido, sin Vite/CLI |
-| `release` | standalone optimizado | standalone optimizado |
-| `hotreload` | abre Terminal con dev server Vite (`apps/web`, `:1420` + HMR), sin `custom-protocol` | hace probe al parent `tauri ios dev --open` vía handshake JSON-RPC (timeout 1.5s) en `$TMPDIR/com.tauri-react-template.app-server-addr`; si responde → `xcode-script` con IPC completo (`TAURI_DEV_HOST` etc.), si no abre el parent en Terminal; si no hay parent → fallback standalone |
+| `debug` | dev server de Vite (`apps/web`, `:1420` + HMR), sin `custom-protocol`; abre la Terminal dev cuando Vite está caído | mismo flujo: `xcode-script --configuration debug` (el fallback MOD-1 da semántica dev: `devUrl` + HMR) |
+| `release` | standalone optimizado, frontend embebido | standalone optimizado, frontend embebido |
 
 Detalles en `scripts/README.es.md:46`.
 
@@ -99,7 +101,7 @@ Edita **solo la plantilla**: `src-tauri/Info.plist` — es la fuente para macOS 
 
 ### DEVELOPMENT_TEAM
 
-La plantilla nunca hardcodea el Team ID — el sentinel `__TAURI_DEVELOPMENT_TEAM__` lo resuelve `scripts/Xcode/apple-xcode.sh` **antes del vendored CLI init**. Prioridad:
+La plantilla nunca hardcodea el Team ID — `scripts/Xcode/apple-xcode.sh` lo lee (env `DEVELOPMENT_TEAM`, que `make` carga del `.env`, o `scripts/.team-id`) y exporta `APPLE_DEVELOPMENT_TEAM`, la variable que el CLI vendoreado lee en `ios init` para rellenar `{{apple.development-team}}` en el proyecto generado. Prioridad:
 
 1. env `DEVELOPMENT_TEAM`
 2. fichero `scripts/.team-id` (gitignored, persiste)
@@ -134,6 +136,6 @@ pnpm dlx @tauri-apps/cli@2.12.0 android build --debug --target aarch64
 `apps/web/vite.config.ts:25` — `host: host || true` (todas las interfaces). `tauri ios dev` negocia `devUrl` en una IP LAN; Vite debe ser alcanzable en esa IP + `ws://:1421` HMR.
 
 - iPhone físico: `tauri ios dev --host 192.168.x.x "iPhone Studio"` → xcodebuild/devicectl + watcher de Rust.
-- Simulador + scheme `hotreload`: si el parent `tauri ios dev --open` está vivo, `xcode-script` consume sus options + `TAURI_DEV_HOST`; si no, lo abre en Terminal.
+- Simulador + config `debug`: compila vía `xcode-script` (semántica dev — carga `devUrl`); un parent `tauri ios dev --open` es opcional (IPC completo si está, Vite solo si no).
 
 Siguiente: [Sensación nativa →](./native-feel.md)

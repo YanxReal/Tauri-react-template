@@ -407,7 +407,10 @@ fn adjust_macos_traffic_lights(window: &tauri::WebviewWindow) {
     const NATIVE_SIZE: f64 = NATIVE_DOT_SIZE;
     const GROWN_SIZE: f64 = NATIVE_SIZE + 3.0;
     let grow = 3.0_f64; // grow each dot ~3px
-    let shift_right = 16.0_f64; // nudge left (19->16)
+                        // Coarse offset only: the absolute snap on the next tick corrects the
+                        // frame to TRAFFIC_LIGHTS_X (the old per-tick -3px approach drifted).
+                        // Do NOT "fix" the sign without re-measuring on real hardware.
+    let shift_right = 16.0_f64;
 
     let Ok(ptr) = window.ns_window() else {
         return;
@@ -583,6 +586,13 @@ fn ensure_traffic_lights_observer(window: &tauri::WebviewWindow) {
 /// an error (the `.expect` at the end of this function).
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Wire the `log` facade to stderr (RUST_LOG=debug for more). Without this
+    // every log::* call in this crate is a silent no-op (env_logger was a
+    // declared-but-unused dependency).
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .try_init()
+        .ok();
+
     // Linux: frameless window (`decorations:false` + `transparent:false` in
     // tauri.linux.conf.json) with the app-drawn titlebar, same as Windows:
     // square system corners, no alpha channel. Deliberate (2026-09-27):

@@ -31,7 +31,7 @@ is treated as user-customized (see below) even if it "belongs" to a template-own
 
 ### User-owned (`B`) — read-only unless explicitly consented per file
 - `apps/web/src/**` (App.tsx, layout/, pages, hooks/, components the user added)
-- `src-tauri/src/**` (lib.rs, platform.rs — the user's commands and native logic)
+- `src-tauri/src/**` (lib.rs, `platform/**` — the user's commands and native logic)
 - `.env`, `.env.local`, `.env.*`, `scripts/.team-id`, `scripts/.env*`
 - `branding.json` + `branding/` (identity: name, version, authors, `icons.master` —
   the user's brand; the template only ever reads these, never writes them)

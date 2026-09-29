@@ -31,7 +31,7 @@ has_packages_ui=false
 crate="${ROOT}/src-tauri/Cargo.toml"
 id_tpl=false
 if [[ -f "$crate" ]] && command -v grep >/dev/null; then
-  grep -q 'tauri-react-template' "$crate" 2>/dev/null && id_tpl=true
+  grep -qi 'tauri-react-template' "$crate" 2>/dev/null && id_tpl=true
 fi
 
 # Count of signals pointing to a template lineage.

@@ -104,8 +104,9 @@ the rustup fallback, drop MOD-5.
 
 ## Templates (not stock)
 
-Unified `project.yml` (single `_Apple` target, debug/hotreload/release configs,
-Terminal-opening hotreload phase, `__TAURI_DEVELOPMENT_TEAM__` sentinel),
+Unified `project.yml` (single `_Apple` target, debug/release configs — the 2.12
+rebase retired the old `hotreload` config; `debug` is the dev/HMR flow,
+Terminal-opening dev phase, `APPLE_DEVELOPMENT_TEAM` consumed at init),
 `apple.xcconfig`, `ExportOptions-{appstore,developerid}.plist`,
 `{{app.name}}_Apple/` entitlements, and the **neutral placeholder** icon sets:
 `templates/mobile/ios/Assets.xcassets/AppIcon.appiconset/**` (21 PNGs) and the
@@ -159,9 +160,16 @@ from sources entirely.
     `gen/` carries the user's `branding/icon-1024.png` (spot-check the iOS
     AppIcon-1024 PNG hash against the composite reference).
 4. Delete the old vendor dir. Update pins: `package.json` (`@tauri-apps/cli`),
-   `scripts/Xcode/apple-xcode.sh` (`TPL`, `TAURI_CLI`), `Makefile`
+   `scripts/Xcode/apple-xcode.sh` (`TMPL_DIR`, `CARGO_TAURI`), `Makefile`
    `install-tauri-cli`, `scripts/README.md`.
 5. `pnpm install`, `make install-tauri-cli`, verify `cargo-tauri --version` +
    `cargo-mobile2` in the vendor `Cargo.lock`.
+5b. Vendor tests must be green: `cargo test --lib` in the vendor tree (119
+    tests). The `helpers::pbxproj` tests need the upstream fixtures that
+    crates.io omits — `tests/fixtures/pbxproj/project.pbxproj` +
+    `snapshots/tauri_cli__helpers__pbxproj__tests__*.snap` (fetch from the
+    `tauri-cli-v<ver>` git tag). Keep them when re-vendoring, and re-align the
+    MOD-1 assertion in `src/mobile/mod.rs` if upstream changes
+    `fetch_options` semantics again.
 6. Update `docs/en|es/mobile.md`, `README.md`, `scripts/README.md` (EN/ES
    parity). Run full checks.

@@ -12,22 +12,22 @@ Resetea una terminal rota: `reset` o `tput rmcup`.
 
 ## Traffic lights de macOS saltan al redimensionar
 
-Asegúrate de que `lib.rs:205` `adjust_macos_traffic_lights` + `lib.rs:331` `ensure_traffic_lights_observer` + polling 60 fps existan. Contrarrestan que AppKit los resetee a `12px` en cada layout. Verifica `titleBarStyle: Overlay` + `hiddenTitle` en `tauri.macos.conf.json`. Comprueba targets `17.5/39.5/61.5`.
+Asegúrate de que `lib.rs:403` `adjust_macos_traffic_lights` + `lib.rs:530` `ensure_traffic_lights_observer` + polling 60 fps existan. Contrarrestan que AppKit los resetee a `12px` en cada layout. Verifica `titleBarStyle: Overlay` + `hiddenTitle` en `tauri.macos.conf.json`. Comprueba targets `17.5/39.5/61.5`.
 
-Si los dots quedan demasiado **arriba** (o desaparecen), revisa `traffic_lights_target_y` (`lib.rs:185`): el frame pertenece al superview del botón, así que la `y` debe salir de `isFlipped()` + la altura del contenedor — no de la altura de la ventana ni del `26 - size/2` a pelo.
+Si los dots quedan demasiado **arriba** (o desaparecen), revisa `traffic_lights_target_y` (`lib.rs:383`): el frame pertenece al superview del botón, así que la `y` debe salir de `isFlipped()` + la altura del contenedor — no de la altura de la ventana ni del `26 - size/2` a pelo.
 
 ## Titlebar / resize / esquinas cuadradas de Linux
 
 La app es dueña de la titlebar y la ventana es frameless (`decorations: false`, `transparent: false`): esquinas cuadradas del sistema, sin marco GTK. `setup()` centra la ventana y llama a `window.show()` — nace oculta (`visible: false`) y se muestra ya centrada.
 
-- **No aparece el cursor/arrastre de resize en los bordes:** la ventana frameless no recibe agarres del WM; el borde interior de 6px del webview usa `useWindowResizeEdges` / `start_window_resize` (`native-chrome.ts`, `lib.rs:88`), que lanza `begin_resize_drag` de GTK.
-- **Los caption buttons no hacen nada:** revisa `core:window:allow-minimize` / `allow-toggle-maximize` / `allow-close` en `capabilities/default.json:6`.
+- **No aparece el cursor/arrastre de resize en los bordes:** la ventana frameless no recibe agarres del WM; el borde interior de 8px del webview usa `useWindowResizeEdges` / `start_window_resize` (`native-chrome.ts`, `lib.rs:134`), que lanza `begin_resize_drag` de GTK.
+- **Los caption buttons no hacen nada:** revisa `core:window:allow-minimize` / `allow-toggle-maximize` / `allow-close` en `capabilities/default.json:15`.
 
 Las esquinas son cuadradas por diseño — ver `native-feel.md` §0. No re-añadas radio CSS ni un provider GTK para redondearlas; ese camino (CSD enganchado, clase `tauri-app`, input shape) se eliminó deliberadamente.
 
 ## Windows: no aparecen los caption buttons / no hay Snap Layouts
 
-Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y la titlebar es de la app: `header.tsx:224` renderiza `window-controls.tsx` y `lib.rs:461` llama a `create_overlay_titlebar()`. Si los botones no salen, comprueba que `platform === 'windows'` resolvió (comando Rust `platform_info`) y que `capabilities/default.json:6` sigue listando `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:15`), más `capabilities/windows.json:7` para `decorum:allow-show-snap-overlay` (capability solo-Windows; déjala fuera de `default.json` o `cargo check` falla en macOS/Linux). Los Snap Layouts solo se abren con el hover de 620 ms sobre maximizar (`window-controls.tsx:8` → `show_snap_overlay`), que es el equivalente Win+Z de decorum — tao no puede responder `WM_NCHITTEST` con `HTMAXBUTTON`, así que no hay flyout nativo real de hover. Si alguna vez aparece la barra de 32px que inyecta el plugin encima del header, es que se quitó la regla `[data-tauri-decorum-tb]` (`globals.css:253`).
+Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y la titlebar es de la app: `header.tsx:227` renderiza `window-controls.tsx` y `lib.rs:686` llama a `create_overlay_titlebar()`. Si los botones no salen, comprueba que `platform === 'windows'` resolvió (comando Rust `platform_info`) y que `capabilities/default.json:15` sigue listando `allow-minimize` / `allow-close` / `allow-is-maximized` / `allow-set-focus` (`capabilities/default.json:18`), más `capabilities/windows.json:7` para `decorum:allow-show-snap-overlay` (capability solo-Windows; déjala fuera de `default.json` o `cargo check` falla en macOS/Linux). Los Snap Layouts solo se abren con el hover de 620 ms sobre maximizar (`window-controls.tsx:10` → `show_snap_overlay`), que es el equivalente Win+Z de decorum — tao no puede responder `WM_NCHITTEST` con `HTMAXBUTTON`, así que no hay flyout nativo real de hover. Si alguna vez aparece la barra de 32px que inyecta el plugin encima del header, es que se quitó la regla `[data-tauri-decorum-tb]` (`globals.css:272`).
 
 ## Scrollbar con flechas / el header no llega al borde derecho
 
@@ -37,7 +37,7 @@ Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y l
 
 **Arreglo (dos partes, ambas necesarias):**
 1. `tauri.windows.conf.json:13` → `scrollBarStyle: "fluentOverlay"` para que WebView2 dibuje la scrollbar **overlay** Fluent (fina, se auto-oculta, flota sobre el contenido). Necesita WebView2 Runtime >= 125.0.2535.41.
-2. `.app-scroll` (`globals.css:231`, `apps/web/src/App.tsx:52`) es el único scroller y envuelve solo `main` + `Footer`, así el header queda fuera.
+2. `.app-scroll` (`globals.css:250`, `apps/web/src/App.tsx:46`) es el único scroller y envuelve solo `main` + `Footer`, así el header queda fuera.
 
 **No** lo "arregles" con CSS: las reglas `::-webkit-scrollbar` anulan el overlay nativo y devuelven la barra clásica con carril reservado y flechas (y añadir `scrollbar-width`/`scrollbar-color` hace que Chromium ignore por completo los pseudo-elementos webkit, que es justo como se cuelan las flechas). En Linux el overlay viene del ajuste GTK `gtk-overlay-scrolling`; en macOS es nativo y se auto-oculta.
 
@@ -51,7 +51,7 @@ Windows es frameless (`tauri.windows.conf.json:12` → `decorations: false`) y l
 
 **Solución:** lanza la app de la forma normal, como el usuario del escritorio que tiene sesión iniciada (acceso directo / `pnpm tauri:dev`). Para fijar la carpeta explícitamente, define `WEBVIEW2_USER_DATA_FOLDER=C:\alguna\carpeta\escribible` antes de arrancar (ojo con el gotcha de cmd: `set VAR=valor && app.exe` se queda con el espacio final, así que entrecomilla: `set "VAR=valor" && app.exe`). Truco de depuración: `scripts/build-windows.sh` + `PsExec64 -i 1 -s` reproduce el fallo, así que no sirve para revisar la UI — copia el exe a una sesión real y haz doble clic.
 
-Desactiva glass — Linux fuerza `glass OFF` por diseño (`glass-cards-provider.tsx` + `globals.css:265`). Mantén `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` en `lib.rs:394`. Ver Plan A degradado en `native-feel.md`.
+Desactiva glass — Linux fuerza `glass OFF` por diseño (`glass-cards-provider.tsx` + `globals.css:265`). Mantén `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `__NV_DISABLE_EXPLICIT_SYNC=1` en `lib.rs:607`. Ver Plan A degradado en `native-feel.md`.
 
 ## `pnpm install` falla / mismatch Node
 
@@ -76,9 +76,9 @@ cargo tauri ios dev "iPhone 18 Pro"   # no pnpm tauri (el binario local trae los
 
 Para device físico usa `make dev-ios-physical` (necesita `--host 169.254.x.x`).
 
-## Puerto 1420 ya en uso / hotreload `beforeDevCommand terminated`
+## Puerto 1420 ya en uso / `beforeDevCommand terminated`
 
-Otro Vite está corriendo. Mátalo (`lsof -i :1420`, `pkill -f vite`) antes de lanzar el scheme `hotreload` — crea un segundo Vite vía el parent `tauri ios dev`.
+Otro Vite está corriendo. Mátalo (`lsof -i :1420`, `pkill -f vite`) antes de lanzar un build dev — un parent `tauri ios dev` crea un segundo Vite.
 
 ## `DEVELOPMENT_TEAM` no inyectado / falla de firma
 

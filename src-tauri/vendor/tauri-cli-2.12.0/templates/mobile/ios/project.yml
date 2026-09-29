@@ -181,13 +181,15 @@ targets:
             if [ "$CONFIGURATION" = "release" ]; then
               (cd "$SRCROOT/../../../apps/web" && pnpm build) || exit 1
               cargo build --manifest-path "$SRCROOT/../../Cargo.toml" --lib --release --features tauri/custom-protocol || exit 1
-              LIB="$SRCROOT/../../target/release/libtauri_react_template_lib.a"
+              # Source: the crate's real lib name (rebrand-proof glob; the
+              # crate name changes with branding, the linked name doesn't).
+              for f in "$SRCROOT/../../target/release/"lib*.a; do LIB="$f"; done
             else
               if ! curl -sf http://localhost:1420 >/dev/null 2>&1; then
                 open -a Terminal "$SRCROOT/../../../scripts/Xcode/xcode-dev.command"
               fi
               cargo build --manifest-path "$SRCROOT/../../Cargo.toml" --lib || exit 1
-              LIB="$SRCROOT/../../target/debug/libtauri_react_template_lib.a"
+              for f in "$SRCROOT/../../target/debug/"lib*.a; do LIB="$f"; done
             fi
             mkdir -p "$SRCROOT/Externals/macosx/$CONFIGURATION"
             cp -f "$LIB" "$SRCROOT/Externals/macosx/$CONFIGURATION/{{ lib-output-file-name }}"

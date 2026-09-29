@@ -75,7 +75,10 @@ case "$OS" in
   Linux)
     # System packages (Debian/Ubuntu: llvm + lld + nsis). cargo-xwin needs
     # llvm-rc / lld-link on PATH for the MSVC CRT pieces.
-    export PATH="/usr/lib/llvm-*/bin:$PATH"
+    # A quoted glob never expands in an assignment: expand the versioned
+    # dirs explicitly (llvm-rc/lld-link live in /usr/lib/llvm-N/bin).
+    for d in /usr/lib/llvm-*/bin; do [ -d "$d" ] && PATH="$d:$PATH"; done
+    export PATH
     ;;
 esac
 export PATH

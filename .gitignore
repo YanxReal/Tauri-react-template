@@ -39,6 +39,8 @@ coverage
 
 # Tauri
 src-tauri/target
+# cargo test artifacts inside the vendored CLI fork
+src-tauri/vendor/*/target/
 
 # Bundles traídos de la caja SSH (scripts/build-linux.sh --fetch)
 dist-linux/

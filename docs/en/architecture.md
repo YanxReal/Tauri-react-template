@@ -55,8 +55,8 @@
 
 ## Frontend → Backend boundary
 
-- Frontend calls Rust via `invoke` (`App.tsx:35`).
-- Commands registered in `lib.rs:607`: `greet`, `platform_info`, `start_window_resize`, `window_effects_set`, `set_status_bar_style`, `set_linux_theme`.
+- Frontend calls Rust via `invoke` (`App.tsx:37`).
+- Commands registered in `lib.rs:635`: `greet`, `platform_info`, `start_window_resize`, `window_effects_set`, `set_status_bar_style`, `set_linux_theme`.
 - Plugins: `tauri_plugin_opener`, `tauri_plugin_prevent_default` (`Flags::debug()` — see [Native Feel](./native-feel.md)).
 
 ## Config layering (Tauri)
@@ -74,7 +74,7 @@ Base `tauri.conf.json:1` holds `build`, common windows, bundle. Per-OS overlays 
 ## Quality gates
 
 - **JS/TS:** Biome — 2 spaces, 80 cols, `asNeeded` semis, `useImportType:error`. No ESLint/Prettier.
-- **Rust:** `cargo fmt` + `clippy` (`await_holding_lock: deny`, `Cargo.toml:76`).
+- **Rust:** `cargo fmt` + `clippy` (`await_holding_lock: deny`, `Cargo.toml:84`).
 - **Tests:** Vitest + Testing Library — see [Testing](./testing.md).
 - **Git:** Husky + lint-staged (`biome check --write` on code files).
 - **Gates (local, no CI):** `pnpm typecheck/lint/test/build` + `cargo check/fmt/clippy/test` — see [Testing](./testing.md).

@@ -61,7 +61,7 @@ Plantilla privada para publicar una **app desktop + móvil con sensación nativa
 - **Semántica HTML5**: landmarks, skip link, nav etiquetada — con tests (`App.test.tsx`).
 - **Backend Tauri v2**: comandos `greet` / `platform_info` / `start_window_resize` / `window_effects_set`, `plugin-opener`, `prevent-default` (`Flags::debug()`).
 - **Efecto cristal**: toggle de translucidez nativa (vibrancy en macOS, Mica en Windows), independiente de las glass cards; forzado a OFF en Linux.
-- **Target Xcode unificado iOS + macOS** (`tauri-react-template_Apple`): configs debug / hotreload / release, auto-inyección de `DEVELOPMENT_TEAM`, CLI 2.12.0 vendoreada + retoques documentados (`.claude/skills/tauri-cli-rebase/references/mods.md`).
+- **Target Xcode unificado iOS + macOS** (`tauri-react-template_Apple`): configs debug / release, auto-inyección de `DEVELOPMENT_TEAM`, CLI 2.12.0 vendoreada + retoques documentados (`.claude/skills/tauri-cli-rebase/references/mods.md`).
 
 ---
 
@@ -186,7 +186,7 @@ Una única titlebar de 44px dibujada por la app (banda de arrastre + caption but
 |---|---|---|---|---|
 | **macOS** | `titleBarStyle: Overlay`, `hiddenTitle` | nativas | nativo + fix HuLa de 3 mecanismos para traffic lights | banda de 52px, dots en `17.5/39.5/61.5` |
 | **Windows** | frameless + `tauri-plugin-decorum` | `DWMWCP_ROUND` | nativo (`WM_NCHITTEST`) | Snap Layouts al hover de maximizar (620 ms) |
-| **Linux** | frameless, opaco | **cuadradas por diseño** | borde de 6px de la app → `begin_resize_drag` | glass OFF (veto WebKitGTK) |
+| **Linux** | frameless, opaco | **cuadradas por diseño** | borde de 8px de la app → `begin_resize_drag` | glass OFF (veto WebKitGTK) |
 | **iOS** | target unificado `_Apple` | — | — | sim con `cargo tauri`, físico con `--host` |
 | **Android** | emulador AVD | — | — | `make dev-android-emulator` |
 
@@ -201,7 +201,6 @@ Todo vive en env / vars de `Makefile` / ficheros estilo `.env` (nada hardcodeado
 | Variable | Default | Descripción |
 |---|---|---|
 | `DEVELOPMENT_TEAM` / `scripts/.team-id` | — (manual en Xcode) | team de firma iOS, inyectado al regenerar |
-| `TAURI_CLI` | `@tauri-apps/cli@2.12.0` | CLI para los flujos `--build` de regen |
 | `CARGO_TAURI` | `cargo-tauri` vendoreado (`~/.cargo/bin`) | CLI para init/build móvil (vía `make install-tauri-cli`) |
 | `IOS_DEVICE` | `iPhone 18 Pro` | selector de simulador/dispositivo |
 | `IOS_DEV_HOST` | autodetección link-local | host dev para iPhone físico (USB) |
@@ -309,7 +308,7 @@ Los volúmenes de la caja viven en el compose de Ubuntu-arm-docker (`admin-home`
 | Traffic lights saltan en resize | Revisa el trío HuLa (`lib.rs:205/331` + poll 60 fps) + config Overlay |
 | Sin caption buttons / Snap Layouts (Win) | Revisa resolve de `platform` + permisos `default.json` + permiso decorum en `windows.json` |
 | Glitches amarillos / RAM en Linux | El glass sigue en OFF (veto); mantén `WEBKIT_DISABLE_DMABUF_RENDERER=1` |
-| Puerto 1420 ocupado | Mata el Vite suelto antes del scheme `hotreload` |
+| Puerto 1420 ocupado | Mata el Vite suelto antes de un build dev |
 | Falla `pnpm install` | Node ≥ 24 + pnpm ≥ 10 (`package.json:engines`) |
 | iOS `EBADARCH` / mismatch de arch | `make install-tauri-cli` y luego `cargo tauri` (no `pnpm tauri`) |
 

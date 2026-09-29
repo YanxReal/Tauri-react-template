@@ -42,7 +42,7 @@ Automation cannot see pixels. After the gates, verify on a **real bundle per OS*
 |---|---|---|---|
 | Launch, no errors | ✓ | ✓ | ✓ |
 | Drag by header band | ✓ | ✓ | ✓ |
-| Resize all edges/corners | ✓ (+live traffic lights) | ✓ | ✓ (6px app edge) |
+| Resize all edges/corners | ✓ (+live traffic lights) | ✓ | ✓ (8px app edge) |
 | Caption buttons (min/max/close) | traffic lights | ✓ + Snap hover | ✓ |
 | Scroll 0↔max, no jank | ✓ | ✓ (overlay bar) | ✓ |
 | No zoom (double-tap, Ctrl+wheel, pinch) | ✓ | ✓ | ✓ |

@@ -167,10 +167,17 @@ fi
 if [[ "$DRY" == "1" ]]; then
   echo "  [dry-run] would update src/main.rs lib call to $LIB"
 else
-  sed -i '' "s/^    [A-Za-z_][A-Za-z_0-9]*_lib::run()/    ${LIB}::run()/" \
-    "$ROOT/src-tauri/src/main.rs"
-  grep -q "${LIB}::run()" "$ROOT/src-tauri/src/main.rs" || {
-    echo "warning: lib call not confirmed in main.rs" >&2; }
+  # python3 (portable): BSD `sed -i ''` aborts GNU sed under `set -e`.
+  python3 - "$ROOT/src-tauri/src/main.rs" "$LIB" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]); lib = sys.argv[2]
+t = p.read_text()
+t2, n = re.subn(r'(?m)^    [A-Za-z_][A-Za-z_0-9]*_lib::run\(\);?$',
+                f'    {lib}::run();', t, count=1)
+p.write_text(t2)
+print(f"  updated src/main.rs lib call -> {lib}::run()" if n else
+      "  warning: lib call not confirmed in main.rs")
+PY
 fi
 
 # Linux builds: the `linux-build` skill's script derives APP_NAME from

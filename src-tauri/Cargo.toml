@@ -3,6 +3,8 @@ name = "Tauri-react-template"
 version = "0.1.0"
 description = "Tauri + React + Vite template — generic multi-platform (iOS/Android/desktop) with Xcode layers"
 authors = ["Yanx Studio"]
+license = "MIT"
+repository = "https://github.com/YanxReal/Tauri-react-template"
 edition = "2021"
 rust-version = "1.85"
 
@@ -52,7 +54,6 @@ objc2 = "0.6"
 objc2-app-kit = { version = "0.3", features = ["NSWindow", "NSButton", "NSView"] }
 objc2-foundation = { version = "0.3", features = ["NSGeometry", "NSTimer", "NSRunLoop", "NSString", "NSNotification"] }
 block2 = "0.6"
-tokio = { version = "1", features = ["rt", "time", "sync"] }
 
 # Windows: Edge/VS Code style overlay titlebar (frameless + own caption
 # buttons + Snap Layouts via `show_snap_overlay`) — community plugin.
@@ -78,9 +79,6 @@ gtk = "0.18"
 [target.'cfg(target_os = "android")'.dependencies]
 jni = "0.21"
 ndk-context = "0.1"
-
-[dev-dependencies]
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [lints.clippy]
 await_holding_lock = "deny"

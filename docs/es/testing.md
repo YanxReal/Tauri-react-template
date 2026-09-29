@@ -42,7 +42,7 @@ La automatización no ve píxeles. Tras los gates, verifica en un **bundle real 
 |---|---|---|---|
 | Arranca, sin errores | ✓ | ✓ | ✓ |
 | Arrastre por la banda del header | ✓ | ✓ | ✓ |
-| Resize de bordes/esquinas | ✓ (+ traffic lights en vivo) | ✓ | ✓ (borde de 6px de la app) |
+| Resize de bordes/esquinas | ✓ (+ traffic lights en vivo) | ✓ | ✓ (borde de 8px de la app) |
 | Caption buttons (min/max/cerrar) | traffic lights | ✓ + hover Snap | ✓ |
 | Scroll 0↔max, sin jank | ✓ | ✓ (barra overlay) | ✓ |
 | Sin zoom (doble-tap, Ctrl+rueda, pinch) | ✓ | ✓ | ✓ |

@@ -177,7 +177,7 @@ After the new vendor passes gates:
     of the NEW version, and remove the OLD one.)
 2. **Update the version pins** (search the repo for the old version string):
    - `package.json` → `@tauri-apps/cli` (npm dev dependency).
-   - `scripts/Xcode/apple-xcode.sh` → `TPL` dir + `TAURI_CLI`.
+   - `scripts/Xcode/apple-xcode.sh` → `TMPL_DIR` (the vendored templates path) + `CARGO_TAURI`.
    - `.claude/skills/tauri-cli-rebase/` if it references a version.
    - `Makefile` → any `tauri-cli-<V>` in `install-tauri-cli`.
    - `src-tauri/Cargo.toml` → `tauri` / `tauri-build` if bumped.
