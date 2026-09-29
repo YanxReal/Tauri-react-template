@@ -41,7 +41,9 @@ endif
 IOS_DEVICE ?= iPhone 18 Pro
 IOS_DEV_HOST ?= $(shell ip=$$(ifconfig en9 2>/dev/null | awk '/inet / && $$2 ~ /^169\.254\./ {print $$2; exit}'); if [ -z "$$ip" ]; then ip=$$(ifconfig 2>/dev/null | awk '/^[a-z0-9]+:/{i=$$1} /inet 169\.254\./{print $$2; exit}'); fi; echo $$ip)
 ANDROID_AVD ?= Resizable_Experimental
-ANDROID_TARGET ?= aarch64
+ANDROID_DEVICE ?= emulator-5554
+# `--target` exists only on `tauri android build`; `android dev` picks the ABI
+# (aarch64 on Apple Silicon) from the device itself.
 ANDROID_HOME ?= $(HOME)/Library/Android/sdk
 export PATH := $(ANDROID_HOME)/emulator:$(ANDROID_HOME)/platform-tools:$(PATH)
 
@@ -98,7 +100,7 @@ dev-android-emulator: ## Boot AVD + android dev
 	@$(ANDROID_HOME)/emulator/emulator -list-avds 2>/dev/null | grep -qx "$(ANDROID_AVD)" || { echo "No AVD '$(ANDROID_AVD)' — create it in Android Studio → Device Manager"; exit 1; }
 	$(ANDROID_HOME)/emulator/emulator -avd "$(ANDROID_AVD)" -no-snapshot -no-boot-anim >/tmp/android-emulator.log 2>&1 &
 	$(ANDROID_HOME)/platform-tools/adb wait-for-device
-	pnpm tauri android dev --target "$(ANDROID_TARGET)"
+	pnpm tauri android dev "$(ANDROID_DEVICE)"
 
 # Xcode — regenerate src-tauri/gen/apple from the template (vendored CLI init).
 gen-apple: ## Regen Xcode project
