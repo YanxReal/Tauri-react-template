@@ -20,7 +20,7 @@ pnpm test                       # turbo (all workspaces)
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-A weekly scheduled CI (`.github/workflows/ci.yml`, Monday 18:00 UTC + manual dispatch) runs the JS+Rust gates via `make ci-frontend`/`make ci-rust` on ubuntu-latest (desktop-only targets; mobile/native bundles stay out of CI). Run them yourself too — on this host AND in the Linux box (`make build-linux` — the `linux-build` skill syncs, builds and verifies with the box's rustup env). Linux-only logic stays testable as pure functions: `ResizeEdge::from_str` (`lib.rs`) parses the 8 GDK edge names with zero GTK calls, so it runs everywhere; the `cfg(linux)` body that maps it to `gtk::gdk::WindowEdge` only compiles in the box.
+A weekly scheduled CI (`.github/workflows/ci.yml`, Monday 18:00 UTC + manual dispatch) runs on the **default branch (`main`)** — it executes the JS+Rust gates via `make ci-frontend`/`make ci-rust` on ubuntu-latest (desktop-only targets; mobile/native bundles stay out of CI). Run them yourself too — on this host AND in the Linux box (`make build-linux` — the `linux-build` skill syncs, builds and verifies with the box's rustup env). Linux-only logic stays testable as pure functions: `ResizeEdge::from_str` (`lib.rs`) parses the 8 GDK edge names with zero GTK calls, so it runs everywhere; the `cfg(linux)` body that maps it to `gtk::gdk::WindowEdge` only compiles in the box.
 
 ## Static gates (run all, in order)
 

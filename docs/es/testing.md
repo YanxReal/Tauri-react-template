@@ -20,7 +20,7 @@ pnpm test                       # turbo (todos los workspaces)
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-Un CI semanal programado (`.github/workflows/ci.yml`, lunes 18:00 UTC + dispatch manual) corre los gates JS+Rust vía `make ci-frontend`/`make ci-rust` en ubuntu-latest (solo targets desktop; móvil y bundles nativos quedan fuera del CI). Córrelos también tú — en este host Y en la caja Linux (`make build-linux` — la skill `linux-build` sincroniza, compila y verifica con el env de rustup de la caja). La lógica Linux-only se mantiene testeable como funciones puras: `ResizeEdge::from_str` (`lib.rs`) parsea los 8 nombres de borde GDK sin llamadas GTK, así corre en todas partes; el cuerpo `cfg(linux)` que lo mapea a `gtk::gdk::WindowEdge` solo compila en la caja.
+Un CI semanal programado (`.github/workflows/ci.yml`, lunes 18:00 UTC + dispatch manual) corre en la **rama por defecto (`main`)** — ejecuta los gates JS+Rust vía `make ci-frontend`/`make ci-rust` en ubuntu-latest (solo targets desktop; móvil y bundles nativos quedan fuera del CI). Córrelos también tú — en este host Y en la caja Linux (`make build-linux` — la skill `linux-build` sincroniza, compila y verifica con el env de rustup de la caja). La lógica Linux-only se mantiene testeable como funciones puras: `ResizeEdge::from_str` (`lib.rs`) parsea los 8 nombres de borde GDK sin llamadas GTK, así corre en todas partes; el cuerpo `cfg(linux)` que lo mapea a `gtk::gdk::WindowEdge` solo compila en la caja.
 
 ## Gates estáticos (todos, en orden)
 
