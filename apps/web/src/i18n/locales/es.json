@@ -45,7 +45,7 @@
     "greetButton": "Saludar desde Rust",
     "greetFallback": "API de Tauri no disponible en el navegador",
     "tauriNote": "Prueba la API de Tauri: {{message}}",
-    "greeted": "¡Hola, {name}! ¡Te ha saludado Rust!"
+    "greeted": "¡Hola, {{name}}! ¡Te ha saludado Rust!"
   },
   "footer": {
     "rights": "Todos los derechos reservados.",

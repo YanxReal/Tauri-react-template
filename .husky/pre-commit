@@ -1,2 +1,5 @@
+#!/bin/sh
+set -euo pipefail
+
 pnpm exec lint-staged
 make check-docs

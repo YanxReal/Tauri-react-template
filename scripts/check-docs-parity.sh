@@ -65,5 +65,24 @@ sys.exit(1 if missing else 0)
 PY
 [ $? -ne 0 ] && ec=1
 
+# 4) i18n interpolation syntax: i18next interpolates {{key}} (default
+#    prefix/suffix). A single-brace {key} renders literally — flag it.
+#    Anchored on BOTH sides (a {word prefix before `}` is invalid too, and
+#    `{{…` must not be split by backtracking).
+python3 - "$ROOT" <<'PY'
+import pathlib, re, sys
+root = pathlib.Path(sys.argv[1])
+bad = 0
+pat = re.compile(r'(?<!\{)\{([a-zA-Z_][a-zA-Z_0-9]*)\}(?!\})')
+for f in sorted((root / 'apps/web/src/i18n/locales').glob('*.json')):
+    for i, line in enumerate(f.read_text().splitlines(), 1):
+        for m in pat.finditer(line):
+            bad += 1
+            print(f'  {f.name}:{i}: single-brace interpolation "{m.group(0)}" — use "{{ "..." }}"')
+print(f'i18n interpolation: {"OK" if bad == 0 else f"{bad} suspects"}')
+sys.exit(1 if bad else 0)
+PY
+[ $? -ne 0 ] && ec=1
+
 [ "$ec" -eq 0 ] && printf '\033[1;32m==>\033[0m docs parity OK\n'
 exit $ec

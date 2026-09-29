@@ -45,7 +45,7 @@
     "greetButton": "Greet from Rust",
     "greetFallback": "Tauri API not available in browser",
     "tauriNote": "Try Tauri API: {{message}}",
-    "greeted": "Hello, {name}! You've been greeted from Rust!"
+    "greeted": "Hello, {{name}}! You've been greeted from Rust!"
   },
   "footer": {
     "rights": "All rights reserved.",
