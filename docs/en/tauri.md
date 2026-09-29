@@ -64,7 +64,7 @@ Platform dispatch for `set_window_effect` (`lib.rs:30`):
       "dragDropEnabled": false,
       "zoomHotkeysEnabled": false
     }],
-    "security": { "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ipc: http://ipc.localhost https://*.supabase.co; object-src 'none'; base-uri 'self'" }
+    "security": { "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'" }
   }
 }
 ```

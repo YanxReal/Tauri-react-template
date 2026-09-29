@@ -53,7 +53,7 @@
 ### `73d445a` `fix: ventana nativa — arrastre con banda reservada y cristal de fondo`
 - Reserva **banda de 36px** (`--native-titlebar-height`) para drag, padding `app-shell`, header sticky en `top:36px`. Cristal de ventana completa: `color-mix(var(--background) 62%, transparent)` para que la translucidez siga el tema.
 
-### `aa83704` `fix: arrastre macOS fiable (patron Prestly, banda 20px)`
+### `aa83704` `fix: arrastre macOS fiable (patrón de arrastre propio, banda 20px)`
 - Drag intermitente: selección del webview + header sticky tapando la banda. Fix: `useMacDragRegion` usa `mousedown` a nivel document, `preventDefault` + `startDragging` en banda, doble-clic → maximize, excluye targets interactivos. Encoje banda a **20px** (`1.25rem`), header sticky en `top: var(--native-titlebar-height)`.
 
 ## 2026-08-31 — Ventana cross-platform
