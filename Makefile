@@ -67,7 +67,7 @@ doctor: ## Check toolchain (versions or MISSING + scope)
 	@command -v rustc >/dev/null && echo "rustc:               $$(rustc --version | cut -d' ' -f2)" || echo "rustc:                MISSING"
 	@XB=$$(xcodebuild -version 2>/dev/null | head -1); [ -n "$$XB" ] && echo "xcodebuild:           $$XB" || echo "xcodebuild:           MISSING (iOS/macOS builds only)"
 	@echo "xcodegen:             not needed (gen via vendored CLI init)"
-	@command -v cargo-tauri >/dev/null && echo "cargo-tauri:          $$(cargo-tauri --version 2>/dev/null)" || { test -x ~/.cargo/bin/cargo-tauri && echo "cargo-tauri:          $$(~/.cargo/bin/cargo-tauri --version 2>/dev/null) (not on PATH)" || echo "cargo-tauri:          MISSING (iOS flows: make install-tauri-cli)"; }
+	@if cargo tauri --version >/dev/null 2>&1; then echo "cargo-tauri:          $$(cargo tauri --version 2>/dev/null) (cargo subcommand)"; else echo "cargo-tauri:          MISSING — run: make install-tauri-cli"; fi
 	@test -x "$(ANDROID_HOME)/emulator/emulator" && echo "android emulator:    present" || echo "android emulator:    MISSING (Android only)"
 	@ssh -o BatchMode=yes -o ConnectTimeout=4 $(LINUX_REMOTE) true 2>/dev/null && echo "linux box ($(LINUX_REMOTE)): reachable" || echo "linux box ($(LINUX_REMOTE)): UNREACHABLE (start Ubuntu-arm-docker)"
 	@command -v makensis >/dev/null && echo "makensis:             present" || echo "makensis:             MISSING (Windows NSIS only)"
