@@ -25,6 +25,16 @@ SRC_T="$ROOT/src-tauri"
 GEN="$SRC_T/gen/android"
 BRAND="$ROOT/branding.json"
 CARGO_TAURI="${CARGO_TAURI:-$HOME/.cargo/bin/cargo-tauri}"
+
+# rustup's cargo is required for the Android cross build (the CLI spawns bare
+# cargo; Homebrew's cargo lacks the Android std). Same detection the Xcode
+# phase uses. ~/.cargo/bin normally, Homebrew's rustup keg otherwise.
+RUSTUP_CARGO_BIN=""
+if [ -x "$HOME/.cargo/bin/cargo" ]; then
+  RUSTUP_CARGO_BIN="$HOME/.cargo/bin"
+elif [ -x "/opt/homebrew/opt/rustup/bin/cargo" ]; then
+  RUSTUP_CARGO_BIN="/opt/homebrew/opt/rustup/bin"
+fi
 BUILD=0
 [[ "${1:-}" == "--build" ]] && BUILD=1
 
@@ -97,7 +107,7 @@ echo "    NDK_HOME=$NDK_HOME"
 
 echo "==> regenerating gen/android via vendored CLI init..."
 rm -rf "$GEN"
-(cd "$SRC_T" && PATH="$HOME/.cargo/bin:$PATH" "$CARGO_TAURI" android init)
+(cd "$SRC_T" && PATH="$RUSTUP_CARGO_BIN:$HOME/.cargo/bin:$PATH" "$CARGO_TAURI" android init)
 
 # --- Mobile icons: master -> icons/ + gen/android (+ gen/apple when present).
 CARGO_TAURI="$CARGO_TAURI" "$ROOT/scripts/mobile/mobile-icons-regen.sh"
@@ -117,6 +127,6 @@ echo "  $GEN"
 
 if [ "$BUILD" = "1" ]; then
   echo "==> building debug APK (aarch64)..."
-  (cd "$SRC_T" && PATH="$HOME/.cargo/bin:$PATH" "$CARGO_TAURI" android build --debug --target aarch64) || exit 1
+  (cd "$SRC_T" && PATH="$RUSTUP_CARGO_BIN:$HOME/.cargo/bin:$PATH" "$CARGO_TAURI" android build --debug --target aarch64) || exit 1
   echo "✓ APK: $GEN/app/build/outputs/apk/universal/debug/app-universal-debug.apk"
 fi

@@ -221,6 +221,15 @@ Windows vuelve a ser frameless (`tauri.windows.conf.json:12` → `decorations: f
 - Eliminado: `install_linux_frame`, `install_linux_resize_grip`, `apply_grip_input_shape`, `find_webview`, `edge_from_position`/`edge_cursor_name` (+ sus tests en `lib.rs`), `useNativeTheme`, el permiso `core:window:allow-set-theme` y la sonda de input shape (`scripts/probe-input-shape.sh`, que había medido `GDK_REGION_SET` = replace). Conservado: `start_window_resize` (una frameless no recibe agarres del WM — el borde interior de 6px sigue lanzando `begin_resize_drag`), `WEBKIT_DISABLE_DMABUF_RENDERER=1`, el veto de glass.
 - `setup()` centra la ventana y llama a `window.show()`: nace oculta (`visible: false`) y se muestra ya centrada. Verificado: `cargo check` + `cargo fmt` + `pnpm typecheck` + `lint` + `test` en verde.
 
+## 2026-09-29 — Public-ready: skills, iconos móviles, dispositivos físicos
+
+- **Skill `linux-build`** (`.claude/skills/linux-build/`) absorbe `scripts/build-linux.sh` (+ `.cmd`): builds Linux solo por SSH en la caja Ubuntu-arm-docker (Cinnamon/X11), rsync sin `.git` (nunca clona), `--debug` = `--no-bundle` rápido, `--verify` = `assistant windows+shot+ocr`; auto-arranca Vite para runs debug (devUrl `:1420`). Makefile: `build-linux` → loop rápido, nuevo `linux-release`, `build-windows` (cargo-xwin).
+- **Iconos móviles arreglados de raíz**: `branding/icon-1024.png` es el máster (`icons.master` en `branding.json`); `scripts/mobile/mobile-icons-regen.sh` (post-init en `apple-xcode.sh`/`android-autogen.sh`) corre `tauri icon` y compone el trío de marketing iOS 1024 (light/dark/tinted) que esta versión del CLI nunca genera. Los templates móviles vendoreados llevan placeholders neutros — un `gen/` fresco no puede arrastrar arte ajeno nunca más. De paso: el generador `xcodegen` desaparece de los docs (el init del CLI vendoreado es el único).
+- **Branding**: `make rebrand` ahora propaga también `authors` + `description` (Cargo.toml, package.json) y avisa el seguimiento de la caja Linux (la skill deriva el binario de Cargo.toml).
+- **Flota iOS**: `.env` carga automático en make (include+export) y `apple-xcode.sh` lo sourcea; `APPLE_DEVELOPMENT_TEAM` traducido desde `DEVELOPMENT_TEAM` con fallback `scripts/.team-id`; cada receta de make resuelve `cargo`/`rustc` vía rustup (el cargo Homebrew no tiene el std cross → E0463). Verificado de punta a punta en un iPhone 15 Pro Max físico (Personal Team, provisioning gratuito de 7 días) y en un dispositivo Android físico ARM32 (APK armv7, `INSTALL_FAILED_NO_MATCHING_ABIS` → `--target armv7`).
+- **`install-skills.sh --verify` es content-aware** (hash de cada fichero; MISSING/STALE/EXTRA + exit code; md5 portable).
+- Nits: schema de `biome.json` 2.5.14, `turbo.json` test `outputs: []`, `authors` del template, `IOS_DEVICE` → `iPhone 18 Pro` en todos lados, refs `file:line` de la tabla §4 de `AGENTS.md` re-ancladas al código actual.
+
 ## Lecciones para futuros cambios
 
 - Si ves `// HuLa fix`, esa línea sobrevivió a múltiples bugs de plataforma. Lee el commit antes de tocarla.

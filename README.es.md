@@ -74,7 +74,7 @@ Plantilla privada para publicar una **app desktop + móvil con sensación nativa
 | **Rust** | estable 1.85+ | `rustup` (o `rust` de Homebrew) | ✅ |
 | **targets rustup** | triples iOS/Android | `rustup show` (`rust-toolchain.toml`) | ◻️ solo móvil |
 | **Xcode** | 26+ | App Store | ◻️ builds iOS/macOS |
-| **xcodegen** | latest | `brew install xcodegen` | ◻️ regen de Xcode |
+| **cargo-tauri (CLI vendoreado)** | 2.12.0 | `make install-tauri-cli` | ◻️ gen Xcode/Android |
 | **Android SDK** | cmdline-tools + emulator + imagen arm64 | Android Studio | ◻️ solo Android |
 | **cargo-xwin + LLVM** | latest | `cargo install cargo-xwin --locked`, `brew install llvm lld` | ◻️ cross-compile Windows |
 | **Docker** | Desktop 4.x | — | ◻️ solo caja Linux |
@@ -202,7 +202,7 @@ Todo vive en env / vars de `Makefile` / ficheros estilo `.env` (nada hardcodeado
 |---|---|---|
 | `DEVELOPMENT_TEAM` / `scripts/.team-id` | — (manual en Xcode) | team de firma iOS, inyectado al regenerar |
 | `TAURI_CLI` | `@tauri-apps/cli@2.12.0` | CLI para los flujos `--build` de regen |
-| `XCODEGEN` | `xcodegen` | binario generador del proyecto Xcode |
+| `CARGO_TAURI` | `cargo-tauri` vendoreado (`~/.cargo/bin`) | CLI para init/build móvil (vía `make install-tauri-cli`) |
 | `IOS_DEVICE` | `iPhone 18 Pro` | selector de simulador/dispositivo |
 | `IOS_DEV_HOST` | autodetección link-local | host dev para iPhone físico (USB) |
 | `ANDROID_AVD` / `ANDROID_TARGET` | `Resizable_Experimental` / `aarch64` | emulador + arquitectura |

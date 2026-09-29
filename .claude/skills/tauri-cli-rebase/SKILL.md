@@ -1,6 +1,6 @@
 ---
 name: Tauri CLI Rebase
-description: Rebase the vendored tauri-cli copy (src-tauri/vendor/tauri-cli-*) onto a NEW stock tauri-cli release by re-applying the 3 local semantic tweaks (MOD-1 fallback_options, MOD-2 unified _Apple target, MOD-3 simplified app.name path replace), then update MODS.md, pins and docs. Use when upgrading tauri-cli or its vendored copy, when a new tauri/tauri-cli version is released, or when the vendored CLI is out of date.
+description: Rebase the vendored tauri-cli copy (src-tauri/vendor/tauri-cli-*) onto a NEW stock tauri-cli release by re-applying the 3 local semantic tweaks (MOD-1 fallback_options, MOD-2 unified _Apple target, MOD-3 simplified app.name path replace), then update references/mods.md, pins and docs. Use when upgrading tauri-cli or its vendored copy, when a new tauri/tauri-cli version is released, or when the vendored CLI is out of date.
 metadata:
   opencode/autoinvoke: false
 ---
@@ -9,7 +9,7 @@ metadata:
 
 Rebase the **vendored** `tauri-cli` (this repo keeps a full stock copy at
 `src-tauri/vendor/tauri-cli-*/` so builds work offline) onto a **new upstream
-version**. The local modifications — documented in root `MODS.md` — must be
+version**. The local modifications — documented in `references/mods.md` — must be
 **re-applied semantically**, not by blind text find/replace: the stock code
 owner -v2.0 re-arranges these functions between releases, so a rigid script
 that searches for an exact byte anchor fails the moment upstream reshapes it.
@@ -25,7 +25,7 @@ that searches for an exact byte anchor fails the moment upstream reshapes it.
 
 Before touching anything, confirm the actual situation:
 
-- Read `MODS.md` (root) — it is the spec for the 3 tweaks and the rebase check­list.
+- Read `references/mods.md` — it is the spec for the 3 tweaks and the rebase check­list.
 - Read `TEMPLATE_VERSION` and the current vendored dir name
   `src-tauri/vendor/tauri-cli-*`.
 - Determine the target stock version: the latest tauri-cli / tauri version the
@@ -78,7 +78,7 @@ in place and "hope".
 
 ## 3. Re-apply the 3 tweaks — SEMANTICALLY (this is the core)
 
-For each of the 3 local modifications in `MODS.md`, do the following — do NOT
+For each of the local modifications in `references/mods.md`, do the following — do NOT
 paste the old block's exact text and search for it; that is the failed approach
 of the old script.
 
@@ -111,7 +111,7 @@ must create `*_Apple`.
 3. Replace `_iOS` → `_Apple` in those lookup/replace sites (watch for the
    `{}_iOS` positional format).
 4. Verify afterwards: `grep -n _iOS src/mobile/ios/` prints NOTHING
-   (`grep` exit code 1) — that is the success check from `MODS.md`.
+   (`grep` exit code 1) — that is the success check from `references/mods.md`.
 
 ### MOD-3 — simplified `{{app.name}}` path replacement
 **Intent:** stock walks `path.components()` and replaces only the FIRST
@@ -138,7 +138,7 @@ customized **mobile templates** + icons that ship in the vendored tree:
 
 Copy the OLD vendor's customized files onto the NEW stock (the new stock only
 ships vanilla versions), then `diff` the old `project.yml` against stock to
-catch any portable upstream fixes worth merging (see `MODS.md` "Rebase
+catch any portable upstream fixes worth merging (see `references/mods.md` "Rebase
 checklist" step 3).
 
 ---
@@ -164,7 +164,7 @@ A RED gate blocks the bump + the "done" report — no exceptions.
 
 ---
 
-## 6. Update pins, MODS.md, docs; remove old vendor
+## 6. Update pins, references/mods.md, docs; remove old vendor
 
 After the new vendor passes gates:
 
@@ -181,7 +181,7 @@ After the new vendor passes gates:
    - `.claude/skills/tauri-cli-rebase/` if it references a version.
    - `Makefile` → any `tauri-cli-<V>` in `install-tauri-cli`.
    - `src-tauri/Cargo.toml` → `tauri` / `tauri-build` if bumped.
-3. **Update `MODS.md`**: reflect the new base version, update the porting notes /
+3. **Update `references/mods.md`**: reflect the new base version, update the porting notes /
    line hints / `BASES` + any diff noted in the overlay step. Keep the `MOD-1/2/3`
    intents intact.
 4. **Bump `TEMPLATE_VERSION`** marker? Only if the template's own version
@@ -219,7 +219,7 @@ including the untouched old vendor dir if you kept it until §6.
 - **Already current** → report and stop.
 - **Anchors moved** → this is the skill's whole reason to exist: re-derive the
   semantic site, mirror the intent, don't force the old bytes.
-- **Stock removed a feature** (e.g. `fetch_options` renamed) → update MODS.md's
+- **Stock removed a feature** (e.g. `fetch_options` renamed) → update `references/mods.md`'s
   "Porting notes" and the intent mapping; do NOT silently drop a tweak.
 - **Partial/interrupted** → rely on per-step commits + `$BASE`; don't continue
   a half-applied vendor.
@@ -230,7 +230,7 @@ including the untouched old vendor dir if you kept it until §6.
 ## References
 
 - `references/mods.md` — the durable spec of MOD-1/2/3 + the rebase checklist
-  (mirror of root `MODS.md`, for this skill's base directory).
-- Root `MODS.md` — source of truth for "why these tweaks exist".
+  (durable spec, root `MODS.md` was removed — no duplication).
+- `references/mods.md` — source of truth for "why these tweaks exist".
 - `docs/en/scripts.md` + `docs/es/scripts.md` — build & CLI flow.
 - Root `TEMPLATE_VERSION` — template release marker.

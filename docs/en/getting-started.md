@@ -11,7 +11,7 @@
 | **Rust** | stable 1.85+ | `rustup` (or Homebrew `rust`) | desktop / mobile builds |
 | **rustup targets** | iOS + Android | `rustup show` (reads `rust-toolchain.toml`) | mobile only |
 | **Xcode** | 26+ | App Store | iOS / macOS |
-| **xcodegen** | latest | `brew install xcodegen` | Xcode regen |
+| **cargo-tauri (vendored CLI)** | 2.12.0 | `make install-tauri-cli` | ◻️ Xcode/Android gen |
 | **Android SDK** | cmdline-tools + emulator + arm64 image | Android Studio | Android only |
 | **Docker** | Desktop 4.x | — | Linux box only |
 | **cargo-tauri 2.12.0** | vendored + tweaks | `make install-tauri-cli` | iOS flows |

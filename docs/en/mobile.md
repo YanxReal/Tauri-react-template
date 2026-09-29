@@ -36,7 +36,7 @@ make gen-apple                          # alias
 
 What it does:
 
-- Resolves `DEVELOPMENT_TEAM` sentinel → real Team ID (see below) → `xcodegen`
+- Resolves `DEVELOPMENT_TEAM` sentinel → real Team ID (see below) → vendored CLI `ios init`
 - Single target `tauri-react-template_Apple` whose `SUPPORTED_PLATFORMS = macosx iphoneos iphonesimulator` via `apple.xcconfig` and branches on `PLATFORM_NAME` in the "Build Rust Code" phase.
 
 ### Three build configs (XcodeGen)
@@ -90,7 +90,7 @@ Edit the **template only**: `src-tauri/Info.plist` — it is the source for macO
 
 ### DEVELOPMENT_TEAM
 
-Template never hardcodes the Team ID — sentinel `__TAURI_DEVELOPMENT_TEAM__` is resolved by `scripts/Xcode/apple-xcode.sh` **before** `xcodegen`. Priority:
+Template never hardcodes the Team ID — sentinel `__TAURI_DEVELOPMENT_TEAM__` is resolved by `scripts/Xcode/apple-xcode.sh` **before the vendored CLI init**. Priority:
 
 1. env `DEVELOPMENT_TEAM`
 2. file `scripts/.team-id` (gitignored, persists)

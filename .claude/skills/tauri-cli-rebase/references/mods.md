@@ -1,8 +1,8 @@
 # Local modifications in the vendored tauri-cli (durable spec for the skill)
 
-> Mirror of root `MODS.md` for this skill's base directory. When you edit the
-> skill, keep this in sync with root `MODS.md`. Base: stock `tauri-cli` from
-> crates.io (immutable). See `SKILL.md` for the full rebase procedure.
+> Durable spec for this skill's base directory — root `MODS.md` was removed in
+> favour of this file (no duplication). Base: stock `tauri-cli` from crates.io
+> (immutable). See `SKILL.md` for the full rebase procedure.
 
 ## Why a full vendor copy
 

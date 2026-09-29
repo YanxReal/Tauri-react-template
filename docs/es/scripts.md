@@ -122,7 +122,7 @@ Notas: el bundler MSI/WiX solo corre en un host Windows (`--bundles nsis` es el 
 `scripts/Xcode/apple-xcode.sh` (ver `scripts/README.es.md:46` — sección Xcode unificado):
 
 - Resuelve el sentinel `DEVELOPMENT_TEAM` → ID real (env `DEVELOPMENT_TEAM` > `scripts/.team-id` > omitido).
-- Corre `xcodegen` → `src-tauri/gen/apple`.
+- Corre el vendored CLI `ios init` → `src-tauri/gen/apple`.
 - Con `--build` también compila iOS sim + macOS host.
 
 Ver `docs/es/mobile.md` para configs y el parche `cargo-mobile2` de Xcode 26.

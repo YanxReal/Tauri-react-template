@@ -66,7 +66,7 @@ doctor: ## Check toolchain (versions or MISSING + scope)
 	@command -v cargo >/dev/null && echo "cargo:                $$(cargo --version)" || echo "cargo:                MISSING (required for desktop/mobile builds)"
 	@command -v rustc >/dev/null && echo "rustc:               $$(rustc --version | cut -d' ' -f2)" || echo "rustc:                MISSING"
 	@XB=$$(xcodebuild -version 2>/dev/null | head -1); [ -n "$$XB" ] && echo "xcodebuild:           $$XB" || echo "xcodebuild:           MISSING (iOS/macOS builds only)"
-	@command -v xcodegen >/dev/null && echo "xcodegen:             present" || echo "xcodegen:             MISSING (Xcode regen only)"
+	@echo "xcodegen:             not needed (gen via vendored CLI init)"
 	@command -v cargo-tauri >/dev/null && echo "cargo-tauri:          $$(cargo-tauri --version 2>/dev/null)" || { test -x ~/.cargo/bin/cargo-tauri && echo "cargo-tauri:          $$(~/.cargo/bin/cargo-tauri --version 2>/dev/null) (not on PATH)" || echo "cargo-tauri:          MISSING (iOS flows: make install-tauri-cli)"; }
 	@test -x "$(ANDROID_HOME)/emulator/emulator" && echo "android emulator:    present" || echo "android emulator:    MISSING (Android only)"
 	@ssh -o BatchMode=yes -o ConnectTimeout=4 $(LINUX_REMOTE) true 2>/dev/null && echo "linux box ($(LINUX_REMOTE)): reachable" || echo "linux box ($(LINUX_REMOTE)): UNREACHABLE (start Ubuntu-arm-docker)"
@@ -100,7 +100,7 @@ dev-android-emulator: ## Boot AVD + android dev
 	$(ANDROID_HOME)/platform-tools/adb wait-for-device
 	pnpm tauri android dev --target "$(ANDROID_TARGET)"
 
-# Xcode — regenerate src-tauri/gen/apple from the template (xcodegen).
+# Xcode — regenerate src-tauri/gen/apple from the template (vendored CLI init).
 gen-apple: ## Regen Xcode project
 	scripts/Xcode/apple-xcode.sh
 

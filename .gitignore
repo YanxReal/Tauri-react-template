@@ -47,3 +47,12 @@ dist-linux/
 Thumbs.db
 # Team de desarrollador (opcional; lo inyecta scripts/Xcode/apple-xcode.sh).
 scripts/.team-id
+
+# Signing secrets — adopters drop identities here; never track them.
+src-tauri/keys/
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision
+!*.mobileprovision.example
