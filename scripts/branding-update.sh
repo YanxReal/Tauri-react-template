@@ -3,8 +3,9 @@
 # branding-update.sh — propagate every identity value from branding.json (repo
 # root) to all consumers. SINGLE SOURCE OF TRUTH: edit branding.json, run this,
 # and the name / version / identifier / binary / icons / bundle meta / authors
-# / description are synced everywhere. Xcode + Android Studio icons/schemes
-# are NOT managed here.
+# / description are synced everywhere, plus the web layer (index.html
+# title/og:title + the favicon generated from the icon master). Xcode +
+# Android Studio icons/schemes are NOT managed here.
 #
 # Usage:
 #   make rebrand      # or: scripts/branding-update.sh
@@ -106,6 +107,32 @@ set_json_field "$ROOT/package.json" "version" "\"$VER\""
 set_json_field "$ROOT/package.json" "description" "\"$DESC\""
 if [[ -n "$AUTHOR_FIRST" ]]; then
   set_json_field "$ROOT/package.json" "author" "\"$AUTHOR_FIRST\""
+fi
+
+# Web identity: index.html <title> + og:title (display name = brand with
+# hyphens as spaces, Title Case — via python3: portable, BSD/GNU-safe).
+TITLE_DISPLAY="$(python3 -c "import sys; print(' '.join(w.capitalize() for w in sys.argv[1].replace('-', ' ').split()))" "$NAME")"
+if [[ "$DRY" == "1" ]]; then
+  echo "  [dry-run] would set index.html title/og:title to '$TITLE_DISPLAY' + favicon from master"
+else
+  if [ -f "$ROOT/apps/web/index.html" ]; then
+    python3 - "$ROOT/apps/web/index.html" "$TITLE_DISPLAY" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]); title = sys.argv[2]
+t = p.read_text()
+t2 = re.sub(r'<title>[^<]*</title>', f'<title>{title}</title>', t, count=1)
+t2 = re.sub(r'(<meta property="og:title" content=")[^"]*(")',
+            lambda m: m.group(1) + title + m.group(2), t2, count=1)
+p.write_text(t2)
+print(f"  updated apps/web/index.html title/og:title -> {title}")
+PY
+  fi
+  FAVICON="$ROOT/apps/web/public/favicon.png"
+  mkdir -p "$(dirname "$FAVICON")"
+  if [ -f "$ROOT/branding/icon-1024.png" ] && command -v sips >/dev/null 2>&1; then
+    sips -z 128 128 "$ROOT/branding/icon-1024.png" --out "$FAVICON" >/dev/null 2>&1
+    echo "  updated $FAVICON ($(basename "$FAVICON"), 128px from the master)"
+  fi
 fi
 
 # Cargo.toml: package name, version, description, authors, [[bin]] name, [lib] name.

@@ -36,5 +36,11 @@
     "typescript": "^7.0.2"
   },
   "description": "Tauri + React + Vite template — generic multi-platform (iOS/Android/desktop) with Xcode layers",
-  "author": "YanX Studio"
+  "author": "YanX Studio",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YanxReal/Tauri-react-template.git"
+  },
+  "homepage": "https://github.com/YanxReal/Tauri-react-template"
 }
