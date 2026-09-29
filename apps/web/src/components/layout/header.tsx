@@ -54,7 +54,7 @@ const HEADER_HEIGHT = {
  */
 export function Header() {
   const { t, i18n } = useTranslation()
-  const { theme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
   const platform = usePlatform()
   const { enabled: glassEnabled } = useGlassCards()
   const isMac = platform === "macos"
@@ -74,7 +74,10 @@ export function Header() {
   }
 
   const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark"
+    // Toggle from the RESOLVED theme: with the default "system" + a dark
+    // system, `theme === "dark"` was false and the first click wrote
+    // "dark" (no visual change).
+    const next = resolvedTheme === "dark" ? "light" : "dark"
     setTheme(next)
   }
 
@@ -111,7 +114,7 @@ export function Header() {
         </a>
 
         <nav
-          aria-label="Main navigation"
+          aria-label={t("header.mainNav")}
           className="hidden items-center gap-6 text-sm sm:flex"
         >
           <a

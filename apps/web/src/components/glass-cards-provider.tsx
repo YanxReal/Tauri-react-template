@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { usePlatform } from "@/components/layout/native-chrome"
+import { isTauriRuntime, usePlatform } from "@/components/layout/native-chrome"
 
 const GLASS_CARDS_KEY = "glass-cards"
 const GLASS_CARDS_ON = "1"
@@ -43,7 +43,12 @@ export function GlassCardsProvider({
   const [enabled, setEnabledState] = React.useState(false)
   const platform = usePlatform()
   const supported = platform !== "linux"
-  const effectiveEnabled = enabled && supported
+  // In the Tauri shell the platform arrives one IPC round-trip later; applying
+  // the glass class before it resolves flashed blur on Linux (the WebKitGTK
+  // veto exists precisely to avoid that). In the browser (no IPC) there is
+  // nothing to wait for.
+  const platformKnown = platform !== null || !isTauriRuntime()
+  const effectiveEnabled = enabled && supported && platformKnown
 
   // Boot: restore the persisted preference (default OFF).
   React.useEffect(() => {

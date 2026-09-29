@@ -24,7 +24,7 @@ export function App() {
   // Linux WebKitGTK has no stable blur (yellow glitches + RAM);
   // the veto lives in GlassCardsProvider (`supported`), so the flag suffices here.
   const effectiveGlass = glassEnabled && !isLinux
-  const [greet, setGreet] = useState<string | null>(null)
+  const [greetState, setGreetState] = useState<"idle" | "ok" | "error">("idle")
 
   useEffect(() => {
     document.documentElement.lang = i18n.language
@@ -32,13 +32,13 @@ export function App() {
 
   async function handleGreet() {
     try {
-      // Kept as an IPC demo (the catch path exercises the error fallback),
-      // but the DISPLAY text is always keyed — never string-replace the
-      // backend reply (brittle and locale-fixed).
+      // IPC demo (the catch path exercises the error fallback). Store only
+      // the RESULT STATE: the display text is translated at render, so it
+      // follows a language switch instead of freezing in the old locale.
       await invoke<string>("greet", { name: "Tauri" })
-      setGreet(t("status.greeted", { name: "Tauri" }))
+      setGreetState("ok")
     } catch {
-      setGreet(t("status.greetFallback"))
+      setGreetState("error")
     }
   }
 
@@ -48,7 +48,7 @@ export function App() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
       >
-        Skip to content / Saltar al contenido
+        {t("app.skipToContent")}
       </a>
 
       <TitleBar />
@@ -91,13 +91,18 @@ export function App() {
                     <GlassControls />
                   </div>
 
-                  {greet && (
+                  {greetState !== "idle" && (
                     <p
                       className="mt-3 text-sm text-white/80"
                       role="status"
                       aria-live="polite"
                     >
-                      {t("status.tauriNote", { message: greet })}
+                      {t("status.tauriNote", {
+                        message:
+                          greetState === "ok"
+                            ? t("status.greeted", { name: "Tauri" })
+                            : t("status.greetFallback"),
+                      })}
                     </p>
                   )}
                 </GlassCardContent>
@@ -124,9 +129,14 @@ export function App() {
                   <GlassControls />
                 </div>
 
-                {greet && (
+                {greetState !== "idle" && (
                   <p className="mt-3 text-sm" role="status" aria-live="polite">
-                    {t("status.tauriNote", { message: greet })}
+                    {t("status.tauriNote", {
+                      message:
+                        greetState === "ok"
+                          ? t("status.greeted", { name: "Tauri" })
+                          : t("status.greetFallback"),
+                    })}
                   </p>
                 )}
               </div>

@@ -174,10 +174,18 @@ function useWindowResizeEdges(enabled: boolean): void {
 
     const onMouseDown = (event: MouseEvent) => {
       if (event.button !== 0) return
+      // Interactive controls inside the band (caption buttons, toggles) keep
+      // their clicks: resize must not win over a button that happens to sit
+      // in the top 8px.
+      const target = event.target instanceof Element ? event.target : null
+      if (target?.closest(INTERACTIVE_SELECTOR)) return
       const edge = resizeEdgeAt(event.clientX, event.clientY, BAND)
       if (!edge) return
-      // Capture: GTK owns the drag, not the DOM.
+      // Capture: GTK owns the drag, not the DOM. Stop the document-level
+      // drag hook (bubble phase) from ALSO starting a window move on the
+      // same press — two IPC calls for one mousedown.
       event.preventDefault()
+      event.stopImmediatePropagation()
       void invoke("start_window_resize", { direction: edge }).catch(() => {})
     }
     const onMouseMove = (event: MouseEvent) => {

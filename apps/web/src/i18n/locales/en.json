@@ -2,8 +2,6 @@
   "header": {
     "title": "Tauri React Template",
     "nav": {
-      "features": "Features",
-      "docs": "Docs",
       "github": "GitHub"
     },
     "language": "Language",
@@ -11,7 +9,8 @@
     "minimize": "Minimize window",
     "maximize": "Maximize window",
     "restore": "Restore window",
-    "close": "Close window"
+    "close": "Close window",
+    "mainNav": "Main navigation"
   },
   "hero": {
     "badge": "Tauri v2 · React 19 · Vite 8 · Tailwind 4",
@@ -19,7 +18,7 @@
     "description": "Bilingual (EN/ES), typed, accessible starter. Ready for your next Tauri desktop app with a modern web frontend.",
     "ctaPrimary": "Get started",
     "ctaSecondary": "Documentation",
-    "hint": "Press {{key}} to toggle dark mode"
+    "hint": "Press D to toggle dark mode"
   },
   "features": {
     "title": "Everything you need — nothing you don't",
@@ -48,10 +47,7 @@
     "greeted": "Hello, {{name}}! You've been greeted from Rust!"
   },
   "footer": {
-    "rights": "All rights reserved.",
     "builtWith": "Built with Tauri, React and Vite.",
-    "privacy": "Privacy",
-    "terms": "Terms",
     "copyright": "© {{year}} Yanx Studio"
   },
   "vibrancy": {
@@ -62,5 +58,8 @@
   "glassCards": {
     "label": "Glass cards",
     "hint": "Toggles the template between the standard components and the reusable glass components from @workspace/ui. Independent from the native window material."
+  },
+  "app": {
+    "skipToContent": "Skip to content"
   }
 }

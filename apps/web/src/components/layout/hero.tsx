@@ -81,7 +81,7 @@ export function Hero() {
         </div>
 
         <p className="font-mono text-xs text-muted-foreground">
-          {t("hero.hint", { key: "D" })} ·{" "}
+          {t("hero.hint")} ·{" "}
           <kbd className="rounded border bg-muted px-1.5 py-0.5">D</kbd>
         </p>
       </div>

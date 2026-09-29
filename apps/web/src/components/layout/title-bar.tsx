@@ -7,6 +7,7 @@ import {
 } from "./native-chrome"
 
 const DESKTOP_PLATFORMS = new Set(["macos", "windows", "linux"])
+const KNOWN_PLATFORMS = new Set([...DESKTOP_PLATFORMS, "ios", "android", "web"])
 
 /**
  * Titlebar side-effects only — side effects for the macOS Overlay titlebar.
@@ -23,19 +24,28 @@ export function TitleBar() {
   useWindowResizeEdges(visible && isLinux)
 
   useEffect(() => {
-    if (!visible || !platform) return
-    document.documentElement.classList.add("titlebar", platform)
-    if (platform === "windows" || platform === "linux")
-      document.documentElement.classList.add("titlebar-win")
-    if (isMac) document.documentElement.classList.add("titlebar-mac")
-    if (platform === "linux") document.documentElement.classList.add("linux")
-    return () => {
-      document.documentElement.classList.remove("titlebar", platform)
-      document.documentElement.classList.remove("titlebar-win")
-      document.documentElement.classList.remove("titlebar-mac")
-      document.documentElement.classList.remove("linux")
+    if (!platform || !KNOWN_PLATFORMS.has(platform)) return
+    const root = document.documentElement
+    // EVERY platform gets its class (html.ios / html.android drive the
+    // mobile safe-area height in globals.css; html.linux/html.windows gate
+    // desktop CSS). Only the titlebar* classes are desktop-only.
+    root.classList.add(platform)
+    if (!DESKTOP_PLATFORMS.has(platform)) {
+      return () => root.classList.remove(platform)
     }
-  }, [visible, platform, isMac])
+    root.classList.add("titlebar")
+    if (platform === "windows" || platform === "linux")
+      root.classList.add("titlebar-win")
+    if (platform === "macos") root.classList.add("titlebar-mac")
+    return () => {
+      root.classList.remove(
+        platform,
+        "titlebar",
+        "titlebar-win",
+        "titlebar-mac"
+      )
+    }
+  }, [platform])
 
   return null
 }

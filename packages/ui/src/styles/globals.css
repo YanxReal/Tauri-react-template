@@ -168,6 +168,13 @@ textarea,
   -webkit-touch-callout: default;
 }
 
+/* No gray tap flash on iOS while still allowing text selection above. */
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* "Crystal effect": the native material (macOS vibrancy / Windows Mica)
    shows through the body background, tinted with the theme color (light/dark)
    so the crystal FOLLOWS the app theme, not the system one (the app paints
@@ -435,4 +442,10 @@ html.light.glass-cards .hover\:text-white:hover {
 }
 html.light.glass-cards .hover\:text-white\/80:hover {
   color: rgba(0, 0, 0, 0.8);
+}
+
+/* Focus ring in light + glass: `ring-white/50` (glass-button) is invisible
+   on light surfaces — WCAG 2.4.7. */
+html.light.glass-cards .focus-visible\:ring-white\/50:focus-visible {
+  --tw-ring-color: rgb(0 0 0 / 0.4);
 }

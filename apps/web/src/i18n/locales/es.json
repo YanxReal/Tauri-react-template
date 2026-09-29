@@ -2,8 +2,6 @@
   "header": {
     "title": "Plantilla Tauri React",
     "nav": {
-      "features": "Funcionalidades",
-      "docs": "Docs",
       "github": "GitHub"
     },
     "language": "Idioma",
@@ -11,7 +9,8 @@
     "minimize": "Minimizar ventana",
     "maximize": "Maximizar ventana",
     "restore": "Restaurar ventana",
-    "close": "Cerrar ventana"
+    "close": "Cerrar ventana",
+    "mainNav": "Navegación principal"
   },
   "hero": {
     "badge": "Tauri v2 · React 19 · Vite 8 · Tailwind 4",
@@ -19,7 +18,7 @@
     "description": "Starter bilingüe (EN/ES), tipado y accesible. Listo para tu próxima app de escritorio con Tauri y frontend web moderno.",
     "ctaPrimary": "Empezar",
     "ctaSecondary": "Documentación",
-    "hint": "Pulsa {{key}} para cambiar el modo oscuro"
+    "hint": "Pulsa D para cambiar el modo oscuro"
   },
   "features": {
     "title": "Todo lo que necesitas — nada que sobre",
@@ -48,10 +47,7 @@
     "greeted": "¡Hola, {{name}}! ¡Te ha saludado Rust!"
   },
   "footer": {
-    "rights": "Todos los derechos reservados.",
     "builtWith": "Hecho con Tauri, React y Vite.",
-    "privacy": "Privacidad",
-    "terms": "Términos",
     "copyright": "© {{year}} Yanx Studio"
   },
   "vibrancy": {
@@ -62,5 +58,8 @@
   "glassCards": {
     "label": "Tarjetas glass",
     "hint": "Cambia el template entre los componentes estándar y los componentes glass reutilizables de @workspace/ui. Independiente del material nativo de la ventana."
+  },
+  "app": {
+    "skipToContent": "Saltar al contenido"
   }
 }
